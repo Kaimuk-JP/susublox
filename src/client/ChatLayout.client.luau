@@ -7,7 +7,8 @@ local function apply()
 	if window then
 		window.HorizontalAlignment = Enum.HorizontalAlignment.Left
 		window.VerticalAlignment = Enum.VerticalAlignment.Bottom
-		window.Size = UDim2.fromOffset(300, 150)
+		window.WidthScale = 0.28
+		window.HeightScale = 0.22
 	end
 end
 
