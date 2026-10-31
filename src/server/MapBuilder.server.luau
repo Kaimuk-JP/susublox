@@ -4,6 +4,8 @@
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 
+local RigFactory = require(script.Parent.RigFactory)
+
 local PALETTE = {
 	ground = Color3.fromHex("B8C0CC"),
 	wall = Color3.fromHex("FFFFFF"),
@@ -91,23 +93,12 @@ local npcs = Instance.new("Folder")
 npcs.Name = "Npcs"
 npcs.Parent = workspace
 
-local function spawnDummy(position: Vector3, level: number, boss: boolean)
-	local ok, desc = pcall(function()
-		return game:GetService("Players"):GetHumanoidDescriptionFromUserId(1)
-	end)
-	local rig = if ok and desc then game:GetService("Players"):CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15) else nil
-	if not rig then
-		return
-	end
-	rig.Name = if boss then "Boss" else "Gangster"
-	rig:SetAttribute("NpcLevel", level)
-	rig:SetAttribute("IsBoss", boss)
-	rig:PivotTo(CFrame.new(position))
-	rig.Parent = npcs
-end
-
 task.spawn(function()
 	for i = 1, 4 do
-		spawnDummy(Vector3.new(-15 + i * 8, 4, 110), 1, false)
+		RigFactory.Create("Gangster", Vector3.new(-15 + i * 8, 4, 110), npcs, { NpcLevel = 1 }, Color3.fromHex("EF233C"))
 	end
 end)
+
+-- อารีน่าสงครามแก๊ง 100x100 (ใช้โดย WarService)
+local war = block("WarArena", Vector3.new(100, 2, 100), Vector3.new(0, -1, 260), PALETTE.ground)
+CollectionService:AddTag(war, "Outline")

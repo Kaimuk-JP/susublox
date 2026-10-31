@@ -119,6 +119,10 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	if Combat.InSafeZone(vroot.Position) or Combat.InSafeZone(aroot.Position) then
 		return
 	end
+	local team = attacker.Character:GetAttribute("Team")
+	if team ~= nil and team == victim.Character:GetAttribute("Team") then
+		return -- ไม่ยิงพวกเดียวกัน (สงครามแก๊ง)
+	end
 	if os.clock() < victim.DeflectUntil then
 		return -- ปัด/หลอกการโจมตีทั้งหมด
 	end
