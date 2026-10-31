@@ -1,5 +1,5 @@
 --!strict
--- ท่าทางต่อสู้แบบโค้ดล้วน: ขยับ Motor6D ของ R15 เอง ใช้ได้ทันทีโดยไม่ต้องมี asset แอนิเมชัน
+-- ท่าทางต่อสู้แบบโค้ดล้วน: ขยับ Motor6D/AnimationConstraint (Transform) ของ R15 เอง ใช้ได้ทันทีโดยไม่ต้องมี asset แอนิเมชัน
 -- (ถ้าใส่ asset ID ใน Assets.Animations แล้ว จะข้ามท่านั้นและให้ AnimationPlayer เล่นของจริงแทน)
 -- ทิศ: ตัวละครหันหน้า -Z, หมุนรอบ X บวก = แขน/ขายกไปข้างหน้า, รอบ Y บวก = ไหล่ขวาหมุนไปหน้า
 local Players = game:GetService("Players")
@@ -213,15 +213,15 @@ local function evaluate(track: Track, t: number): Pose?
 	return nil
 end
 
-local motorCache: { [Model]: { [string]: Motor6D } } = {}
-local function motorsOf(character: Model): { [string]: Motor6D }
+local motorCache: { [Model]: { [string]: Motor6D | AnimationConstraint } } = {}
+local function motorsOf(character: Model): { [string]: Motor6D | AnimationConstraint }
 	local cached = motorCache[character]
 	if cached then
 		return cached
 	end
-	local map: { [string]: Motor6D } = {}
+	local map: { [string]: Motor6D | AnimationConstraint } = {}
 	for _, d in character:GetDescendants() do
-		if d:IsA("Motor6D") then
+		if d:IsA("Motor6D") or d:IsA("AnimationConstraint") then
 			map[d.Name] = d
 		end
 	end
@@ -264,7 +264,8 @@ local function start(character: Model, name: string)
 	end
 end
 
-RunService.RenderStepped:Connect(function()
+-- ต้อง Bind หลัง Animator อัปเดต ไม่งั้น Transform ที่เขียนจะถูกทับ (RenderStepped:Connect ถูกทับทุกเฟรม)
+RunService:BindToRenderStep("ProceduralAnim", Enum.RenderPriority.Character.Value + 1, function()
 	local now = os.clock()
 	for character, act in active do
 		if not character.Parent then
