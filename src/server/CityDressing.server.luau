@@ -5,6 +5,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
+local Combat = require(script.Parent.Combat)
+local PlayerData = require(script.Parent.PlayerData)
+
+local SHOP_PRICE = 60
+local worldRemote = ReplicatedStorage:WaitForChild("WorldRemote", 60) :: RemoteEvent
 
 local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
@@ -138,6 +143,43 @@ if districtsFolder then
 			local gate = BK.ball("StationGate", 1.4, Vector3.new(px, 2.4, pz + 0.5), hex("7EC8E3"), folder, Enum.Material.Neon)
 			BK.light(gate, hex("7EC8E3"), 22, 1.2)
 			BK.box("StationBench", px + 3, px + 7, 1.4, 1.9, pz - 2.4, pz - 1.4, hex("9C7A54"), folder, Enum.Material.Wood)
+			-- ร้านบนชานชาลา: กดซื้ออาหาร ¥60 ฟื้นเลือดเต็มและพลังงาน (เหตุผลให้แวะสถานี)
+			local machine = BK.box("StationShop", px - 7.5, px - 4.5, 0.9, 6.4, pz - 2.9, pz - 0.9, hex("EF233C"), folder)
+			local panel = BK.box("StationShopPanel", px - 7.2, px - 4.8, 3, 5.6, pz - 0.95, pz - 0.85, hex("FFF3C9"), folder, Enum.Material.Neon)
+			BK.light(panel, hex("FFF3C9"), 14, 0.9)
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.ActionText = "ซื้ออาหาร (¥60)"
+			prompt.ObjectText = "ร้านบนชานชาลา: ฟื้นเลือดและพลังงานเต็ม"
+			prompt.HoldDuration = 0.4
+			prompt.MaxActivationDistance = 10
+			prompt.RequiresLineOfSight = false
+			prompt.Parent = machine
+			local lastBuy: { [Player]: number } = {}
+			prompt.Triggered:Connect(function(player)
+				local now = os.clock()
+				if now - (lastBuy[player] or -math.huge) < 6 then
+					return
+				end
+				local p = PlayerData.Get(player)
+				local char = player.Character
+				local hum = char and char:FindFirstChildOfClass("Humanoid")
+				if not p or not char or not hum or hum.Health <= 0 then
+					return
+				end
+				if p.Yen < SHOP_PRICE then
+					worldRemote:FireClient(player, "Toast", `เงินไม่พอ (ต้องใช้ ¥{SHOP_PRICE})`)
+					return
+				end
+				lastBuy[player] = now
+				p.Yen -= SHOP_PRICE
+				player:SetAttribute("Yen", p.Yen)
+				hum.Health = hum.MaxHealth
+				local state = Combat.Get(char)
+				if state then
+					state.Stamina = (char:GetAttribute("MaxStamina") :: number?) or 100
+				end
+				worldRemote:FireClient(player, "Toast", "อิ่มแล้ว! เลือดและพลังงานเต็ม")
+			end)
 		end
 	end
 end
