@@ -15,6 +15,11 @@ local menu = Instance.new("RemoteEvent")
 menu.Name = "MenuRemote"
 menu.Parent = ReplicatedStorage
 
+-- ให้บริการอื่น (เช่นโหมดทดสอบ) สั่งรีเฟรชโปรไฟล์ -> ตัวละคร/Attribute
+local profileChanged = Instance.new("BindableEvent")
+profileChanged.Name = "ProfileChanged"
+profileChanged.Parent = game:GetService("ServerStorage")
+
 local ranks = {
 	{ Fame = 2000, Title = "ราชาโรงเรียน" },
 	{ Fame = 500, Title = "หัวหน้าแก๊ง" },
@@ -161,6 +166,11 @@ Players.PlayerAdded:Connect(setup)
 for _, p in Players:GetPlayers() do
 	task.spawn(setup, p)
 end
+
+profileChanged.Event:Connect(function(player: Player)
+	applyToCharacter(player)
+	replicate(player)
+end)
 
 -- replicate หลอดพลังงาน/ท่าไม้ตายให้ HUD
 task.spawn(function()
