@@ -101,7 +101,13 @@ local Styles: { [string]: Style } = {
 -- Mastery ที่ต้องมีเพื่อใช้สกิลแต่ละปุ่ม (ทุกสไตล์เหมือนกัน)
 local MasteryUnlock = table.freeze({ Z = 1, X = 10, C = 25, V = 40, Ultimate = 60 })
 
+-- ราคามานาของสกิล Z X C V (ไม้ตายไม่กินมานา ใช้หลอดไม้ตาย): ยิ่งคูลดาวน์นาน ยิ่งแพง 8–40
+local function skillCost(skill: Skill): number
+	return math.clamp(math.floor(skill.Cooldown * 2.2 + 0.5), 8, 40)
+end
+
 return {
+	SkillCost = skillCost,
 	Styles = Styles,
 	MasteryUnlock = MasteryUnlock,
 	MaxMastery = 100,

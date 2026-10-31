@@ -11,6 +11,7 @@ export type Data = {
 	Character: Model,
 	State: Types.State,
 	Stamina: number,
+	Mana: number, -- มานาสำหรับสกิล Z X C V
 	Ult: number, -- 0..UltMax
 	Combo: number,
 	LastM1: number,
@@ -33,6 +34,7 @@ function CombatState.new(character: Model): CombatState
 		Character = character,
 		State = "Idle" :: Types.State,
 		Stamina = Config.BaseStamina,
+		Mana = Config.BaseMana,
 		Ult = 0,
 		Combo = 0,
 		LastM1 = 0,
@@ -122,6 +124,8 @@ function CombatState.AddUlt(self: CombatState, amount: number)
 end
 
 function CombatState.Regen(self: CombatState, dt: number)
+	local maxMana = (self.Character:GetAttribute("MaxMana") :: number?) or Config.BaseMana
+	self.Mana = math.min(maxMana, self.Mana + Config.ManaRegen * dt)
 	if self.State ~= "Blocking" then
 		local max = (self.Character:GetAttribute("MaxStamina") :: number?) or Config.BaseStamina
 		self.Stamina = math.min(max, self.Stamina + Config.StaminaRegen * dt)

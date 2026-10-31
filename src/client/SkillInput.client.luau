@@ -21,7 +21,17 @@ local function canUse(key: string): boolean
 		return typeof(ult) == "number" and ult >= Config.UltMax
 	end
 	local readyAt = (player:GetAttribute("CD_" .. key) :: number?) or 0
-	return workspace:GetServerTimeNow() >= readyAt
+	if workspace:GetServerTimeNow() < readyAt then
+		return false
+	end
+	-- มานาพอไหม (ไม่พอก็ไม่ทำนายท่า server จะปฏิเสธ)
+	local styleId = player:GetAttribute("Style")
+	local style = typeof(styleId) == "string" and StyleData.Styles[styleId]
+	local mana = player.Character and player.Character:GetAttribute("Mana")
+	if style and typeof(mana) == "number" then
+		return mana >= StyleData.SkillCost((style.Skills :: any)[key])
+	end
+	return true
 end
 
 local function press(key: string)

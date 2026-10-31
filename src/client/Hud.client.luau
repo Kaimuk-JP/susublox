@@ -51,11 +51,12 @@ end
 
 local healthFill, healthLabel = bar("Health", 16, COLORS.Health)
 local staminaFill, staminaLabel = bar("Stamina", 40, COLORS.Stamina)
-local ultFill, ultLabel = bar("Ult", 64, COLORS.Ult)
-local expFill, expLabel = bar("Exp", 88, COLORS.Exp)
+local manaFill, manaLabel = bar("Mana", 64, Color3.fromHex("6C7BFF"))
+local ultFill, ultLabel = bar("Ult", 88, COLORS.Ult)
+local expFill, expLabel = bar("Exp", 112, COLORS.Exp)
 
 local info = Instance.new("TextLabel")
-info.Position = UDim2.fromOffset(16, 112)
+info.Position = UDim2.fromOffset(16, 136)
 info.Size = UDim2.fromOffset(260, 20)
 info.BackgroundTransparency = 1
 info.TextXAlignment = Enum.TextXAlignment.Left
@@ -66,7 +67,7 @@ info.TextSize = 14
 info.Parent = gui
 
 local goalLabel = Instance.new("TextLabel")
-goalLabel.Position = UDim2.fromOffset(16, 130)
+goalLabel.Position = UDim2.fromOffset(16, 154)
 goalLabel.Size = UDim2.fromOffset(300, 34)
 goalLabel.BackgroundTransparency = 1
 goalLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -105,6 +106,9 @@ RunService.RenderStepped:Connect(function()
 		local maxStamina = (char:GetAttribute("MaxStamina") :: number?) or Config.BaseStamina
 		local stamina = (char:GetAttribute("Stamina") :: number?) or maxStamina
 		set(staminaFill, staminaLabel, stamina, maxStamina, `พลังงาน {math.floor(stamina)}`)
+		local maxMana = (char:GetAttribute("MaxMana") :: number?) or Config.BaseMana
+		local mana = (char:GetAttribute("Mana") :: number?) or maxMana
+		set(manaFill, manaLabel, mana, maxMana, `มานา {math.floor(mana)}/{math.floor(maxMana)}`)
 		local ult = (char:GetAttribute("Ult") :: number?) or 0
 		set(ultFill, ultLabel, ult, Config.UltMax, if ult >= Config.UltMax then "ไม้ตายพร้อม! (G)" else `ไม้ตาย {math.floor(ult)}%`)
 	end

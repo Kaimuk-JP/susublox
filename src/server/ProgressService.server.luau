@@ -99,6 +99,7 @@ local function applyToCharacter(player: Player)
 	hum.WalkSpeed = 16 + 0.3 * p.Stats.Speed
 	char:SetAttribute("DamageMult", 1 + 0.05 * p.Stats.Strength) -- +5% ต่อแต้ม (ดูตัวเลขจริงในเมนูสเตตัส)
 	char:SetAttribute("MaxStamina", Config.BaseStamina + 5 * p.Stats.Stamina)
+	char:SetAttribute("MaxMana", Config.BaseMana + 5 * p.Stats.Stamina)
 	s.Equipped = table.clone(p.Passives)
 end
 
@@ -238,6 +239,7 @@ task.spawn(function()
 				local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
 				player:SetAttribute("InSafeZone", root ~= nil and Combat.InSafeZone(root.Position))
 				char:SetAttribute("Stamina", s.Stamina)
+				char:SetAttribute("Mana", s.Mana)
 				char:SetAttribute("Ult", s.Ult)
 			end
 		end

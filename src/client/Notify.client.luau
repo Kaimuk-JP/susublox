@@ -57,6 +57,15 @@ local function banner(text: string)
 	end)
 end
 
+-- มานาไม่พอ: เตือนด้วยข้อความฟ้า (เซิร์ฟเวอร์ตั้ง NoManaAt ตอนปฏิเสธสกิล)
+local lastNoMana = 0
+player:GetAttributeChangedSignal("NoManaAt"):Connect(function()
+	if os.clock() - lastNoMana > 0.5 then
+		lastNoMana = os.clock()
+		floatText("มานาไม่พอ!", Color3.fromHex("8FA0FF"), -30, 22)
+	end
+end)
+
 -- รางวัลล็อกอินต่อเนื่อง 7 วัน (วันที่ 7 ใหญ่สุด)
 local function showLogin()
 	local v = player:GetAttribute("LoginReward")

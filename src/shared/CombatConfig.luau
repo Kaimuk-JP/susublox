@@ -22,6 +22,8 @@ return table.freeze({
 	StaminaRegen = 15, -- ต่อวินาที
 	HitStop = 0.05,
 	RemoteRateLimit = 20, -- ครั้งต่อวินาที
+	BaseMana = 100, -- มานาสูงสุดเริ่มต้น (เพิ่ม 5 ต่อแต้มสเตตัส "พลังงาน")
+	ManaRegen = 6, -- ต่อวินาที
 	UltMax = 100,
 	UltPerHit = 4, -- ท่าไม้ตายชาร์จจากการโจมตีโดน
 	UltPerDamageTaken = 0.2, -- ต่อ 1 ดาเมจที่โดน
