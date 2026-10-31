@@ -1,13 +1,17 @@
 --!strict
--- โครงข้อมูลผู้เล่น + migration ตามหมายเลขเวอร์ชัน (เสียบเข้า ProfileStore ภายหลัง)
+-- โครงข้อมูลผู้เล่น + migration ตามหมายเลขเวอร์ชัน
 export type Profile = {
 	Version: number,
 	Level: number,
 	Exp: number,
 	Yen: number,
+	Fame: number,
 	StatPoints: number,
 	Stats: { Strength: number, Health: number, Stamina: number, Speed: number },
 	UnlockedStyles: { string },
+	EquippedStyle: string,
+	Mastery: { [string]: { Level: number, Exp: number } },
+	Passives: { string },
 	Outfits: { string },
 	Prestige: number,
 	Wins: number,
@@ -25,9 +29,13 @@ function ProfileTemplate.new(): Profile
 		Level = 1,
 		Exp = 0,
 		Yen = 0,
+		Fame = 0,
 		StatPoints = 0,
 		Stats = { Strength = 0, Health = 0, Stamina = 0, Speed = 0 },
-		UnlockedStyles = { "StreetBrawl" },
+		UnlockedStyles = { "StreetBrawl", "Kendo" },
+		EquippedStyle = "StreetBrawl",
+		Mastery = {},
+		Passives = {},
 		Outfits = {},
 		Prestige = 0,
 		Wins = 0,
@@ -38,11 +46,18 @@ end
 -- แต่ละ migration ยกเวอร์ชัน n -> n+1 เพิ่มเมื่อเปลี่ยนโครงข้อมูล
 local migrations: { [number]: (data: any) -> () } = {}
 
+-- เติมฟิลด์ที่ขาด (ลึก 1 ชั้นสำหรับ Stats) แล้วรัน migration ตามลำดับ
 function ProfileTemplate.Migrate(data: any): Profile
-	local template = ProfileTemplate.new()
-	for k, v in template :: any do
+	local template: any = ProfileTemplate.new()
+	for k, v in template do
 		if data[k] == nil then
 			data[k] = v
+		elseif type(v) == "table" and type(data[k]) == "table" and k == "Stats" then
+			for sk, sv in v do
+				if data[k][sk] == nil then
+					data[k][sk] = sv
+				end
+			end
 		end
 	end
 	local version: number = data.Version or 0
