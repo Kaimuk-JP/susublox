@@ -2,12 +2,24 @@
 -- สร้างโลกเปิดรอบโรงเรียน: ขยาย Terrain, ถนน, 7 ย่านต่างธีม, จุดเดินทาง (Stone) และขอบโลก
 -- รอให้ MapBuilder สร้างโรงเรียนเสร็จก่อน (ดูจากโฟลเดอร์ Npcs ที่ถูกสร้างตอนท้าย) แล้วค่อยต่อ
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
 
-workspace:WaitForChild("Npcs")
-task.wait(1)
+-- เพิ่มเลขนี้ทุกครั้งที่แก้โลก: ถ้าใน Place มีโลกที่สร้างไว้ล่วงหน้า (รันใน Edit) เวอร์ชันตรงกัน ตอนเล่นจะข้ามการสร้างใหม่
+local VERSION = 3
+local running = RunService:IsRunning()
+local prebuilt = workspace:FindFirstChild("World")
+if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttribute("Version") == VERSION then
+	return true
+end
+
+-- ตอนเล่นจริงรอให้ MapBuilder สร้างโรงเรียนเสร็จก่อน; ตอนรันใน Edit (สร้างล่วงหน้า) ข้ามการรอ
+if running then
+	workspace:WaitForChild("Npcs")
+	task.wait(1)
+end
 
 local hex = Color3.fromHex
 local rng = BK.rng
@@ -537,4 +549,6 @@ for _, d in World.Districts do
 	task.wait()
 end
 
+worldFolder:SetAttribute("Version", VERSION)
 worldFolder:SetAttribute("Built", true)
+return true

@@ -9,6 +9,7 @@ local B = World.Bounds
 local RES = 4 -- ขนาด voxel ของ Roblox Terrain
 local CHUNK = 128 -- studs ต่อ chunk (ด้านราบ)
 local MIN_Y, MAX_Y = -24, 48
+local SURFACE_OFFSET = 2 -- ผิว Terrain ที่ render จริงสูงกว่าขอบบน voxel เต็ม ~2 stud ลบออกให้พื้นราบอยู่ที่ y=0 พอดี
 
 local flatCircles = {}
 for _, d in World.Districts do
@@ -105,9 +106,9 @@ for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องช
 				materials[ix][iy], occupancy[ix][iy] = {}, {}
 				local y = MIN_Y + (iy - 0.5) * RES
 				for iz = 1, nz do
-					local occ = math.clamp((colH[ix][iz] - (y - RES / 2)) / RES, 0, 1)
+					local occ = math.clamp((colH[ix][iz] - SURFACE_OFFSET - (y - RES / 2)) / RES, 0, 1)
 					local mat = colMat[ix][iz]
-					if occ > 0 and y < -0.5 - RES then
+					if occ > 0 and y < -4 * RES - 0.5 then
 						mat = Enum.Material.Ground -- ชั้นดินใต้ผิว
 					end
 					materials[ix][iy][iz] = occ > 0 and mat or Enum.Material.Air
