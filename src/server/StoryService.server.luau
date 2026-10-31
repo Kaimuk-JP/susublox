@@ -7,6 +7,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Story = require(ReplicatedStorage.Shared.Story)
+local Scenes = require(ReplicatedStorage.Shared.Scenes)
 local World = require(ReplicatedStorage.Shared.World)
 local WQ = require(ReplicatedStorage.Shared.WorldQuests)
 local Combat = require(script.Parent.Combat)
@@ -106,6 +107,14 @@ local function publishStory(player: Player, p: any)
 	player:SetAttribute("StoryPos", stepTarget(step))
 end
 
+-- เล่นฉากบทสนทนา (ครั้งเดียวต่อผู้เล่น) client ถือบทเอง ส่งแค่คีย์
+local function playScene(player: Player, p: any, key: string)
+	if Scenes.Scenes[key] and not p.SeenScenes[key] then
+		p.SeenScenes[key] = true
+		remote:FireClient(player, "Scene", key)
+	end
+end
+
 -- ตรวจและเลื่อนขั้น (ถ้าผู้เล่นเกินเกณฑ์อยู่แล้วหลายขั้นก็ไล่ให้ครบ สูงสุด 12 ขั้นต่อรอบ)
 local function advanceStory(player: Player)
 	local p = PlayerData.Get(player)
@@ -114,6 +123,7 @@ local function advanceStory(player: Player)
 	end
 	local completed = 0
 	local lastTitle = ""
+	local sceneKeys: { string } = {}
 	for _ = 1, 12 do
 		local step = Story.Steps[p.StoryStep]
 		if not step or progressOf(p, step) < step.Goal then
@@ -123,6 +133,11 @@ local function advanceStory(player: Player)
 		p.StoryStep += 1
 		completed += 1
 		lastTitle = step.Title
+		table.insert(sceneKeys, step.Id .. ":done")
+		local nextStep = Story.Steps[p.StoryStep]
+		if nextStep then
+			table.insert(sceneKeys, nextStep.Id .. ":start")
+		end
 		local r = step.Reward
 		remote:FireClient(
 			player,
@@ -134,6 +149,20 @@ local function advanceStory(player: Player)
 	end
 	if completed > 1 then
 		remote:FireClient(player, "Toast", `เนื้อเรื่องก้าวหน้า {completed} ขั้นรวด! (ล่าสุด: {lastTitle})`)
+	end
+	-- ฉากบทสนทนา: ผ่านทีละขั้นเล่นครบ; ถ้าข้ามรวดหลายขั้น (เช่นเลเวลสูงอยู่แล้ว) เล่นเฉพาะฉากท้ายสุด ไม่ให้ท่วมจอ
+	if completed == 1 then
+		for _, key in sceneKeys do
+			playScene(player, p, key)
+		end
+	elseif completed > 1 then
+		for i, key in sceneKeys do
+			if i >= #sceneKeys - 1 then
+				playScene(player, p, key)
+			else
+				p.SeenScenes[key] = true
+			end
+		end
 	end
 	publishStory(player, p)
 end
@@ -269,6 +298,11 @@ local function setup(player: Player)
 	end
 	publishBounty(player, p)
 	advanceStory(player)
+	-- ฉากเปิดเรื่อง: เล่นครั้งแรกที่เข้าเกม (รอให้จอโหลดเสร็จ)
+	if not p.SeenScenes.intro and p.StoryStep <= 1 then
+		task.wait(4)
+		playScene(player, p, "intro")
+	end
 end
 Players.PlayerAdded:Connect(setup)
 for _, pl in Players:GetPlayers() do
