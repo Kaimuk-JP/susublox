@@ -25,7 +25,7 @@ local paint = { "EF233C", "4D7CFE", "FFE066", "FFFFFF", "2B2D42", "5FBF7A", "FF8
 -- โมเดลรถจริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Cars) ข้อตกลง: Pivot = กึ่งกลางใต้ล้อ หน้ารถหัน -Z ไม่มีสคริปต์
 -- ถ้ามีจะใช้แทนรถที่สร้างด้วยชิ้นส่วนเอง; ถ้าไม่มีก็ใช้โมเดลโค้ดด้านล่าง (ไม่พัง)
 local ServerStorage = game:GetService("ServerStorage")
-local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Model, BasePart)?
+local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Model?, BasePart?)
 	local assets = ServerStorage:FindFirstChild("ImportedAssets")
 	local folder = assets and assets:FindFirstChild("Cars")
 	local list = folder and folder:GetChildren() or {}

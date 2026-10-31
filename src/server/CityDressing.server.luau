@@ -32,7 +32,7 @@ local cx = (B.MinX + B.MaxX) / 2
 -- ผิว Terrain จริง = ค่าที่เขียน + ~2 studs: ขุดให้สูงพอ (ถึง +8) แล้ววางทราย/น้ำให้ยอดน้ำต่ำกว่าตลิ่ง (ยอดที่เขียน -3 = ผิวจริง ~ -1)
 terrain:FillBlock(CFrame.new(cx, -2, RIVER_Z), Vector3.new(width, 20, RIVER_W), Enum.Material.Air)
 terrain:FillBlock(CFrame.new(cx, -10.5, RIVER_Z), Vector3.new(width, 3, RIVER_W), Enum.Material.Sand)
-terrain:FillBlock(CFrame.new(cx, -6, RIVER_Z), Vector3.new(width, 6, RIVER_W), Enum.Material.Water)
+terrain:FillBlock(CFrame.new(cx, -5, RIVER_Z), Vector3.new(width, 8, RIVER_W), Enum.Material.Water)
 
 -- ต้นสนฉากหลังของโรงเรียน (MapBuilder) ที่บังเอิญตกอยู่กลางแม่น้ำ ให้เอาออก
 local mapFolder = workspace:FindFirstChild("Map")

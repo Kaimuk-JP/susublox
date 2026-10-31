@@ -505,7 +505,7 @@ local function buildDocks(d: World.District, f: Folder)
 	-- อ่าวน้ำด้านตะวันออก
 	terrain:FillBlock(CFrame.new(cx + 180, -2, cz + 20), Vector3.new(110, 20, 420), Enum.Material.Air) -- ขุดอ่าว
 	terrain:FillBlock(CFrame.new(cx + 180, -10.5, cz + 20), Vector3.new(110, 3, 420), Enum.Material.Sand)
-	terrain:FillBlock(CFrame.new(cx + 180, -6, cz + 20), Vector3.new(110, 6, 420), Enum.Material.Water)
+	terrain:FillBlock(CFrame.new(cx + 180, -5, cz + 20), Vector3.new(110, 8, 420), Enum.Material.Water)
 	BK.box("Pier", cx + 70, cx + 135, 0, 1.2, cz + 15, cz + 25, hex("9C7A54"), f, Enum.Material.WoodPlanks)
 	for x = cx + 75, cx + 135, 10 do
 		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, cz + 14.6), hex("6B5A47"), f, Enum.Material.Wood)
