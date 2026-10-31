@@ -52,6 +52,7 @@ local function publish(player: Player)
 	end
 	for _, quest in allQuests() do
 		player:SetAttribute("Q_" .. quest.Id, p.Quests.Progress[quest.Id] or 0)
+		player:SetAttribute("QC_" .. quest.Id, p.Quests.Claimed[quest.Id] == true) -- รับรางวัลแล้วหรือยัง (ให้เมนูแสดง ✓)
 	end
 	player:SetAttribute("LoginStreak", p.Login.Streak)
 end
@@ -115,7 +116,11 @@ local function loginReward(player: Player)
 	end
 	p.Login.Streak = if last == today - 1 then p.Login.Streak % 7 + 1 else 1
 	p.Login.Last = today
-	p.Yen += QuestData.LoginYen[p.Login.Streak]
+	local reward = QuestData.LoginYen[p.Login.Streak]
+	p.Yen += reward
+	player:SetAttribute("Yen", p.Yen)
+	-- ให้ client แสดงป้าย "ล็อกอินวันที่ N" (ไม่ให้รางวัลเงียบๆ)
+	player:SetAttribute("LoginReward", `{p.Login.Streak}|{reward}|{os.clock()}`)
 end
 
 local function setup(player: Player)
@@ -149,6 +154,7 @@ remote.OnServerEvent:Connect(function(player: Player, id: unknown)
 			and not p.Quests.Claimed[id]
 		then
 			p.Quests.Claimed[id] = true
+			player:SetAttribute("QC_" .. id, true)
 			p.Yen += quest.Yen
 			local level, exp, points = Progression.AddExp(p.Level, p.Exp, quest.Exp, p.Prestige)
 			p.Level, p.Exp = level, exp

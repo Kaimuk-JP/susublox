@@ -170,6 +170,11 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	local aFraction = ahum and ahum.Health / ahum.MaxHealth or 1
 	amount *= Passives.DamageMultiplier(attacker.Equipped, aFraction, victim.IsBoss)
 	amount *= (attacker.Character:GetAttribute("DamageMult") :: number?) or 1
+	-- คริติคอล: ผู้เล่นมีโอกาส 8% ได้ดาเมจ x1.8 (รางวัลแบบสุ่ม ทำให้การตีน่าตื่นเต้น)
+	local crit = Players:GetPlayerFromCharacter(attacker.Character) ~= nil and math.random() < 0.08
+	if crit then
+		amount *= 1.8
+	end
 
 	if victim.State == "Blocking" and not o.Pierce then
 		if os.clock() - victim.BlockStart <= Config.PerfectBlockWindow then
@@ -212,7 +217,7 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	hum:TakeDamage(amount)
 	attacker:AddUlt(Config.UltPerHit)
 	victim:AddUlt(amount * Config.UltPerDamageTaken)
-	notify(attacker, vroot.Position, amount)
+	notify(attacker, vroot.Position, amount, if crit then "Crit" else nil)
 	for _, fn in hitListeners do
 		task.spawn(fn, attacker, victim, amount)
 	end

@@ -22,7 +22,7 @@ local function shake(duration: number, power: number)
 	end)
 end
 
-local function damageNumber(position: Vector3, amount: number)
+local function damageNumber(position: Vector3, amount: number, crit: boolean?)
 	local anchor = Instance.new("Part")
 	anchor.Anchored, anchor.CanCollide, anchor.CanQuery, anchor.Transparency = true, false, false, 1
 	anchor.Size = Vector3.one
@@ -35,7 +35,11 @@ local function damageNumber(position: Vector3, amount: number)
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
 	label.Text = tostring(math.round(amount * 10) / 10)
-	label.TextColor3 = Color3.fromHex("FFE066")
+	label.TextColor3 = if crit then Color3.fromHex("FF4D4D") else Color3.fromHex("FFE066")
+	if crit then
+		label.Text ..= "!"
+		gui.Size = UDim2.fromOffset(130, 64) -- คริติคอล: เลขใหญ่สีแดง
+	end
 	label.TextStrokeTransparency = 0
 	label.Font = Enum.Font.FredokaOne
 	label.TextScaled = true
@@ -46,11 +50,12 @@ local function damageNumber(position: Vector3, amount: number)
 end
 
 feedback.OnClientEvent:Connect(function(kind: string, position: Vector3, amount: number)
-	if kind ~= "Hit" then
+	if kind ~= "Hit" and kind ~= "Crit" then
 		return
 	end
-	shake(0.15, 0.4)
-	damageNumber(position, amount)
+	local crit = kind == "Crit"
+	shake(if crit then 0.25 else 0.15, if crit then 0.8 else 0.4)
+	damageNumber(position, amount, crit)
 	-- hit-stop: หน่วงอนิเมชันของตัวเองสั้น ๆ
 	local char = Players.LocalPlayer.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")

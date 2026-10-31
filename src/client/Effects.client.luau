@@ -65,6 +65,10 @@ feedback.OnClientEvent:Connect(function(kind: string, position: Vector3, amount:
 		if big then
 			flash(Color3.fromHex("FFF3B0"), 0.2)
 		end
+	elseif kind == "Crit" then
+		starBurst(position, Color3.fromHex("FF4D4D"), 22)
+		play("Punch")
+		flash(Color3.fromHex("FFD0D0"), 0.25)
 	elseif kind == "PerfectBlock" then
 		starBurst(position, Color3.fromHex("7EC8E3"), 16)
 		play("PerfectBlock")

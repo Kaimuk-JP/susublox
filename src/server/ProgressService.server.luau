@@ -155,6 +155,31 @@ Combat.OnKill(function(killer, victim)
 	local victimPlayer = Players:GetPlayerFromCharacter(victim.Character)
 	local npcLevel = (victim.Character:GetAttribute("NpcLevel") :: number?) or 1
 	local exp = if victimPlayer then 50 else 30 * npcLevel * (if victim.IsBoss then 5 else 1)
+
+	-- โบนัสเล่นเป็นทีม: มีผู้เล่นอื่นอยู่ใกล้ (60 studs) คนละ +15% สูงสุด +45%
+	local killerRoot = killer.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local allies = 0
+	if killerRoot then
+		for _, other in Players:GetPlayers() do
+			local oroot = other ~= player and other.Character and other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if oroot and (oroot.Position - killerRoot.Position).Magnitude <= 60 then
+				allies += 1
+			end
+		end
+	end
+	local mult = 1 + math.min(allies, 3) * 0.15
+	-- โบนัสรายวัน: ศัตรู 5 ตัวแรกของวัน EXP x2 (รีเซ็ตทุกวัน ให้มีเหตุผลกลับมาเล่นทุกวัน)
+	local today = os.time() // 86400
+	if p.DailyBonus.Day ~= today then
+		p.DailyBonus.Day, p.DailyBonus.Used = today, 0
+	end
+	if not victimPlayer and p.DailyBonus.Used < 5 then
+		mult *= 2
+		p.DailyBonus.Used += 1
+	end
+	player:SetAttribute("DailyBonusLeft", math.max(0, 5 - p.DailyBonus.Used))
+	player:SetAttribute("PartyBonus", allies)
+	exp = math.floor(exp * mult)
 	p.Yen += math.floor((if victimPlayer then 25 else 10 * npcLevel) * LiveOps.YenMultiplier())
 	p.Fame += if victimPlayer then 10 else (if victim.IsBoss then 50 else 5)
 	p.Wins += 1

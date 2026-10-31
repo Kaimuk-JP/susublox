@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.CombatConfig)
+local StyleData = require(ReplicatedStorage.Shared.Styles)
 local player = Players.LocalPlayer
 
 local COLORS = {
@@ -64,6 +65,19 @@ info.Font = Enum.Font.FredokaOne
 info.TextSize = 14
 info.Parent = gui
 
+local goalLabel = Instance.new("TextLabel")
+goalLabel.Position = UDim2.fromOffset(16, 130)
+goalLabel.Size = UDim2.fromOffset(300, 34)
+goalLabel.BackgroundTransparency = 1
+goalLabel.TextXAlignment = Enum.TextXAlignment.Left
+goalLabel.TextYAlignment = Enum.TextYAlignment.Top
+goalLabel.TextColor3 = Color3.fromHex("FFE066")
+goalLabel.TextStrokeTransparency = 0.5
+goalLabel.Font = Enum.Font.FredokaOne
+goalLabel.TextSize = 12
+goalLabel.TextWrapped = true
+goalLabel.Parent = gui
+
 local safeLabel = Instance.new("TextLabel")
 safeLabel.AnchorPoint = Vector2.new(0.5, 0)
 safeLabel.Position = UDim2.new(0.5, 0, 0, 90)
@@ -98,5 +112,23 @@ RunService.RenderStepped:Connect(function()
 	local need = (player:GetAttribute("ExpNeeded") :: number?) or 100
 	set(expFill, expLabel, exp, need, `EXP {exp}/{need}`)
 	safeLabel.Visible = player:GetAttribute("InSafeZone") == true
+	-- เป้าหมายถัดไป: สกิลที่จะปลดล็อก + โบนัสรายวัน/ทีม
+	local mastery = (player:GetAttribute("MasteryLevel") :: number?) or 1
+	local nextKey, nextNeed = nil, math.huge
+	for key, need in StyleData.MasteryUnlock do
+		if need > mastery and need < nextNeed then
+			nextKey, nextNeed = key, need
+		end
+	end
+	local goal = if nextKey then `เป้าหมาย: ปลดล็อกสกิล {if nextKey == "Ultimate" then "ไม้ตาย" else nextKey} ที่ Mastery {nextNeed} (ตอนนี้ {mastery})` else "ปลดล็อกสกิลครบแล้ว!"
+	local daily = (player:GetAttribute("DailyBonusLeft") :: number?)
+	if daily == nil or daily > 0 then
+		goal ..= `\nโบนัสวันนี้: EXP x2 อีก {daily or 5} ตัว`
+	end
+	local party = (player:GetAttribute("PartyBonus") :: number?) or 0
+	if party > 0 then
+		goal ..= `  | ทีม +{party * 15}%`
+	end
+	goalLabel.Text = goal
 	info.Text = `Lv.{player:GetAttribute("Level") or 1}  {player:GetAttribute("Rank") or ""}  ¥{player:GetAttribute("Yen") or 0}`
 end)

@@ -57,6 +57,22 @@ local function banner(text: string)
 	end)
 end
 
+-- รางวัลล็อกอินต่อเนื่อง 7 วัน (วันที่ 7 ใหญ่สุด)
+local function showLogin()
+	local v = player:GetAttribute("LoginReward")
+	if typeof(v) == "string" then
+		local parts = v:split("|")
+		local day, yen = parts[1], parts[2]
+		if day and yen then
+			banner(`ล็อกอินวันที่ {day}/7  +¥{yen}`)
+		end
+	end
+end
+player:GetAttributeChangedSignal("LoginReward"):Connect(showLogin)
+if player:GetAttribute("LoginReward") ~= nil then
+	task.defer(showLogin)
+end
+
 local last: { [string]: number } = {}
 local function track(name: string, onIncrease: (delta: number, value: number) -> ())
 	-- ข้ามเฉพาะค่าแรกที่เซิร์ฟเวอร์ตั้งตอนโหลด (ถ้าตอนเริ่มยังไม่มีค่า) ไม่ข้ามการเพิ่มครั้งแรกจริง

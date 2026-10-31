@@ -187,9 +187,13 @@ views.quests = function()
 	for _, group in { Quests.Daily, Quests.Weekly } do
 		for _, q in group do
 			local prog = (player:GetAttribute("Q_" .. q.Id) :: number?) or 0
-			row(`{q.Name}  {prog}/{q.Goal}  (+¥{q.Yen})`, if prog >= q.Goal then "รับ" else nil, function()
-				questRemote:FireServer(q.Id)
-			end)
+			if player:GetAttribute("QC_" .. q.Id) == true then
+				row(`✓ {q.Name}  รับรางวัลแล้ว`)
+			else
+				row(`{q.Name}  {prog}/{q.Goal}  (+¥{q.Yen} +{q.Exp} EXP)`, if prog >= q.Goal then "รับ" else nil, function()
+					questRemote:FireServer(q.Id)
+				end)
+			end
 		end
 	end
 end

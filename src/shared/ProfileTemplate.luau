@@ -27,6 +27,7 @@ export type Profile = {
 	BattlePass: { Season: number, Xp: number, ClaimedFree: { [string]: boolean }, ClaimedPremium: { [string]: boolean } },
 	TutorialDone: boolean,
 	EquippedOutfit: string,
+	DailyBonus: { Day: number, Used: number },
 	World: { Active: { [string]: number }, Done: { [string]: boolean }, Discovered: { [string]: boolean } },
 }
 
@@ -63,6 +64,7 @@ function ProfileTemplate.new(): Profile
 		BattlePass = { Season = 1, Xp = 0, ClaimedFree = {}, ClaimedPremium = {} },
 		TutorialDone = false,
 		EquippedOutfit = "Uniform_School",
+		DailyBonus = { Day = 0, Used = 0 },
 		World = { Active = {}, Done = {}, Discovered = {} },
 	}
 end
