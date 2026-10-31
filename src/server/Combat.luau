@@ -281,6 +281,51 @@ function Combat.QueryRadius(attacker: CombatState.CombatState, radius: number): 
 	return found
 end
 
+-- ล็อกเป้านุ่ม: ผู้เล่นชก/ใช้สกิลแล้วตัวหันหาศัตรูที่ใกล้ที่สุดข้างหน้า (ภายใน 14 studs มุม ±70°) อัตโนมัติ
+-- ช่วยให้ตีโดนแม้เล็งไม่เป๊ะ (มือถือเล็งยากเป็นพิเศษ)
+function Combat.AimAssist(s: CombatState.CombatState)
+	if not Players:GetPlayerFromCharacter(s.Character) then
+		return
+	end
+	local root = rootOf(s)
+	if not root then
+		return
+	end
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	if look.Magnitude < 0.01 then
+		return
+	end
+	look = look.Unit
+	local team = s.Character:GetAttribute("Team")
+	local best: BasePart? = nil
+	local bestScore = math.huge
+	for _, v in Combat.QueryRadius(s, 14) do
+		local vroot = rootOf(v)
+		local hum = v.Character:FindFirstChildOfClass("Humanoid")
+		if
+			vroot
+			and hum
+			and hum.Health > 0
+			and not (team ~= nil and team == v.Character:GetAttribute("Team"))
+			and not Combat.InSafeZone(vroot.Position)
+		then
+			local offset = Vector3.new(vroot.Position.X - root.Position.X, 0, vroot.Position.Z - root.Position.Z)
+			if offset.Magnitude > 0.1 then
+				local dot = offset.Unit:Dot(look)
+				if dot > 0.34 then
+					local score = offset.Magnitude * (2 - dot) -- ใกล้และตรงหน้า ได้คะแนนดี
+					if score < bestScore then
+						best, bestScore = vroot, score
+					end
+				end
+			end
+		end
+	end
+	if best then
+		root.CFrame = CFrame.lookAt(root.Position, Vector3.new(best.Position.X, root.Position.Y, best.Position.Z))
+	end
+end
+
 function Combat.M1(s: CombatState.CombatState)
 	local now = os.clock()
 	if not s:CanAct() or now - s.LastM1 < Config.M1Cooldown then
@@ -301,6 +346,7 @@ function Combat.M1(s: CombatState.CombatState)
 		return
 	end
 	s.State = "Attacking"
+	Combat.AimAssist(s)
 	Combat.PlayAnim(s.Character, `M1_{if final then Config.ComboLength else s.Combo}`)
 	-- พุ่งเข้าหาศัตรูที่อยู่ใกล้ข้างหน้าเท่านั้น (ห่างเกินระยะตีแต่ไม่เกิน 10) ถ้าไม่มีเป้าหมายอยู่กับที่
 	if Players:GetPlayerFromCharacter(s.Character) then -- ผู้เล่นเท่านั้น (มอนไม่ต้องคำนวณ ลดภาระเซิร์ฟเวอร์)
@@ -320,8 +366,24 @@ function Combat.M1(s: CombatState.CombatState)
 		end
 	end
 	local cf = root.CFrame * CFrame.new(0, 0, -Config.HitboxForward)
+	local struck: { [CombatState.CombatState]: boolean } = {}
 	for _, v in Combat.QueryBox(s, cf, Config.HitboxSize, Config.MaxHitRange) do
+		struck[v] = true
 		Combat.Hit(s, v, Config.M1Damage, { Final = final })
+	end
+	-- วงโดนเสริมรอบตัวด้านหน้า (รัศมี 6): ศัตรูที่อยู่ชิดตัวหรือเหลื่อมกล่องตีเพราะความหน่วงก็ยังโดน
+	if Players:GetPlayerFromCharacter(s.Character) then
+		local look = root.CFrame.LookVector
+		for _, v in Combat.QueryRadius(s, 6) do
+			local vroot = rootOf(v)
+			if vroot and not struck[v] then
+				local offset = vroot.Position - root.Position
+				if offset.Magnitude > 0.1 and offset.Unit:Dot(look) > 0.1 then
+					struck[v] = true
+					Combat.Hit(s, v, Config.M1Damage, { Final = final })
+				end
+			end
+		end
 	end
 	task.delay(Config.M1Cooldown, function()
 		if s.State == "Attacking" then

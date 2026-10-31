@@ -39,6 +39,7 @@ local function hitFront(s: CombatState.CombatState, skill: StyleData.Skill, dama
 	if not root then
 		return
 	end
+	Combat.AimAssist(s) -- หันหาเป้าก่อนตี ช่วยให้สกิลโดนง่ายขึ้น
 	local length = skill.Range or 6
 	local cf = root.CFrame * CFrame.new(0, 0, -length / 2)
 	local size = Vector3.new(Config.SkillHitbox.X, Config.SkillHitbox.Y, length)
