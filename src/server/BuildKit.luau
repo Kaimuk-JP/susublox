@@ -101,7 +101,37 @@ function BK.pine(parent: Instance, x: number, z: number, h: number)
 	BK.blob(parent, Vector3.new(x, h * 0.98, z), h * 0.12, jitter(green, 0.03))
 end
 
+-- ต้นไม้จริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Trees) ข้อตกลง: Pivot = โคนต้นที่พื้น สูงราว 12 studs ไม่มีสคริปต์
+-- ถ้ามีจะใช้แทนต้นไม้ที่ประกอบจากก้อนกลม; ถ้าไม่มีก็ใช้แบบเดิม
+function BK.importedTree(parent: Instance, x: number, z: number, scale: number): boolean
+	local assets = game:GetService("ServerStorage"):FindFirstChild("ImportedAssets")
+	local folder = assets and assets:FindFirstChild("Trees")
+	local list = folder and folder:GetChildren() or {}
+	if #list == 0 then
+		return false
+	end
+	local src = list[BK.rng:NextInteger(1, #list)]
+	if not src:IsA("Model") then
+		return false
+	end
+	local model = src:Clone()
+	for _, d in model:GetDescendants() do
+		if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") or d:IsA("Sound") then
+			d:Destroy()
+		elseif d:IsA("BasePart") then
+			d.Anchored = true
+		end
+	end
+	model:ScaleTo(math.max(0.5, scale) * BK.rng:NextNumber(0.9, 1.15))
+	model:PivotTo(CFrame.new(x, 0, z) * CFrame.Angles(0, BK.rng:NextNumber(0, 6.28), 0))
+	model.Parent = parent
+	return true
+end
+
 function BK.roundTree(parent: Instance, x: number, z: number, scale: number, leaf: Color3?)
+	if BK.importedTree(parent, x, z, scale) then
+		return
+	end
 	local s = scale
 	local bark = jitter(hex("7A5A44"), 0.04)
 	BK.cylinder("TrunkBase", 1.25 * s, 1.5 * s, Vector3.new(x, 0.75 * s, z), bark, parent, Enum.Material.Wood)

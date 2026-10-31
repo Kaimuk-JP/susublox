@@ -22,7 +22,77 @@ life.Parent = worldFolder
 local paint = { "EF233C", "4D7CFE", "FFE066", "FFFFFF", "2B2D42", "5FBF7A", "FF8A3D", "C9CED6", "FF8FAB" }
 
 ---------------------------------------------------------------- รถ: โมเดลง่ายๆ (ตัวถัง ห้องโดยสาร ล้อ ไฟหน้า) หันไปตามแกน Z ของ Model
+-- โมเดลรถจริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Cars) ข้อตกลง: Pivot = กึ่งกลางใต้ล้อ หน้ารถหัน -Z ไม่มีสคริปต์
+-- ถ้ามีจะใช้แทนรถที่สร้างด้วยชิ้นส่วนเอง; ถ้าไม่มีก็ใช้โมเดลโค้ดด้านล่าง (ไม่พัง)
+local ServerStorage = game:GetService("ServerStorage")
+local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Model, BasePart)?
+	local assets = ServerStorage:FindFirstChild("ImportedAssets")
+	local folder = assets and assets:FindFirstChild("Cars")
+	local list = folder and folder:GetChildren() or {}
+	if #list == 0 then
+		return nil
+	end
+	local src = list[rng:NextInteger(1, #list)]
+	if not src:IsA("Model") then
+		return nil
+	end
+	local model = src:Clone()
+	model.Name = if moving then "TrafficCar" else "ParkedCar"
+	for _, d in model:GetDescendants() do
+		if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") or d:IsA("Sound") then
+			d:Destroy() -- กันไว้อีกชั้น ไม่เอาสคริปต์/เสียงจากโมเดลภายนอก
+		end
+	end
+	local primary = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	if not primary then
+		model:Destroy()
+		return nil
+	end
+	model.PrimaryPart = primary
+	model:PivotTo(cf)
+	model.Parent = parent
+	if not moving then
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.Anchored = true
+				d.CanTouch = false
+			end
+		end
+		return model, primary
+	end
+	-- รถวิ่ง: ตัวขยับล่องหนที่ Anchored ตัวเดียว ชิ้นอื่นเชื่อมตามด้วย Weld ไม่ชนผู้เล่น
+	local mover = Instance.new("Part")
+	mover.Name = "Mover"
+	mover.Size = Vector3.one
+	mover.Transparency = 1
+	mover.Anchored = true
+	mover.CanCollide, mover.CanQuery, mover.CanTouch = false, false, false
+	mover.CFrame = cf
+	mover.Parent = model
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= mover then
+			d.Anchored = false
+			d.CanCollide = false
+			d.CanTouch = false
+			d.Massless = true
+			if d ~= primary then
+				local w = Instance.new("WeldConstraint")
+				w.Part0, w.Part1 = primary, d
+				w.Parent = d
+			end
+		end
+	end
+	local w = Instance.new("WeldConstraint")
+	w.Part0, w.Part1 = mover, primary
+	w.Parent = primary
+	return model, mover
+end
+
 local function buildCar(parent: Instance, cf: CFrame, moving: boolean): (Model, BasePart)
+	local imported, importedBody = importedCar(parent, cf, moving)
+	if imported and importedBody then
+		return imported, importedBody
+	end
 	local model = Instance.new("Model")
 	model.Name = if moving then "TrafficCar" else "ParkedCar"
 	local color = hex(paint[rng:NextInteger(1, #paint)])
