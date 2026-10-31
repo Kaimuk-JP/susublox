@@ -17,8 +17,14 @@ end
 
 -- ตอนเล่นจริงรอให้ MapBuilder สร้างโรงเรียนเสร็จก่อน; ตอนรันใน Edit (สร้างล่วงหน้า) ข้ามการรอ
 if running then
-	workspace:WaitForChild("Npcs")
-	task.wait(1)
+	-- ห้ามใช้ Npcs เป็นสัญญาณ (ค้างอยู่ใน Place จากโหมด Edit ทำให้ไม่รอ แล้วกำแพง ±340 ของแมพเก่าถูกสร้างทับทีหลัง)
+	-- รอให้ MapBuilder ตั้ง SchoolMapReady=false ตอนเริ่ม แล้วรอจน true
+	task.wait(2)
+	local started = os.clock()
+	while workspace:GetAttribute("SchoolMapReady") ~= true and os.clock() - started < 240 do
+		task.wait(0.5)
+	end
+	task.wait(0.5)
 end
 
 local hex = Color3.fromHex

@@ -36,6 +36,9 @@ local C = {
 
 local rng = Random.new(42)
 
+-- สัญญาณให้ WorldBuilder รอ: โรงเรียนยังสร้างไม่เสร็จ (ห้ามใช้ Npcs เป็นสัญญาณ เพราะค้างอยู่ใน Place จากโหมด Edit)
+workspace:SetAttribute("SchoolMapReady", false)
+
 -- ล้างของเดิม (Baseplate เทาของ Studio, แมพรอบก่อน) แล้วสร้างใหม่ทุกครั้ง
 for _, name in { "Baseplate", "Map", "Npcs" } do
 	local old = workspace:FindFirstChild(name)
@@ -767,16 +770,8 @@ for i = 1, 60 do
 		cone.Size = Vector3.new(s, s * 1.3, s)
 	end
 end
-for _, wall in {
-	{ Vector3.new(0, 40, -190), Vector3.new(700, 100, 2) },
-	{ Vector3.new(0, 40, 400), Vector3.new(700, 100, 2) },
-	{ Vector3.new(-340, 40, 105), Vector3.new(2, 100, 600) },
-	{ Vector3.new(340, 40, 105), Vector3.new(2, 100, 600) },
-} do
-	local w = part("WorldBound", wall[2], wall[1], C.white, scenery)
-	w.Transparency = 1
-	w.CanQuery = false
-end
+-- ขอบโลก (กำแพงล่องหน) สร้างโดย WorldBuilder เท่านั้น เพื่อให้ขนาดโลกใหญ่ได้ (±1050) ห้ามสร้างซ้ำที่นี่
+-- เดิมมีกำแพงที่ x=±340 ซึ่งขังผู้เล่นไว้ในโรงเรียนเมื่อ WorldBuilder รื้อไม่ทัน
 
 ---------------------------------------------------------------- จุดเกิดและโซนปลอดภัย (สนามหน้าโรงเรียน)
 local spawn = Instance.new("SpawnLocation")
@@ -860,3 +855,4 @@ end)
 
 -- แท็กให้ไฮไลต์/ระบบอื่นเรียกใช้ภายหลังได้
 CollectionService:AddTag(map, "SchoolMap")
+workspace:SetAttribute("SchoolMapReady", true)
