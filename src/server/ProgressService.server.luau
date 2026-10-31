@@ -9,6 +9,7 @@ local Progression = require(ReplicatedStorage.Shared.Progression)
 local StyleData = require(ReplicatedStorage.Shared.Styles)
 local Combat = require(script.Parent.Combat)
 local PlayerData = require(script.Parent.PlayerData)
+local LiveOps = require(script.Parent.LiveOps)
 
 local menu = Instance.new("RemoteEvent")
 menu.Name = "MenuRemote"
@@ -71,6 +72,7 @@ local function addExp(player: Player, amount: number)
 	if not p then
 		return
 	end
+	amount *= LiveOps.ExpMultiplier()
 	if p.Passes.Exp2x then
 		amount *= 2
 	end
@@ -123,7 +125,7 @@ Combat.OnKill(function(killer, victim)
 	local victimPlayer = Players:GetPlayerFromCharacter(victim.Character)
 	local npcLevel = (victim.Character:GetAttribute("NpcLevel") :: number?) or 1
 	local exp = if victimPlayer then 50 else 30 * npcLevel * (if victim.IsBoss then 5 else 1)
-	p.Yen += if victimPlayer then 25 else 10 * npcLevel
+	p.Yen += math.floor((if victimPlayer then 25 else 10 * npcLevel) * LiveOps.YenMultiplier())
 	p.Fame += if victimPlayer then 10 else (if victim.IsBoss then 50 else 5)
 	p.Wins += 1
 	addExp(player, exp)
