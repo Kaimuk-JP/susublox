@@ -68,10 +68,18 @@ local function runAI(npc: Model)
 
 	-- เกิดใหม่ที่เดิมหลังตาย
 	hum.Died:Once(function()
-		task.delay(RESPAWN_TIME, function()
-			template:PivotTo(home)
-			template.Parent = parent
-		end)
+		-- ศัตรูที่ถูกเก็บออกเพราะไม่มีผู้เล่นอยู่ใกล้ (Despawned) ไม่เกิดใหม่
+		if npc:GetAttribute("Despawned") ~= true then
+			local wait = (npc:GetAttribute("RespawnTime") :: number?) or RESPAWN_TIME
+			task.delay(wait, function()
+				local district = npc:GetAttribute("District")
+				if typeof(district) == "string" and parent:GetAttribute("Active_" .. district) == false then
+					return -- ย่านนี้ถูกเก็บออกไปแล้วระหว่างรอ
+				end
+				template:PivotTo(home)
+				template.Parent = parent
+			end)
+		end
 		task.delay(3, function()
 			npc:Destroy()
 		end)

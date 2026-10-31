@@ -50,6 +50,10 @@ local function boost(player: Player)
 			table.insert(p.Owned, id) -- ทดสอบสวมทุกชุดได้ทันที
 		end
 	end
+	for _, d in require(game.ReplicatedStorage.Shared.World).Districts do
+		p.World.Discovered[d.Id] = true -- ทดสอบเดินทางด่วนได้ทุกย่าน
+		player:SetAttribute("Disc_" .. d.Id, true)
+	end
 	changed:Fire(player)
 	warn(`[Debug] Studio test boost: Lv.{p.Level}, Mastery {DEBUG.Mastery}, styles {#p.UnlockedStyles}, Yen {p.Yen}`)
 end

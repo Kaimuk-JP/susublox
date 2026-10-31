@@ -17,6 +17,9 @@ local shopRemote = ReplicatedStorage:WaitForChild("ShopRemote") :: RemoteEvent
 
 local BP = require(ReplicatedStorage.Shared.BattlePass)
 local Outfits = require(ReplicatedStorage.Shared.Outfits)
+local World = require(ReplicatedStorage.Shared.World)
+local WQ = require(ReplicatedStorage.Shared.WorldQuests)
+local worldRemote = ReplicatedStorage:WaitForChild("WorldRemote") :: RemoteEvent
 local outfitRemote = ReplicatedStorage:WaitForChild("OutfitRemote") :: RemoteEvent
 local bpRemote = ReplicatedStorage:WaitForChild("BattlePassRemote") :: RemoteEvent
 local gangRemote = ReplicatedStorage:WaitForChild("GangRemote") :: RemoteEvent
@@ -43,7 +46,7 @@ toggle.Parent = gui
 Instance.new("UICorner", toggle)
 
 local window = Instance.new("Frame")
-window.Size = UDim2.new(0, 520, 0, 360)
+window.Size = UDim2.new(0, 700, 0, 380)
 window.Position = UDim2.fromScale(0.5, 0.5)
 window.AnchorPoint = Vector2.new(0.5, 0.5)
 window.BackgroundColor3 = PANEL
@@ -51,7 +54,7 @@ window.Visible = false
 window.Parent = gui
 Instance.new("UICorner", window)
 local constraint = Instance.new("UISizeConstraint")
-constraint.MaxSize = Vector2.new(520, 360)
+constraint.MaxSize = Vector2.new(700, 380)
 constraint.Parent = window
 
 local tabs = Instance.new("Frame")
@@ -258,6 +261,42 @@ views.gang = function()
 	end
 end
 
+views.map = function()
+	row("แผนที่โลก: เดินทางด่วนไปย่านที่เคยค้นพบแล้ว (รอ 12 วินาทีระหว่างการเดินทาง)")
+	row("โรงเรียนซูซูบล็อกซ์ (จุดเริ่มต้น)", "เดินทาง", function()
+		worldRemote:FireServer("Travel", "School")
+	end)
+	for _, d in World.Districts do
+		local found = player:GetAttribute("Disc_" .. d.Id) == true
+		if found then
+			row(`{d.Name}  Lv.{d.Levels[1]}–{d.Levels[2]}`, "เดินทาง", function()
+				worldRemote:FireServer("Travel", d.Id)
+			end)
+		else
+			row(`🔒 ??? ยังไม่ได้ค้นพบ (เดินไปตามถนนสายหลักเพื่อค้นหา)`)
+		end
+	end
+end
+
+views.worldQuests = function()
+	local count = (player:GetAttribute("QTCount") :: number?) or 0
+	row(`ภารกิจที่รับอยู่: {count}/{WQ.MaxActive}  — คุยกับตัวละครที่มีเครื่องหมาย ! ในแต่ละย่านเพื่อรับภารกิจ`)
+	for i = 1, count do
+		local name = player:GetAttribute(`QT{i}Name`)
+		local id = player:GetAttribute(`QT{i}Id`)
+		row(`{name}\n{player:GetAttribute(`QT{i}Text`)}`, "ละทิ้ง", function()
+			if typeof(id) == "string" then
+				worldRemote:FireServer("Abandon", id)
+			end
+		end)
+	end
+	for _, d in World.Districts do
+		if player:GetAttribute("Disc_" .. d.Id) == true then
+			row(`{d.Name}: ผู้ให้ภารกิจคือ {d.GiverName}`)
+		end
+	end
+end
+
 views.outfits = function()
 	local equipped = player:GetAttribute("Outfit")
 	row(`เยน: ¥{player:GetAttribute("Yen") or 0}  — ชุดที่ใส่อยู่: {Outfits.Name((equipped :: string?) or Outfits.Default)}`)
@@ -302,6 +341,8 @@ local tabList = {
 	{ "styles", "สไตล์" },
 	{ "outfits", "ชุด" },
 	{ "quests", "เควส" },
+	{ "worldQuests", "ภารกิจโลก" },
+	{ "map", "แผนที่" },
 	{ "shop", "ร้าน" },
 	{ "battlepass", "Pass" },
 	{ "gang", "แก๊ง" },
