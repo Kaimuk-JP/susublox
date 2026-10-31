@@ -23,7 +23,7 @@ if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttri
 		local tile = 400
 		for x = B.MinX, B.MaxX - 1, tile do
 			for z = B.MinZ, B.MaxZ - 1, tile do
-				workspace.Terrain:FillBlock(CFrame.new(x + tile / 2, -6, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.Grass)
+				workspace.Terrain:FillBlock(CFrame.new(x + tile / 2, -8, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.LeafyGrass)
 			end
 			task.wait()
 		end
@@ -92,7 +92,7 @@ if workspace:GetAttribute("TerrainBaked") ~= true then
 	local tile = 400
 	for x = B.MinX, B.MaxX - 1, tile do
 		for z = B.MinZ, B.MaxZ - 1, tile do
-			terrain:FillBlock(CFrame.new(x + tile / 2, -6, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.Grass)
+			terrain:FillBlock(CFrame.new(x + tile / 2, -8, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.LeafyGrass)
 		end
 		task.wait()
 	end
@@ -152,7 +152,9 @@ local function buildPark(d: World.District, f: Folder)
 	local cx, cz = d.Center.X, d.Center.Z
 	-- สระน้ำ + สะพาน
 	local px, pz = cx - 60, cz - 75
-	terrain:FillCylinder(CFrame.new(px, -3.4, pz), 6, 22, Enum.Material.Water)
+	terrain:FillCylinder(CFrame.new(px, -2, pz), 4, 27, Enum.Material.Sand) -- ชายหาดรอบสระ
+	terrain:FillCylinder(CFrame.new(px, -1.5, pz), 9, 22, Enum.Material.Air) -- ขุดแอ่ง (ผิว Terrain จริงสูงกว่าที่เขียน ~2 studs)
+	terrain:FillCylinder(CFrame.new(px, -6, pz), 6, 22, Enum.Material.Water)
 	ramp(f, px - 34, 0.3, px - 26, 2.2, pz, 5, hex("9C7A54"))
 	BK.box("BridgeDeck", px - 26, px + 26, 1.7, 2.2, pz - 2.5, pz + 2.5, hex("9C7A54"), f, Enum.Material.WoodPlanks)
 	ramp(f, px + 26, 2.2, px + 34, 0.3, pz, 5, hex("9C7A54"))
@@ -501,7 +503,9 @@ end
 local function buildDocks(d: World.District, f: Folder)
 	local cx, cz = d.Center.X, d.Center.Z
 	-- อ่าวน้ำด้านตะวันออก
-	terrain:FillBlock(CFrame.new(cx + 180, -3.4, cz + 20), Vector3.new(110, 6, 420), Enum.Material.Water)
+	terrain:FillBlock(CFrame.new(cx + 180, -2, cz + 20), Vector3.new(110, 20, 420), Enum.Material.Air) -- ขุดอ่าว
+	terrain:FillBlock(CFrame.new(cx + 180, -10.5, cz + 20), Vector3.new(110, 3, 420), Enum.Material.Sand)
+	terrain:FillBlock(CFrame.new(cx + 180, -6, cz + 20), Vector3.new(110, 6, 420), Enum.Material.Water)
 	BK.box("Pier", cx + 70, cx + 135, 0, 1.2, cz + 15, cz + 25, hex("9C7A54"), f, Enum.Material.WoodPlanks)
 	for x = cx + 75, cx + 135, 10 do
 		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, cz + 14.6), hex("6B5A47"), f, Enum.Material.Wood)
