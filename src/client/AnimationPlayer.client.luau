@@ -32,8 +32,7 @@ end
 local function playOn(character: Model, name: string)
 	local id = Assets.Animations[name]
 	if not id or id == 0 then
-		fallbackSlash(character, name)
-		return
+		return -- ท่าทางสำรองทำโดย ProceduralAnim.client.luau
 	end
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
