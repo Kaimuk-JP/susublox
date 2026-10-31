@@ -50,6 +50,12 @@ local function replicate(player: Player)
 	player:SetAttribute("Rank", rankOf(p.Fame))
 	player:SetAttribute("StatPoints", p.StatPoints)
 	player:SetAttribute("Style", p.EquippedStyle)
+	for id in StyleData.Styles do
+		player:SetAttribute("StyleUnlocked_" .. id, table.find(p.UnlockedStyles, id) ~= nil)
+	end
+	if player.Character then
+		player.Character:SetAttribute("Style", p.EquippedStyle) -- ให้ทุกคนเห็นขอบสีสไตล์
+	end
 	player:SetAttribute("Prestige", p.Prestige)
 	local m = p.Mastery[p.EquippedStyle]
 	player:SetAttribute("MasteryLevel", m and m.Level or 1)

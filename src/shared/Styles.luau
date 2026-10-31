@@ -20,6 +20,7 @@ export type Skill = {
 
 export type Style = {
 	Name: string,
+	Color: string, -- สีประจำสไตล์ (ขอบรอบตัวละคร)
 	UnlockLevel: number?,
 	Skills: { Z: Skill, X: Skill, C: Skill, V: Skill },
 	Ultimate: Skill,
@@ -27,6 +28,7 @@ export type Style = {
 
 local Styles: { [string]: Style } = {
 	StreetBrawl = {
+		Color = "FFB7C5",
 		Name = "ต่อยข้างถนน",
 		Skills = {
 			Z = { Name = "หมัดพุ่ง", Kind = "Dash", Damage = 12, Cooldown = 6, Range = 10 },
@@ -37,6 +39,7 @@ local Styles: { [string]: Style } = {
 		Ultimate = { Name = "หมัดเดือดข้างถนน", Kind = "Melee", Damage = 45, Cooldown = 0, Knockback = 60 },
 	},
 	Karate = {
+		Color = "FFE066",
 		Name = "คาราเต้",
 		UnlockLevel = 10,
 		Skills = {
@@ -48,6 +51,7 @@ local Styles: { [string]: Style } = {
 		Ultimate = { Name = "ทะลวงอิฐสิบก้อน", Kind = "Melee", Damage = 50, Cooldown = 0, Pierce = true },
 	},
 	Judo = {
+		Color = "7EC8E3",
 		Name = "ยูโด",
 		UnlockLevel = 20,
 		Skills = {
@@ -59,6 +63,7 @@ local Styles: { [string]: Style } = {
 		Ultimate = { Name = "ทุ่มพายุ", Kind = "AoE", Damage = 55, Cooldown = 0, Radius = 12, Knockdown = 1 },
 	},
 	Wrestling = {
+		Color = "EF233C",
 		Name = "มวยปล้ำ",
 		UnlockLevel = 30,
 		Skills = {
@@ -70,6 +75,7 @@ local Styles: { [string]: Style } = {
 		Ultimate = { Name = "ทุ่มสะเทือนโรงยิม", Kind = "AoE", Damage = 60, Cooldown = 0, Radius = 14, Knockdown = 2 },
 	},
 	Kendo = {
+		Color = "B8F2A8",
 		Name = "เคนโด้",
 		Skills = {
 			Z = { Name = "ฟันศีรษะ", Kind = "Melee", Damage = 14, Cooldown = 5, Range = 8 },
@@ -80,6 +86,7 @@ local Styles: { [string]: Style } = {
 		Ultimate = { Name = "พันดาบซากุระ", Kind = "AoE", Damage = 50, Cooldown = 0, Radius = 15 },
 	},
 	ShadowFist = {
+		Color = "9B7BFF",
 		Name = "หมัดเงา",
 		Skills = {
 			Z = { Name = "ก้าวเงา", Kind = "Teleport", Damage = 0, Cooldown = 8, Range = 40 },

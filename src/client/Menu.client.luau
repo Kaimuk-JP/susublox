@@ -85,7 +85,7 @@ local order = 0
 local function row(text: string, buttonText: string?, onClick: (() -> ())?)
 	order += 1
 	local f = Instance.new("Frame")
-	f.Size = UDim2.new(1, -8, 0, 44)
+	f.Size = UDim2.new(1, -8, 0, if text:find("\n") then 62 else 44)
 	f.BackgroundColor3 = Color3.fromHex("3A3D5C")
 	f.LayoutOrder = order
 	f.Parent = content
@@ -143,14 +143,30 @@ views.stats = function()
 	end
 end
 
+local STYLE_ORDER = { "StreetBrawl", "Karate", "Judo", "Wrestling", "Kendo", "ShadowFist" }
+
 views.styles = function()
 	local mastery = (player:GetAttribute("MasteryLevel") :: number?) or 1
-	row(`สไตล์ปัจจุบัน: {player:GetAttribute("Style")}  Mastery {mastery}`)
-	for id, style in StyleData.Styles do
-		local lock = if style.UnlockLevel then ` (ปลดล็อก Lv.{style.UnlockLevel})` else ""
-		row(style.Name .. lock, "สวม", function()
-			menu:FireServer("EquipStyle", id)
-		end)
+	local current = player:GetAttribute("Style")
+	row(`สไตล์ที่สวมอยู่: {StyleData.Styles[current :: string] and StyleData.Styles[current :: string].Name or current}  Mastery {mastery}`)
+	for _, id in STYLE_ORDER do
+		local style = StyleData.Styles[id]
+		if style then
+			local unlocked = player:GetAttribute("StyleUnlocked_" .. id) == true
+			local equipped = current == id
+			local sk = style.Skills
+			local skills = `Z {sk.Z.Name} · X {sk.X.Name} · C {sk.C.Name} · V {sk.V.Name} · ไม้ตาย {style.Ultimate.Name}`
+			local status = if equipped then "✓ " elseif unlocked then "" else "🔒 "
+			local hint = if unlocked then "" elseif style.UnlockLevel then ` (ปลดล็อก Lv.{style.UnlockLevel})` else " (ปลดล็อกจากบอสหัวหน้าชมรม)"
+			local label = `{status}{style.Name}{hint}\n{skills}`
+			if unlocked and not equipped then
+				row(label, "สวม", function()
+					menu:FireServer("EquipStyle", id)
+				end)
+			else
+				row(label)
+			end
+		end
 	end
 end
 
