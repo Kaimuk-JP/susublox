@@ -9,6 +9,7 @@ LiveOps.Flags = {
 	WeekendBoost = true,
 	LaunchWeek = false, -- EXP x2 ช่วงเปิดตัว 7 วัน
 	WanderingBoss = true,
+	ClubBoss = true,
 } :: { [string]: boolean }
 
 -- รายวัน: สลับ EXP x2 / เงิน x2 ตามวันที่ (เสาร์-อาทิตย์ UTC+7)
