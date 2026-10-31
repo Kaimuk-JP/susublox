@@ -83,3 +83,15 @@ Players.PlayerAdded:Connect(onPlayer)
 for _, p in Players:GetPlayers() do
 	onPlayer(p)
 end
+
+-- ตัวช่วยทดสอบ: ยิง DebugKill:Fire(ผู้เล่น, โมเดลศัตรู) เพื่อให้ผู้เล่นฆ่าศัตรูผ่าน Combat.Hit จริง (ตั้ง LastAttacker ครบ)
+local killEvent = Instance.new("BindableEvent")
+killEvent.Name = "DebugKill"
+killEvent.Parent = ServerStorage
+killEvent.Event:Connect(function(player: Player, victim: Model)
+	local a = Combat.Get(player.Character)
+	local v = Combat.Get(victim)
+	if a and v then
+		Combat.Hit(a, v, 1e6)
+	end
+end)

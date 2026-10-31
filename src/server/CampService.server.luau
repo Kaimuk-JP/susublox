@@ -165,8 +165,9 @@ local function spawnCamp(c: Camp)
 	-- ทหารในค่าย 6 คน + หัวหน้ากลุ่ม 1 คน
 	for i = 1, 7 do
 		local leader = i == 7
-		local a = (i / 7) * math.pi * 2
-		local r = if leader then 4 else rng:NextNumber(8, 15)
+		-- หัวหน้ายืนด้านที่ไม่มีธง/ลัง/ป้าย (ฝั่ง -X) ไม่งั้น raycast ชนธงแล้วไม่เกิด
+		local a = if leader then math.pi else (i / 7) * math.pi * 2
+		local r = if leader then 5 else rng:NextNumber(8, 15)
 		local pos = clearGround(d, c.Center.X + math.cos(a) * r, c.Center.Z + math.sin(a) * r, 4)
 		if pos then
 			local npcType = if leader then "Brute" else (if i % 3 == 0 then "Speedy" else "Grunt")
