@@ -24,6 +24,8 @@ export type Profile = {
 	Passes: { [string]: boolean },
 	ExpBoostUntil: number,
 	Receipts: { [string]: boolean },
+	BattlePass: { Season: number, Xp: number, ClaimedFree: { [string]: boolean }, ClaimedPremium: { [string]: boolean } },
+	TutorialDone: boolean,
 }
 
 local CURRENT_VERSION = 1
@@ -40,7 +42,7 @@ function ProfileTemplate.new(): Profile
 		Fame = 0,
 		StatPoints = 0,
 		Stats = { Strength = 0, Health = 0, Stamina = 0, Speed = 0 },
-		UnlockedStyles = { "StreetBrawl", "Kendo" },
+		UnlockedStyles = { "StreetBrawl" }, -- เคนโด้ปลดล็อกจากบอสหัวหน้าชมรม
 		EquippedStyle = "StreetBrawl",
 		Mastery = {},
 		Passives = {},
@@ -56,6 +58,8 @@ function ProfileTemplate.new(): Profile
 		Passes = {},
 		ExpBoostUntil = 0,
 		Receipts = {},
+		BattlePass = { Season = 1, Xp = 0, ClaimedFree = {}, ClaimedPremium = {} },
+		TutorialDone = false,
 	}
 end
 

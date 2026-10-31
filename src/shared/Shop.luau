@@ -21,6 +21,7 @@ Shop.GamePasses = {
 	Exp2x = 0, -- EXP x2 ถาวร
 	ExtraStorage = 0,
 	TauntDance = 0,
+	BattlePassPremium = 0, -- สายพรีเมียมของซีซันปัจจุบัน
 } :: { [string]: number }
 
 Shop.Products = {
