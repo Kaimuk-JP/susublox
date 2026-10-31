@@ -9,7 +9,7 @@ return {
 		StreetBrawl_Z = 0, StreetBrawl_X = 0, StreetBrawl_C = 0, StreetBrawl_V = 0, StreetBrawl_Ultimate = 0,
 	} :: { [string]: number },
 	Sounds = {
-		Punch = 0, Whoosh = 0, Kick = 0, Block = 0, PerfectBlock = 0, UltReady = 0,
+		Punch = 2330778973, Whoosh = 624706518, Kick = 0, Block = 278061737, PerfectBlock = 0, UltReady = 0,
 		LevelUp = 0, Quest = 0, ZoneYard = 0, ZoneGym = 0, BossMusic = 0,
 	} :: { [string]: number },
 }
