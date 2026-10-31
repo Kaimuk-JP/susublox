@@ -167,6 +167,7 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 			return
 		end
 		amount *= 1 - Config.BlockReduction
+		Combat.PlayAnim(victim.Character, "BlockHit")
 		victim.Stamina =
 			math.max(0, victim.Stamina - Config.BlockStaminaCost * Passives.BlockCostMultiplier(victim.Equipped))
 		if victim.Stamina <= 0 then
@@ -175,11 +176,14 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	else
 		if victim.State == "Blocking" then
 			victim.State = "Idle"
+			Combat.PlayAnim(victim.Character, "BlockEnd")
 		end
 		if o.Knockdown then
 			victim:Knockdown(o.Knockdown)
+			Combat.PlayAnim(victim.Character, "Knockdown")
 		else
 			victim:Stun(o.Stun or 0.4)
+			Combat.PlayAnim(victim.Character, "Hit")
 		end
 		local push = o.Knockback or (o.Final and Config.FinisherKnockback) or 0
 		if push > 0 then
@@ -270,6 +274,7 @@ function Combat.M1(s: CombatState.CombatState)
 	end
 	s.State = "Attacking"
 	Combat.PlayAnim(s.Character, `M1_{if final then Config.ComboLength else s.Combo}`)
+	Combat.Impulse(s, root.CFrame.LookVector * 16, 0.1) -- พุ่งตัวเข้าหาตอนชก ให้มีน้ำหนัก
 	local cf = root.CFrame * CFrame.new(0, 0, -Config.HitboxForward)
 	for _, v in Combat.QueryBox(s, cf, Config.HitboxSize, Config.MaxHitRange) do
 		Combat.Hit(s, v, Config.M1Damage, { Final = final })
@@ -292,6 +297,7 @@ end
 function Combat.BlockEnd(s: CombatState.CombatState)
 	if s.State == "Blocking" then
 		s.State = "Idle"
+		Combat.PlayAnim(s.Character, "BlockEnd")
 	end
 end
 

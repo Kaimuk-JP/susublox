@@ -36,6 +36,7 @@ local function runAI(npc: Model)
 	hum.Health = hum.MaxHealth
 	npc:SetAttribute("DamageMult", 1 + 0.1 * (level - 1))
 	local home = root.CFrame
+	local parent = npc.Parent -- ต้องจำไว้ก่อน เพราะ npc:Destroy() จะทำให้ Parent เป็น nil
 
 	task.spawn(function()
 		while hum.Health > 0 and npc.Parent do
@@ -64,7 +65,7 @@ local function runAI(npc: Model)
 	hum.Died:Once(function()
 		task.delay(RESPAWN_TIME, function()
 			template:PivotTo(home)
-			template.Parent = npc.Parent
+			template.Parent = parent
 		end)
 		task.delay(3, function()
 			npc:Destroy()
