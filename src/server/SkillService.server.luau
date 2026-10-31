@@ -173,6 +173,7 @@ local function activate(player: Player, key: string)
 			return
 		end
 		s.Ult = 0
+		Combat.Emit("Ultimate", s)
 	end
 	s.SkillReady[key] = now + skill.Cooldown
 	s.State = "Attacking"

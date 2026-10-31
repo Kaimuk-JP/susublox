@@ -38,6 +38,17 @@ function Combat.OnKill(fn: (CombatState.CombatState, CombatState.CombatState) ->
 	table.insert(killListeners, fn)
 end
 
+-- เหตุการณ์ทั่วไป (เช่น "Ultimate") สำหรับเควส/สถิติ
+local eventListeners: { (string, CombatState.CombatState) -> () } = {}
+function Combat.OnEvent(fn: (string, CombatState.CombatState) -> ())
+	table.insert(eventListeners, fn)
+end
+function Combat.Emit(name: string, s: CombatState.CombatState)
+	for _, fn in eventListeners do
+		task.spawn(fn, name, s)
+	end
+end
+
 function Combat.Register(character: Model): CombatState.CombatState
 	local s = CombatState.new(character)
 	states[character] = s

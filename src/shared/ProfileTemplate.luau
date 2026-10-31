@@ -16,6 +16,8 @@ export type Profile = {
 	Prestige: number,
 	Wins: number,
 	Losses: number,
+	Quests: { DailyReset: number, WeeklyReset: number, Progress: { [string]: number }, Claimed: { [string]: boolean } },
+	Login: { Streak: number, Last: number },
 }
 
 local CURRENT_VERSION = 1
@@ -40,6 +42,8 @@ function ProfileTemplate.new(): Profile
 		Prestige = 0,
 		Wins = 0,
 		Losses = 0,
+		Quests = { DailyReset = 0, WeeklyReset = 0, Progress = {}, Claimed = {} },
+		Login = { Streak = 0, Last = 0 },
 	}
 end
 
