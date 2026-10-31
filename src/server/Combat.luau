@@ -49,6 +49,20 @@ function Combat.Emit(name: string, s: CombatState.CombatState)
 	end
 end
 
+-- ผลักตัวละคร: ผู้เล่นถูกคุมฟิสิกส์โดย client (network ownership) การตั้งความเร็วจาก server จะถูกทับ
+-- จึงส่งให้ client ของเจ้าของใช้เอง ส่วน NPC/บอส (server เป็นเจ้าของ) ตั้งตรงได้
+function Combat.Impulse(s: CombatState.CombatState, velocity: Vector3, duration: number)
+	local owner = Players:GetPlayerFromCharacter(s.Character)
+	if owner and feedback then
+		feedback:FireClient(owner, "Impulse", velocity, duration)
+		return
+	end
+	local root = s.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if root then
+		root.AssemblyLinearVelocity = velocity
+	end
+end
+
 -- บอก client ว่าตัวละครนี้เริ่มท่าอะไร (client เล่นแอนิเมชันถ้ามี asset ID)
 local animCounter = 0
 function Combat.PlayAnim(character: Model, name: string)
@@ -169,7 +183,7 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 		end
 		local push = o.Knockback or (o.Final and Config.FinisherKnockback) or 0
 		if push > 0 then
-			vroot.AssemblyLinearVelocity = aroot.CFrame.LookVector * push + Vector3.new(0, 25, 0)
+			Combat.Impulse(victim, aroot.CFrame.LookVector * push + Vector3.new(0, 25, 0), 0.25)
 		end
 		if o.Root then
 			victim:Root(o.Root)
@@ -291,7 +305,7 @@ function Combat.Dash(s: CombatState.CombatState)
 	s.LastDash = now
 	s.Stamina -= Config.DashStaminaCost
 	Combat.PlayAnim(s.Character, "Dash")
-	root.AssemblyLinearVelocity = root.CFrame.LookVector * Config.DashSpeed
+	Combat.Impulse(s, root.CFrame.LookVector * Config.DashSpeed, Config.DashTime)
 end
 
 RunService.Heartbeat:Connect(function(dt)

@@ -81,7 +81,7 @@ local function dashHit(s: CombatState.CombatState, skill: StyleData.Skill)
 		return
 	end
 	local time = 0.2
-	root.AssemblyLinearVelocity = root.CFrame.LookVector * ((skill.Range or 10) / time)
+	Combat.Impulse(s, root.CFrame.LookVector * ((skill.Range or 10) / time), time)
 	task.delay(time, function()
 		if alive(s) then
 			hitFront(s, skill, skill.Damage, false)
