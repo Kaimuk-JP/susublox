@@ -125,8 +125,15 @@ views.stats = function()
 	local level = (player:GetAttribute("Level") :: number?) or 1
 	row(`Lv.{level}  แต้มสเตตัส: {player:GetAttribute("StatPoints") or 0}  Prestige: {player:GetAttribute("Prestige") or 0}`)
 	local names = { Strength = "พลังหมัด", Health = "พลังชีวิต", Stamina = "พลังงาน", Speed = "ความเร็ว" }
+	local effects = {
+		Strength = function(v: number) return `ดาเมจ +{v * 5}%` end,
+		Health = function(v: number) return `เลือดสูงสุด +{v * 5}` end,
+		Stamina = function(v: number) return `พลังงานสูงสุด +{v * 5}` end,
+		Speed = function(v: number) return `ความเร็วเดิน +{math.floor(v * 3) / 10}` end,
+	}
 	for _, stat in Progression.Stats do
-		row(names[stat], "+1", function()
+		local v = (player:GetAttribute("Stat_" .. stat) :: number?) or 0
+		row(`{names[stat]}  {v} แต้ม  ({effects[stat](v)})`, "+1", function()
 			menu:FireServer("AddStat", stat)
 		end)
 	end

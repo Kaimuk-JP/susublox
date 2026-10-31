@@ -50,6 +50,9 @@ local function replicate(player: Player)
 	player:SetAttribute("Rank", rankOf(p.Fame))
 	player:SetAttribute("StatPoints", p.StatPoints)
 	player:SetAttribute("Style", p.EquippedStyle)
+	for stat, value in p.Stats :: any do
+		player:SetAttribute("Stat_" .. stat, value)
+	end
 	for id in StyleData.Styles do
 		player:SetAttribute("StyleUnlocked_" .. id, table.find(p.UnlockedStyles, id) ~= nil)
 	end
@@ -73,7 +76,7 @@ local function applyToCharacter(player: Player)
 	hum.MaxHealth = Config.BaseHealth + 5 * p.Stats.Health
 	hum.Health = hum.MaxHealth * ratio
 	hum.WalkSpeed = 16 + 0.3 * p.Stats.Speed
-	char:SetAttribute("DamageMult", 1 + 0.02 * p.Stats.Strength)
+	char:SetAttribute("DamageMult", 1 + 0.05 * p.Stats.Strength) -- +5% ต่อแต้ม (ดูตัวเลขจริงในเมนูสเตตัส)
 	char:SetAttribute("MaxStamina", Config.BaseStamina + 5 * p.Stats.Stamina)
 	s.Equipped = table.clone(p.Passives)
 end

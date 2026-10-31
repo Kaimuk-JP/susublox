@@ -34,7 +34,7 @@ local function damageNumber(position: Vector3, amount: number)
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
-	label.Text = tostring(math.round(amount))
+	label.Text = tostring(math.round(amount * 10) / 10)
 	label.TextColor3 = Color3.fromHex("FFE066")
 	label.TextStrokeTransparency = 0
 	label.Font = Enum.Font.FredokaOne
