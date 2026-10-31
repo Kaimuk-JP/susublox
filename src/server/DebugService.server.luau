@@ -45,6 +45,11 @@ local function boost(player: Player)
 		p.Mastery[id] = { Level = DEBUG.Mastery, Exp = 0 }
 	end
 	p.TutorialDone = true
+	for _, id in require(game.ReplicatedStorage.Shared.Outfits).Order do
+		if not table.find(p.Owned, id) then
+			table.insert(p.Owned, id) -- ทดสอบสวมทุกชุดได้ทันที
+		end
+	end
 	changed:Fire(player)
 	warn(`[Debug] Studio test boost: Lv.{p.Level}, Mastery {DEBUG.Mastery}, styles {#p.UnlockedStyles}, Yen {p.Yen}`)
 end

@@ -16,6 +16,8 @@ local questRemote = ReplicatedStorage:WaitForChild("QuestRemote") :: RemoteEvent
 local shopRemote = ReplicatedStorage:WaitForChild("ShopRemote") :: RemoteEvent
 
 local BP = require(ReplicatedStorage.Shared.BattlePass)
+local Outfits = require(ReplicatedStorage.Shared.Outfits)
+local outfitRemote = ReplicatedStorage:WaitForChild("OutfitRemote") :: RemoteEvent
 local bpRemote = ReplicatedStorage:WaitForChild("BattlePassRemote") :: RemoteEvent
 local gangRemote = ReplicatedStorage:WaitForChild("GangRemote") :: RemoteEvent
 local warRemote = ReplicatedStorage:WaitForChild("WarRemote") :: RemoteEvent
@@ -41,7 +43,7 @@ toggle.Parent = gui
 Instance.new("UICorner", toggle)
 
 local window = Instance.new("Frame")
-window.Size = UDim2.new(0, 420, 0, 360)
+window.Size = UDim2.new(0, 520, 0, 360)
 window.Position = UDim2.fromScale(0.5, 0.5)
 window.AnchorPoint = Vector2.new(0.5, 0.5)
 window.BackgroundColor3 = PANEL
@@ -49,7 +51,7 @@ window.Visible = false
 window.Parent = gui
 Instance.new("UICorner", window)
 local constraint = Instance.new("UISizeConstraint")
-constraint.MaxSize = Vector2.new(420, 360)
+constraint.MaxSize = Vector2.new(520, 360)
 constraint.Parent = window
 
 local tabs = Instance.new("Frame")
@@ -256,6 +258,27 @@ views.gang = function()
 	end
 end
 
+views.outfits = function()
+	local equipped = player:GetAttribute("Outfit")
+	row(`เยน: ¥{player:GetAttribute("Yen") or 0}  — ชุดที่ใส่อยู่: {Outfits.Name((equipped :: string?) or Outfits.Default)}`)
+	for _, id in Outfits.Order do
+		local owned = player:GetAttribute("OutfitOwned_" .. id) == true
+		local isOn = equipped == id
+		local label = `{if isOn then "✓ " elseif owned then "" else "🔒 "}{Outfits.Name(id)}{if owned then "" else `  ¥{Outfits.Price(id)}`}`
+		if isOn then
+			row(label)
+		elseif owned then
+			row(label, "สวม", function()
+				outfitRemote:FireServer("Equip", id)
+			end)
+		else
+			row(label, "ซื้อ", function()
+				shopRemote:FireServer(id)
+			end)
+		end
+	end
+end
+
 views.prestige = function()
 	local p = (player:GetAttribute("Prestige") :: number?) or 0
 	local level = (player:GetAttribute("Level") :: number?) or 1
@@ -277,6 +300,7 @@ end
 local tabList = {
 	{ "stats", "สเตตัส" },
 	{ "styles", "สไตล์" },
+	{ "outfits", "ชุด" },
 	{ "quests", "เควส" },
 	{ "shop", "ร้าน" },
 	{ "battlepass", "Pass" },
