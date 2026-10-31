@@ -24,6 +24,47 @@ type Look = {
 	Aura: boolean?,
 }
 
+-- ตราโรงเรียนวงกลมปักที่หลังเสื้อกากุรัน (ออกแบบเอง: วงแหวนสองชั้น + อักษรคันจิ "素々高")
+type AddFn = (partName: string, size: Vector3, offset: CFrame, color: string, material: Enum.Material?, shape: Enum.PartType?) -> Part?
+local function backCrest(add: AddFn, withText: string?)
+	local back = add("UpperTorso", Vector3.new(1.85, 1.55, 0.06), CFrame.new(0, -0.05, 0.54), "0B0B0F")
+	if not back then
+		return
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Back
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 80
+	gui.Parent = back
+	local function ring(sizeScale: number, thickness: number, transparency: number?)
+		local frame = Instance.new("Frame")
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+		frame.Size = UDim2.fromScale(sizeScale * 0.8, sizeScale)
+		frame.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		frame.BackgroundTransparency = 1
+		frame.Parent = gui
+		Instance.new("UICorner", frame).CornerRadius = UDim.new(1, 0)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = hex("F4F1E8")
+		stroke.Thickness = thickness
+		stroke.Transparency = transparency or 0
+		stroke.Parent = frame
+	end
+	ring(0.92, 4)
+	ring(0.8, 2)
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.fromScale(0.5, 0.62)
+	label.BackgroundTransparency = 1
+	label.Text = withText or "素々\n高"
+	label.TextColor3 = hex("F4F1E8")
+	label.Font = Enum.Font.GothamBlack
+	label.TextScaled = true
+	label.Parent = gui
+end
+
 local looks: { [string]: Look } = {
 	Uniform_School = {
 		Torso = "FFFFFF",
@@ -51,6 +92,7 @@ local looks: { [string]: Look } = {
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(-1.15, 0.78, 0), "15151A") -- ไหล่เสริม
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(1.15, 0.78, 0), "15151A")
 			add("UpperTorso", Vector3.new(0.42, 0.42, 0.1), CFrame.new(0.6, 0.45, -0.56), "FFE066", Enum.Material.Neon, Enum.PartType.Ball) -- ตราโรงเรียน
+			backCrest(add) -- ตราวงกลมปักที่หลัง
 		end,
 	},
 	-- นากะรัน: ตัวยาวถึงเข่า กางเกงขาบาน ปักอักษรที่หลัง
@@ -76,22 +118,10 @@ local looks: { [string]: Look } = {
 			for _, leg in { "LeftLowerLeg", "RightLowerLeg" } do
 				add(leg, Vector3.new(1.35, 1.2, 1.35), CFrame.new(0, 0.1, 0), "1A1A22")
 			end
-			-- ปักหลัง: ตัวอักษรทอง
-			local back = add("UpperTorso", Vector3.new(1.85, 1.55, 0.06), CFrame.new(0, -0.05, 0.54), "0B0B0F")
-			if back then
-				local gui = Instance.new("SurfaceGui")
-				gui.Face = Enum.NormalId.Back
-				gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-				gui.PixelsPerStud = 60
-				gui.Parent = back
-				local label = Instance.new("TextLabel")
-				label.Size = UDim2.fromScale(1, 1)
-				label.BackgroundTransparency = 1
-				label.Text = "喧嘩\n上等"
-				label.TextColor3 = hex("FFE066")
-				label.Font = Enum.Font.GothamBlack
-				label.TextScaled = true
-				label.Parent = gui
+			-- ปักหลัง: ตราวงกลมโรงเรียน + แขนเสื้อลายคลื่นสีขาวที่ปลายแขน
+			backCrest(add, "素々\n高")
+			for _, arm in { "LeftLowerArm", "RightLowerArm" } do
+				add(arm, Vector3.new(1.15, 0.5, 1.15), CFrame.new(0, -0.35, 0), "DCE3EE") -- ลายคลื่นปลายแขน (ย่อเป็นแถบ)
 			end
 		end,
 	},
@@ -120,6 +150,7 @@ local looks: { [string]: Look } = {
 			for _, leg in { "LeftLowerLeg", "RightLowerLeg" } do
 				add(leg, Vector3.new(1.5, 1.3, 1.5), CFrame.new(0, 0.1, 0), "20202A")
 			end
+			backCrest(add)
 		end,
 	},
 	Uniform_Sakura = {
