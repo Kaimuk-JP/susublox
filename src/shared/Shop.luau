@@ -10,6 +10,9 @@ Shop.YenPerHour = 600
 Shop.Items = {
 	Uniform_Sakura = { Name = "ชุดนักเรียนซากุระ", Price = 400, Kind = "Outfit" },
 	Uniform_Night = { Name = "ชุดนักเรียนกลางคืน", Price = 900, Kind = "Outfit" },
+	Gakuran_Standard = { Name = "กากุรัน (ชุดนักเรียนชายคอตั้ง)", Price = 700, Kind = "Outfit" },
+	Gakuran_Nagaran = { Name = "นากะรัน (กากุรันตัวยาวสายเกเร)", Price = 1500, Kind = "Outfit" },
+	Gakuran_Tanran = { Name = "ทันรัน (กากุรันตัวสั้นขาบาน)", Price = 1500, Kind = "Outfit" },
 	Jacket_Gang = { Name = "แจ็กเกตหัวหน้าแก๊ง", Price = 1800, Kind = "Outfit" },
 	Aura_Sparkle = { Name = "ออร่าประกาย", Price = 2400, Kind = "Outfit" },
 	StatReset = { Name = "รีเซ็ตสเตตัส", Price = 300, Kind = "Service" },

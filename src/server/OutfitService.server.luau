@@ -20,7 +20,7 @@ type Look = {
 	Arms: string,
 	Legs: string,
 	Shoes: string?,
-	Decor: ((character: Model, add: (partName: string, size: Vector3, offset: CFrame, color: string, material: Enum.Material?, shape: Enum.PartType?) -> ()) -> ())?,
+	Decor: ((character: Model, add: (partName: string, size: Vector3, offset: CFrame, color: string, material: Enum.Material?, shape: Enum.PartType?) -> Part?) -> ())?,
 	Aura: boolean?,
 }
 
@@ -33,6 +33,93 @@ local looks: { [string]: Look } = {
 		Decor = function(_, add)
 			add("UpperTorso", Vector3.new(0.9, 0.55, 0.25), CFrame.new(0, 0.55, -0.62), "EF233C") -- ริบบิ้น
 			add("UpperTorso", Vector3.new(1.9, 0.18, 1.1), CFrame.new(0, 0.95, -0.05), "2B2D42") -- ปกเสื้อ
+		end,
+	},
+	-- กากุรัน: ชุดนักเรียนชายคอตั้งสีดำ กระดุมทอง 5 เม็ด ไหล่เสริม ตราโรงเรียนที่อก
+	Gakuran_Standard = {
+		Torso = "15151A",
+		Arms = "15151A",
+		Legs = "1A1A22",
+		Shoes = "0F0F14",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.9, 0.5, 1.1), CFrame.new(0, 1.0, -0.02), "15151A") -- คอตั้ง
+			add("UpperTorso", Vector3.new(0.8, 0.14, 0.12), CFrame.new(0, 1.05, -0.56), "FFFFFF") -- ขอบเสื้อด้านในขาว
+			add("UpperTorso", Vector3.new(0.32, 1.6, 0.06), CFrame.new(0, 0, -0.52), "0B0B0F") -- แนวกระดุม
+			for i = 0, 4 do
+				add("UpperTorso", Vector3.new(0.22, 0.22, 0.12), CFrame.new(0, 0.62 - i * 0.32, -0.56), "FFE066", Enum.Material.Neon, Enum.PartType.Ball)
+			end
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(-1.15, 0.78, 0), "15151A") -- ไหล่เสริม
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(1.15, 0.78, 0), "15151A")
+			add("UpperTorso", Vector3.new(0.42, 0.42, 0.1), CFrame.new(0.6, 0.45, -0.56), "FFE066", Enum.Material.Neon, Enum.PartType.Ball) -- ตราโรงเรียน
+		end,
+	},
+	-- นากะรัน: ตัวยาวถึงเข่า กางเกงขาบาน ปักอักษรที่หลัง
+	Gakuran_Nagaran = {
+		Torso = "15151A",
+		Arms = "15151A",
+		Legs = "1A1A22",
+		Shoes = "0F0F14",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.9, 0.5, 1.1), CFrame.new(0, 1.0, -0.02), "15151A")
+			add("UpperTorso", Vector3.new(0.8, 0.14, 0.12), CFrame.new(0, 1.05, -0.56), "FFFFFF")
+			add("UpperTorso", Vector3.new(0.32, 1.6, 0.06), CFrame.new(0, 0, -0.52), "0B0B0F")
+			for i = 0, 4 do
+				add("UpperTorso", Vector3.new(0.22, 0.22, 0.12), CFrame.new(0, 0.62 - i * 0.32, -0.56), "FFE066", Enum.Material.Neon, Enum.PartType.Ball)
+			end
+			-- ชายเสื้อยาวถึงเข่า (ผ่าหลังเป็นสองแผ่น)
+			add("LowerTorso", Vector3.new(2.2, 1.9, 1.15), CFrame.new(0, -1.35, 0), "15151A")
+			add("LowerTorso", Vector3.new(2.3, 0.18, 1.25), CFrame.new(0, -2.3, 0), "FFE066", Enum.Material.Neon) -- แถบชายเสื้อ
+			-- กางเกงขาบาน (บอนตัน)
+			for _, leg in { "LeftUpperLeg", "RightUpperLeg" } do
+				add(leg, Vector3.new(1.55, 1.3, 1.55), CFrame.new(0, -0.1, 0), "1A1A22")
+			end
+			for _, leg in { "LeftLowerLeg", "RightLowerLeg" } do
+				add(leg, Vector3.new(1.35, 1.2, 1.35), CFrame.new(0, 0.1, 0), "1A1A22")
+			end
+			-- ปักหลัง: ตัวอักษรทอง
+			local back = add("UpperTorso", Vector3.new(1.85, 1.55, 0.06), CFrame.new(0, -0.05, 0.54), "0B0B0F")
+			if back then
+				local gui = Instance.new("SurfaceGui")
+				gui.Face = Enum.NormalId.Back
+				gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+				gui.PixelsPerStud = 60
+				gui.Parent = back
+				local label = Instance.new("TextLabel")
+				label.Size = UDim2.fromScale(1, 1)
+				label.BackgroundTransparency = 1
+				label.Text = "喧嘩\n上等"
+				label.TextColor3 = hex("FFE066")
+				label.Font = Enum.Font.GothamBlack
+				label.TextScaled = true
+				label.Parent = gui
+			end
+		end,
+	},
+	-- ทันรัน: ตัวสั้นเหนือเอว เห็นเสื้อขาวด้านใน กางเกงขาบานมาก เข็มขัดหัวทอง
+	Gakuran_Tanran = {
+		Torso = "15151A",
+		Arms = "15151A",
+		Legs = "20202A",
+		Shoes = "FFFFFF",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.9, 0.5, 1.1), CFrame.new(0, 1.0, -0.02), "15151A")
+			add("UpperTorso", Vector3.new(0.32, 1.4, 0.06), CFrame.new(0, 0.1, -0.52), "0B0B0F")
+			for i = 0, 3 do
+				add("UpperTorso", Vector3.new(0.22, 0.22, 0.12), CFrame.new(0, 0.55 - i * 0.32, -0.56), "FFE066", Enum.Material.Neon, Enum.PartType.Ball)
+			end
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(-1.15, 0.78, 0), "15151A")
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(1.15, 0.78, 0), "15151A")
+			-- เสื้อขาวด้านใน + เข็มขัด
+			add("LowerTorso", Vector3.new(2.05, 0.9, 1.05), CFrame.new(0, 0.1, 0), "FFFFFF")
+			add("LowerTorso", Vector3.new(2.15, 0.22, 1.12), CFrame.new(0, -0.3, 0), "0B0B0F")
+			add("LowerTorso", Vector3.new(0.45, 0.35, 0.1), CFrame.new(0, -0.3, -0.58), "FFE066", Enum.Material.Neon)
+			-- กางเกงขาบานพิเศษ ขากว้างที่ต้นขา เรียวที่ข้อเท้า
+			for _, leg in { "LeftUpperLeg", "RightUpperLeg" } do
+				add(leg, Vector3.new(1.9, 1.4, 1.9), CFrame.new(0, -0.05, 0), "20202A")
+			end
+			for _, leg in { "LeftLowerLeg", "RightLowerLeg" } do
+				add(leg, Vector3.new(1.5, 1.3, 1.5), CFrame.new(0, 0.1, 0), "20202A")
+			end
 		end,
 	},
 	Uniform_Sakura = {
@@ -119,10 +206,10 @@ local function apply(character: Model, id: string)
 	setColor(character, { "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }, hex(base.Legs))
 	setColor(character, { "LeftFoot", "RightFoot" }, hex(base.Shoes or base.Legs))
 
-	local function add(partName: string, size: Vector3, offset: CFrame, color: string, material: Enum.Material?, shape: Enum.PartType?)
+	local function add(partName: string, size: Vector3, offset: CFrame, color: string, material: Enum.Material?, shape: Enum.PartType?): Part?
 		local anchor = character:FindFirstChild(partName) :: BasePart?
 		if not anchor then
-			return
+			return nil
 		end
 		local p = Instance.new("Part")
 		p.Name = "OutfitDecor"
@@ -140,6 +227,7 @@ local function apply(character: Model, id: string)
 		weld.Part1 = p
 		weld.Parent = p
 		p.Parent = character
+		return p
 	end
 
 	if base.Decor then

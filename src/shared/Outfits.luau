@@ -4,7 +4,16 @@ local Shop = require(script.Parent.Shop)
 
 local DEFAULT = "Uniform_School"
 
-local list: { string } = { DEFAULT, "Uniform_Sakura", "Uniform_Night", "Jacket_Gang", "Aura_Sparkle" }
+local list: { string } = {
+	DEFAULT,
+	"Gakuran_Standard",
+	"Gakuran_Nagaran",
+	"Gakuran_Tanran",
+	"Uniform_Sakura",
+	"Uniform_Night",
+	"Jacket_Gang",
+	"Aura_Sparkle",
+}
 
 return {
 	Default = DEFAULT,
