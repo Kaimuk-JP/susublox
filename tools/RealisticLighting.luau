@@ -3,9 +3,12 @@
 -- Lighting.Technology ตั้งจากสคริปต์ตอนเล่นไม่ได้ ต้องตั้งตอนแก้ไขแล้วเซฟไว้ใน Place
 local Lighting = game:GetService("Lighting")
 
-pcall(function()
+local okSet = pcall(function()
 	Lighting.Technology = Enum.Technology.Future -- เงา/แสงสะท้อนสมจริง
 end)
+if not okSet then
+	warn("[RealisticLighting] ตั้ง Technology ผ่านสคริปต์ไม่ได้ (ไม่มีสิทธิ์) — ให้ตั้งเองใน Properties ของ Lighting")
+end
 Lighting.Brightness = 3
 Lighting.ShadowSoftness = 0.25
 Lighting.EnvironmentDiffuseScale = 1
@@ -31,4 +34,7 @@ ensure("BloomEffect", { Intensity = 0.35, Size = 28, Threshold = 1.2 })
 ensure("SunRaysEffect", { Intensity = 0.08, Spread = 0.9 })
 ensure("ColorCorrectionEffect", { Saturation = 0.08, Contrast = 0.08, TintColor = Color3.fromRGB(255, 250, 245) })
 ensure("DepthOfFieldEffect", { FarIntensity = 0.12, FocusDistance = 120, InFocusRadius = 80, NearIntensity = 0 })
-print("[RealisticLighting] Technology =", Lighting.Technology.Name)
+local okT, tech = pcall(function()
+	return Lighting.Technology.Name
+end)
+print("[RealisticLighting] Technology =", okT and tech or "อ่านไม่ได้จากสคริปต์ — ตั้งใน Studio: Lighting > Technology = Future")

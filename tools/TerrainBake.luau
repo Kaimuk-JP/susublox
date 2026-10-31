@@ -60,41 +60,57 @@ local function height(x, z)
 end
 
 terrain:Clear()
+-- สีวัสดุภูมิประเทศให้เป็นธรรมชาติ (ค่าเริ่มต้นออกฟ้า-ซีด)
+for mat, col in {
+	[Enum.Material.Grass] = Color3.fromRGB(96, 140, 62),
+	[Enum.Material.LeafyGrass] = Color3.fromRGB(78, 120, 50),
+	[Enum.Material.Ground] = Color3.fromRGB(118, 96, 66),
+	[Enum.Material.Mud] = Color3.fromRGB(92, 74, 54),
+	[Enum.Material.Rock] = Color3.fromRGB(118, 116, 110),
+} do
+	terrain:SetMaterialColor(mat, col)
+end
 local count = 0
-for cx = B.MinX, B.MaxX - 1, CHUNK do
-	for cz = B.MinZ, B.MaxZ - 1, CHUNK do
-		local nx, nz = math.ceil(CHUNK / RES), math.ceil(CHUNK / RES)
-		local ny = math.ceil((MAX_Y - MIN_Y) / RES)
+local nx, nz = math.ceil(CHUNK / RES), math.ceil(CHUNK / RES)
+local ny = math.ceil((MAX_Y - MIN_Y) / RES)
+for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องชิดกริด voxel
+	for cz = math.floor(B.MinZ / RES) * RES, B.MaxZ - 1, CHUNK do
+		-- คำนวณความสูง/วัสดุต่อคอลัมน์ครั้งเดียว (เร็วกว่าคำนวณทุก voxel มาก)
+		local colH, colMat = {}, {}
+		for ix = 1, nx do
+			colH[ix], colMat[ix] = {}, {}
+			local x = cx + (ix - 0.5) * RES
+			for iz = 1, nz do
+				local z = cz + (iz - 0.5) * RES
+				local h = height(x, z)
+				local slope = math.abs(height(x + RES, z) - h) + math.abs(height(x, z + RES) - h)
+				local patch = math.noise(x / 40, z / 40, 5)
+				local mat = Enum.Material.Grass
+				if slope > 5.5 or h > 22 then
+					mat = Enum.Material.Rock
+				elseif slope > 3 then
+					mat = Enum.Material.Ground
+				elseif patch > 0.35 then
+					mat = Enum.Material.LeafyGrass
+				elseif patch < -0.55 then
+					mat = Enum.Material.Ground
+				end
+				colH[ix][iz], colMat[ix][iz] = h, mat
+			end
+		end
 		local materials, occupancy = {}, {}
 		for ix = 1, nx do
 			materials[ix], occupancy[ix] = {}, {}
-			local x = cx + (ix - 0.5) * RES
 			for iy = 1, ny do
 				materials[ix][iy], occupancy[ix][iy] = {}, {}
 				local y = MIN_Y + (iy - 0.5) * RES
 				for iz = 1, nz do
-					local z = cz + (iz - 0.5) * RES
-					local h = height(x, z)
-					local occ = math.clamp((h - (y - RES / 2)) / RES, 0, 1)
-					local mat = Enum.Material.Grass
-					if occ > 0 then
-						-- ชัน = หิน, สูงมาก = หินล้วน, ที่ราบ = หญ้า/ดิน/โคลนเป็นหย่อม
-						local slope = math.abs(height(x + RES, z) - h) + math.abs(height(x, z + RES) - h)
-						local patch = math.noise(x / 40, z / 40, 5)
-						if slope > 5.5 or h > 22 then
-							mat = Enum.Material.Rock
-						elseif slope > 3 then
-							mat = Enum.Material.Ground
-						elseif patch > 0.35 then
-							mat = Enum.Material.LeafyGrass
-						elseif patch < -0.4 then
-							mat = Enum.Material.Mud
-						end
-						if y < -0.5 - RES then
-							mat = Enum.Material.Ground -- ชั้นดินใต้ผิว
-						end
+					local occ = math.clamp((colH[ix][iz] - (y - RES / 2)) / RES, 0, 1)
+					local mat = colMat[ix][iz]
+					if occ > 0 and y < -0.5 - RES then
+						mat = Enum.Material.Ground -- ชั้นดินใต้ผิว
 					end
-					materials[ix][iy][iz] = mat
+					materials[ix][iy][iz] = occ > 0 and mat or Enum.Material.Air
 					occupancy[ix][iy][iz] = occ
 				end
 			end
@@ -102,8 +118,10 @@ for cx = B.MinX, B.MaxX - 1, CHUNK do
 		local region = Region3.new(Vector3.new(cx, MIN_Y, cz), Vector3.new(cx + nx * RES, MIN_Y + ny * RES, cz + nz * RES)):ExpandToGrid(RES)
 		terrain:WriteVoxels(region, RES, materials, occupancy)
 		count += 1
-		task.wait()
+		if count % 4 == 0 then
+			task.wait()
+		end
 	end
 end
 workspace:SetAttribute("TerrainBaked", true)
-print(`[TerrainBake] เสร็จ {count} chunk — ภูมิประเทศธรรมชาติพร้อมแล้ว อย่าลืมบันทึก Place`)
+print("[TerrainBake] done chunks=" .. count .. " - save the Place")
