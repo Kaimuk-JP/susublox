@@ -177,6 +177,7 @@ local function activate(player: Player, key: string)
 	end
 	s.SkillReady[key] = now + skill.Cooldown
 	s.State = "Attacking"
+	Combat.PlayAnim(s.Character, `{profile.EquippedStyle}_{if isUlt then "Ultimate" else key}`)
 	executors[skill.Kind](s, skill)
 	task.delay(ACTION_LOCK, function()
 		if s.State == "Attacking" then

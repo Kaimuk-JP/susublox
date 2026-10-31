@@ -1,14 +1,26 @@
 # สถานะการพัฒนา
 
-เขียนโค้ดเสร็จแต่**ยังไม่เคยรันใน Roblox Studio** (เครื่องนี้ยังไม่มี Rojo/Studio MCP/Luau runtime)
+โค้ดครบตามแผนเท่าที่เขียนเป็นโค้ดได้ แต่ **ยังไม่เคยรันหรือคอมไพล์ใน Roblox Studio** (เครื่องนี้ไม่มี Rojo/Studio MCP/Luau runtime)
+คาดว่าจะมี syntax error/บั๊กตอนเปิดครั้งแรก — ทำตามหัวข้อ "เริ่มทดสอบ" ด้านล่าง
 
-| ช่วงในแผน | สถานะ |
-| --- | --- |
-| 0–10% ตั้งโปรเจกต์ | เสร็จ (ยังไม่ได้รัน `wally install`) |
-| 10–30% greybox + ต่อสู้แกนหลัก | โค้ดครบ ต้องทดสอบใน Studio |
-| 30–50% เลเวล/สไตล์/สกิล/ข้อมูล | โค้ดครบ (PlayerData ใช้ DataStore + session lock เบื้องต้น แทน ProfileStore) |
-| 50–65% งานภาพ/แอนิเมชัน/เสียง/UI | HUD พื้นฐานเท่านั้น ที่เหลือเป็นงาน asset ใน Studio/Blender |
-| 65–80% โหมด/เควส/เศรษฐกิจ | ดวล 1v1+แรงก์, เควส, ล็อกอิน, ร้านเยน, ProcessReceipt, แก๊ง (ในเซิร์ฟเวอร์เดียว), เมนู UI เสร็จ ยังไม่มีสงครามแก๊ง 4v4, บอสชมรม, Battle Pass, ตั้ง ID Robux จริง |
-| 80–100% ทดสอบ/เปิดตัว | ยัง |
+## เสร็จแล้ว (โค้ด)
+- ต่อสู้: M1 4 จังหวะ, บล็อก/Perfect Block, Dash, hitbox ฝั่ง server, safe zone, กันยิงพวกเดียวกัน
+- 6 สไตล์ x (Z X C V + ไม้ตาย), Mastery, สกิลติดตัว 2 ช่อง
+- เลเวล 1–100, สเตตัส, Prestige, อันดับตามชื่อเสียง, ProfileTemplate + migration
+- PlayerData (DataStore + session lock เบื้องต้น), เควสรายวัน/สัปดาห์, ล็อกอินต่อเนื่อง
+- ดวล 1v1 + แต้มแรงก์, แก๊ง (ข้ามเซิร์ฟเวอร์ผ่าน DataStore), สงครามแก๊ง 4v4
+- บอสหัวหน้าชมรม (ดรอปเคนโด้), บอสพเนจร 20:00, NPC + AI
+- ร้านเยน, ProcessReceipt, Battle Pass 30 ขั้น, Live ops + feature flags
+- บทสอน, HUD, เมนู 7 แท็บ, VFX โค้ดล้วน, กลางวัน/กลางคืน, กันโกงความเร็ว + rate limit
 
-ทดสอบตรรกะ: `tests/Logic.spec.luau`
+## ต้องทำเองก่อนเปิดตัว (ทำจากโค้ดไม่ได้)
+1. **ทดสอบใน Studio**: `rokit install` -> `rojo serve` -> sync เข้า Studio แล้วแก้ error
+2. **Asset จริง**: แอนิเมชัน (Moon Animator 2), เสียง, โมเดลแมพ/พร็อพ (Blender) แล้วใส่ ID ใน `src/shared/Assets.luau` (ตอนนี้เป็น 0 = ข้าม)
+3. **Robux**: สร้าง Game Pass/Developer Product ใน Creator Hub แล้วใส่ ID ใน `src/shared/Shop.luau` (ตอนนี้เป็น 0 = ปิด)
+4. **ProfileStore**: ย้ายจาก PlayerData เมื่อ `wally install` แล้วเสร็จ (โค้ดปัจจุบันทำงานได้ด้วย DataStore ล้วน)
+5. **มือถือ/Performance**: วัด MicroProfiler บนเครื่องจริง, ตัดจำนวน part ให้ <15,000
+6. ตรวจกฎ Roblox เรื่องกล่องสุ่ม/อายุก่อนเปิดขายของสุ่ม (ตอนนี้ยังไม่มีกล่องสุ่มในโค้ด)
+
+## เริ่มทดสอบ
+- ตรรกะล้วน: `tests/Logic.spec.luau`
+- ทดสอบสไตล์/ท่าไม้ตายเร็ว ๆ: ตั้ง Mastery ผ่านโปรไฟล์ใน Studio (สกิลต้องการ Mastery 1/10/25/40/60)

@@ -15,7 +15,14 @@ local menu = ReplicatedStorage:WaitForChild("MenuRemote") :: RemoteEvent
 local questRemote = ReplicatedStorage:WaitForChild("QuestRemote") :: RemoteEvent
 local shopRemote = ReplicatedStorage:WaitForChild("ShopRemote") :: RemoteEvent
 
-local PANEL, ACCENT = Color3.fromHex("2B2D42"), Color3.fromHex("FFB7C5")
+local BP = require(ReplicatedStorage.Shared.BattlePass)
+local bpRemote = ReplicatedStorage:WaitForChild("BattlePassRemote") :: RemoteEvent
+local gangRemote = ReplicatedStorage:WaitForChild("GangRemote") :: RemoteEvent
+local warRemote = ReplicatedStorage:WaitForChild("WarRemote") :: RemoteEvent
+
+local PRESTIGE_TITLES = { [0] = "มือใหม่", "ผู้กล้า", "นักสู้ตัวจริง", "ตำนานโรงเรียน", "ราชันย์นิรันดร์" }
+
+local PANEL, ACCENT =Color3.fromHex("2B2D42"), Color3.fromHex("FFB7C5")
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Menu"
@@ -168,19 +175,98 @@ views.shop = function()
 	end
 end
 
+views.battlepass = function()
+	local tier = (player:GetAttribute("BP_Tier") :: number?) or 0
+	local premium = player:GetAttribute("BP_Premium") == true
+	row(`Battle Pass ซีซัน {BP.Season}  ขั้น {tier}/{BP.Tiers}  XP {player:GetAttribute("BP_Xp") or 0}  {if premium then "(พรีเมียม)" else "(สายฟรี)"}`)
+	for t = 1, BP.Tiers do
+		if tier >= t then
+			row(`ขั้น {t} ฟรี: ¥{BP.Free[t].Yen or 0}{if BP.Free[t].Outfit then " + ชุด" else ""}`, "รับ", function()
+				bpRemote:FireServer("Free", t)
+			end)
+			if premium then
+				local r = BP.Premium[t]
+				row(`ขั้น {t} พรีเมียม: ¥{r.Yen or 0}{if r.Outfit then " + ชุด" elseif r.ExpBoost then " + บูสต์ EXP" else ""}`, "รับ", function()
+					bpRemote:FireServer("Premium", t)
+				end)
+			end
+		end
+	end
+end
+
+views.gang = function()
+	local gang = (player:GetAttribute("Gang") :: string?) or ""
+	if gang == "" then
+		row("ยังไม่มีแก๊ง: พิมพ์ชื่อ 3–16 ตัว (อังกฤษ/ตัวเลข/_) แล้วสร้างหรือเข้าร่วม")
+		order += 1
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.new(1, -8, 0, 40)
+		box.LayoutOrder = order
+		box.PlaceholderText = "ชื่อแก๊ง"
+		box.Text = ""
+		box.ClearTextOnFocus = false
+		box.Font = Enum.Font.FredokaOne
+		box.TextSize = 16
+		box.BackgroundColor3 = Color3.fromHex("3A3D5C")
+		box.TextColor3 = Color3.new(1, 1, 1)
+		box.Parent = content
+		Instance.new("UICorner", box)
+		row(`สร้างแก๊ง (¥{Shop.GangCreateCost})`, "สร้าง", function()
+			gangRemote:FireServer("Create", box.Text)
+		end)
+		row("เข้าร่วมแก๊งตามชื่อที่พิมพ์", "เข้า", function()
+			gangRemote:FireServer("Join", box.Text)
+		end)
+	else
+		row(`แก๊ง {gang}  เลเวล {player:GetAttribute("GangLevel") or 1}  เงินแก๊ง ¥{player:GetAttribute("GangFunds") or 0}`)
+		row("ออกจากแก๊ง", "ออก", function()
+			gangRemote:FireServer("Leave")
+		end)
+		local queued = player:GetAttribute("WarQueued") == true
+		row(
+			if player:GetAttribute("InWar") then "กำลังอยู่ในสงคราม!" else "สงครามแก๊ง 4v4: ต้องมีเพื่อนในแก๊งเข้าคิว 4 คน",
+			if queued then "ออกคิว" else "เข้าคิว",
+			function()
+				warRemote:FireServer(if queued then "Unqueue" else "Queue")
+			end
+		)
+	end
+end
+
+views.prestige = function()
+	local p = (player:GetAttribute("Prestige") :: number?) or 0
+	local level = (player:GetAttribute("Level") :: number?) or 1
+	row(`ฉายา: {PRESTIGE_TITLES[math.min(p, #PRESTIGE_TITLES)]}  Prestige {p}  โบนัส EXP ถาวร +{p * 10}%`)
+	row(`ต้องถึงเลเวล {Progression.MaxLevel} (ตอนนี้ Lv.{level}) รีเซ็ตเลเวลและสเตตัส แลกฉายาและโบนัสถาวร`)
+	if level >= Progression.MaxLevel then
+		row("พร้อม Prestige แล้ว!", "ยืนยัน", function()
+			menu:FireServer("Prestige")
+		end)
+	end
+end
+
 render = function()
 	order = 0
 	clear()
 	views[current]()
 end
 
-for _, t in { { "stats", "สเตตัส" }, { "styles", "สไตล์" }, { "quests", "เควส" }, { "shop", "ร้าน" } } do
+local tabList = {
+	{ "stats", "สเตตัส" },
+	{ "styles", "สไตล์" },
+	{ "quests", "เควส" },
+	{ "shop", "ร้าน" },
+	{ "battlepass", "Pass" },
+	{ "gang", "แก๊ง" },
+	{ "prestige", "Prestige" },
+}
+for _, t in tabList do
 	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0.25, 0, 1, 0)
+	b.Size = UDim2.new(1 / #tabList, 0, 1, 0)
 	b.BackgroundColor3 = PANEL
 	b.TextColor3 = ACCENT
 	b.Font = Enum.Font.FredokaOne
-	b.TextSize = 16
+	b.TextSize = 13
 	b.Text = t[2]
 	b.Parent = tabs
 	b.Activated:Connect(function()
@@ -207,7 +293,7 @@ end)
 
 -- อัปเดตเมื่อค่าเปลี่ยนขณะเปิดเมนู
 player.AttributeChanged:Connect(function()
-	if window.Visible then
+	if window.Visible and not UserInputService:GetFocusedTextBox() then -- ไม่รีเฟรชระหว่างพิมพ์
 		render()
 	end
 end)

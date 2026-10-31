@@ -1,0 +1,41 @@
+--!strict
+-- วงจรกลางวัน/เย็น/กลางคืน (1 วันในเกม = 12 นาทีจริง) เปลี่ยนโทนบรรยากาศแบบพาสเทล
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local DAY_SECONDS = 720
+
+local phases = {
+	{ From = 6, Name = "Day", Ambient = Color3.fromHex("FFE9F0"), Haze = 0.25 },
+	{ From = 17, Name = "Evening", Ambient = Color3.fromHex("FFC8A2"), Haze = 0.35 },
+	{ From = 20, Name = "Night", Ambient = Color3.fromHex("5B6CA8"), Haze = 0.45 },
+}
+
+local function phaseAt(hour: number)
+	local current = phases[#phases] -- ก่อน 6 โมงยังเป็นกลางคืน
+	for _, p in phases do
+		if hour >= p.From then
+			current = p
+		end
+	end
+	return current
+end
+
+local lastName = ""
+local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+local start = os.clock()
+
+RunService.Heartbeat:Connect(function()
+	local hour = (6 + (os.clock() - start) / DAY_SECONDS * 24) % 24
+	Lighting.ClockTime = hour
+	local phase = phaseAt(hour)
+	if phase.Name ~= lastName then
+		lastName = phase.Name
+		workspace:SetAttribute("TimeOfDay", phase.Name)
+		atmosphere = atmosphere or Lighting:FindFirstChildOfClass("Atmosphere")
+		if atmosphere then
+			TweenService:Create(atmosphere, TweenInfo.new(5), { Color = phase.Ambient, Density = phase.Haze }):Play()
+		end
+	end
+end)

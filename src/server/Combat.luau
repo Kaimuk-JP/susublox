@@ -49,6 +49,13 @@ function Combat.Emit(name: string, s: CombatState.CombatState)
 	end
 end
 
+-- บอก client ว่าตัวละครนี้เริ่มท่าอะไร (client เล่นแอนิเมชันถ้ามี asset ID)
+local animCounter = 0
+function Combat.PlayAnim(character: Model, name: string)
+	animCounter += 1
+	character:SetAttribute("Anim", `{name}:{animCounter}`)
+end
+
 function Combat.Register(character: Model): CombatState.CombatState
 	local s = CombatState.new(character)
 	states[character] = s
@@ -248,6 +255,7 @@ function Combat.M1(s: CombatState.CombatState)
 		return
 	end
 	s.State = "Attacking"
+	Combat.PlayAnim(s.Character, `M1_{if final then Config.ComboLength else s.Combo}`)
 	local cf = root.CFrame * CFrame.new(0, 0, -Config.HitboxForward)
 	for _, v in Combat.QueryBox(s, cf, Config.HitboxSize, Config.MaxHitRange) do
 		Combat.Hit(s, v, Config.M1Damage, { Final = final })
@@ -261,6 +269,7 @@ end
 
 function Combat.BlockStart(s: CombatState.CombatState)
 	if s:CanAct() and s.Stamina > 0 then
+		Combat.PlayAnim(s.Character, "Block")
 		s.State = "Blocking"
 		s.BlockStart = os.clock()
 	end
@@ -281,6 +290,7 @@ function Combat.Dash(s: CombatState.CombatState)
 	end
 	s.LastDash = now
 	s.Stamina -= Config.DashStaminaCost
+	Combat.PlayAnim(s.Character, "Dash")
 	root.AssemblyLinearVelocity = root.CFrame.LookVector * Config.DashSpeed
 end
 
