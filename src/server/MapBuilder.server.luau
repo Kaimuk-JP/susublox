@@ -202,6 +202,11 @@ terrain.WaterTransparency = 0.45
 terrain.WaterWaveSize = 0.12
 terrain.WaterReflectance = 0.5
 
+for _, old in terrain:GetChildren() do
+	if old:IsA("Clouds") then
+		old:Destroy() -- กันเมฆซ้ำเมื่อรันซ้ำ (Terrain:Clear ไม่ลบ Clouds)
+	end
+end
 local clouds = Instance.new("Clouds")
 clouds.Cover = 0.55
 clouds.Density = 0.55
