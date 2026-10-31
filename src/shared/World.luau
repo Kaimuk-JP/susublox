@@ -69,7 +69,27 @@ local Roads = {
 	{ -560, -100, -560, 170, 14 }, -- ขึ้นเหนือไปค่ายในป่า
 	{ -700, -100, -560, -100, 14 },
 	{ 560, -150, 560, 170, 14 }, -- ขึ้นเหนือไปศาลเจ้า
-	{ 560, -150, 700, -150, 14 },
+	{ 560, -86, 700, -86, 14 }, -- ต่อถึงเชิงบันไดศาลเจ้า (ฐานเนินอยู่ที่ z=-90)
+}
+
+-- พื้นที่ปูแข็งของแต่ละย่าน (Terrain ใต้เป็นวัสดุเมือง ไม่ใช่หญ้า): {x1, x2, z1, z2, วัสดุ}
+local Paved = {
+	{ 285, 555, 130, 212, "Cobblestone" }, -- ถนนการค้า
+	{ -300, 300, 555, 645, "Pavement" }, -- ย่านสถานี แถวตึกตะวันออก-ตะวันตก
+	{ -135, -45, 230, 560, "Pavement" }, -- ย่านสถานี แถวตึกเหนือ-ใต้
+	{ 100, 240, 640, 730, "Pavement" }, -- สถานี + ชานชาลา
+	{ 625, 872, 490, 745, "Concrete" }, -- ท่าเรือ (ลานตู้คอนเทนเนอร์)
+	{ -860, -640, 520, 715, "Pavement" }, -- โรงเรียนคุโรกาเนะ
+}
+
+-- เนินที่ปั้นด้วย Terrain: ลาดชันคงที่ r0..r1 ยอดราบสูง top (บันไดศาลเจ้าวิ่งตามแนวลาดนี้)
+local Hills = {
+	{ x = 700, z = -150, r0 = 22, r1 = 58, top = 27 },
+}
+
+-- แอ่งน้ำ (ขุด Terrain แล้วเติมน้ำ): กล่อง {x1, x2, z1, z2}
+local Water = {
+	{ 875, 985, 430, 850 }, -- อ่าวท่าเรือ
 }
 
 local Bounds = { MinX = -1050, MaxX = 1050, MinZ = -450, MaxZ = 960 }
@@ -77,7 +97,19 @@ local Bounds = { MinX = -1050, MaxX = 1050, MinZ = -450, MaxZ = 960 }
 return {
 	Districts = Districts,
 	Roads = Roads,
+	Paved = Paved,
+	Hills = Hills,
+	Water = Water,
 	Bounds = Bounds,
+	-- ความสูงเนินที่ระยะ r จากศูนย์กลาง (ใช้ทั้ง TerrainBake และตอนวางบันได/ต้นไม้)
+	HillHeight = function(h: { x: number, z: number, r0: number, r1: number, top: number }, r: number): number
+		if r <= h.r0 then
+			return h.top
+		elseif r >= h.r1 then
+			return 0
+		end
+		return h.top * (h.r1 - r) / (h.r1 - h.r0)
+	end,
 	ById = function(id: string): District?
 		for _, d in Districts do
 			if d.Id == id then

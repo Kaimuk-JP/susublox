@@ -30,6 +30,50 @@ local function distanceToRoad(x, z)
 	return best
 end
 
+-- พื้นเมืองไม่ใช้หญ้า: Terrain Decoration (ใบหญ้า) ขึ้นเฉพาะวัสดุ Grass จึงโผล่ทะลุถนน/ทางเท้า
+local pavedMats = {
+	Cobblestone = Enum.Material.Cobblestone,
+	Pavement = Enum.Material.Pavement,
+	Concrete = Enum.Material.Concrete,
+}
+local function urbanMaterial(x, z)
+	for _, r in World.Roads do
+		local x1, z1, x2, z2 = math.min(r[1], r[3]), math.min(r[2], r[4]), math.max(r[1], r[3]), math.max(r[2], r[4])
+		local dx = math.max(x1 - x, 0, x - x2)
+		local dz = math.max(z1 - z, 0, z - z2)
+		if math.sqrt(dx * dx + dz * dz) < r[5] / 2 + 4 then
+			return Enum.Material.Asphalt
+		end
+	end
+	for _, p in World.Paved do
+		if x >= p[1] and x <= p[2] and z >= p[3] and z <= p[4] then
+			return pavedMats[p[5]]
+		end
+	end
+	return nil
+end
+
+local WATER_BED, WATER_TOP, SHORE = -9, 1, 18
+local function waterAmount(x, z) -- 1 = กลางแอ่งน้ำ, 0 = พ้นขอบลาด
+	local best = 0
+	for _, b in World.Water do
+		local dx = math.max(b[1] - x, 0, x - b[2])
+		local dz = math.max(b[3] - z, 0, z - b[4])
+		best = math.max(best, 1 - math.clamp(math.sqrt(dx * dx + dz * dz) / SHORE, 0, 1))
+	end
+	return best
+end
+
+local function hillAt(x, z)
+	local best, inside = 0, false
+	for _, h in World.Hills do
+		local r = math.sqrt((x - h.x) ^ 2 + (z - h.z) ^ 2)
+		best = math.max(best, World.HillHeight(h, r))
+		inside = inside or r < h.r1 + 6
+	end
+	return best, inside
+end
+
 local function smooth(t)
 	t = math.clamp(t, 0, 1)
 	return t * t * (3 - 2 * t)
@@ -53,11 +97,18 @@ end
 
 local function height(x, z)
 	local m = naturalMask(x, z)
-	if m <= 0 then
-		return 0
+	local h = 0
+	if m > 0 then
+		local n = math.noise(x / 180, z / 180, 3) * 22 + math.noise(x / 70, z / 70, 9) * 8 + math.noise(x / 28, z / 28, 17) * 2.5
+		h = math.max(n, -1) * m
 	end
-	local n = math.noise(x / 180, z / 180, 3) * 22 + math.noise(x / 70, z / 70, 9) * 8 + math.noise(x / 28, z / 28, 17) * 2.5
-	return math.max(n, -1) * m
+	h = math.max(h, (hillAt(x, z)))
+	local w = waterAmount(x, z)
+	if w > 0 then
+		local t = smooth(w * 1.6)
+		h = h * (1 - t) + WATER_BED * t
+	end
+	return h
 end
 
 terrain:Clear()
@@ -68,6 +119,10 @@ for mat, col in {
 	[Enum.Material.Ground] = Color3.fromRGB(118, 96, 66),
 	[Enum.Material.Mud] = Color3.fromRGB(92, 74, 54),
 	[Enum.Material.Rock] = Color3.fromRGB(118, 116, 110),
+	[Enum.Material.Asphalt] = Color3.fromRGB(74, 77, 92),
+	[Enum.Material.Pavement] = Color3.fromRGB(150, 150, 158),
+	[Enum.Material.Cobblestone] = Color3.fromRGB(150, 140, 128),
+	[Enum.Material.Concrete] = Color3.fromRGB(140, 142, 150),
 } do
 	terrain:SetMaterialColor(mat, col)
 end
@@ -77,9 +132,9 @@ local ny = math.ceil((MAX_Y - MIN_Y) / RES)
 for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องชิดกริด voxel
 	for cz = math.floor(B.MinZ / RES) * RES, B.MaxZ - 1, CHUNK do
 		-- คำนวณความสูง/วัสดุต่อคอลัมน์ครั้งเดียว (เร็วกว่าคำนวณทุก voxel มาก)
-		local colH, colMat = {}, {}
+		local colH, colMat, colWater = {}, {}, {}
 		for ix = 1, nx do
-			colH[ix], colMat[ix] = {}, {}
+			colH[ix], colMat[ix], colWater[ix] = {}, {}, {}
 			local x = cx + (ix - 0.5) * RES
 			for iz = 1, nz do
 				local z = cz + (iz - 0.5) * RES
@@ -96,7 +151,17 @@ for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องช
 				elseif patch < -0.55 then
 					mat = Enum.Material.Ground
 				end
-				colH[ix][iz], colMat[ix][iz] = h, mat
+				local _, onHill = hillAt(x, z)
+				if onHill then
+					mat = Enum.Material.Grass -- เนินศาลเจ้าเป็นหญ้า ไม่ใช่หิน
+				elseif h == 0 then
+					mat = urbanMaterial(x, z) or mat
+				end
+				local wet = waterAmount(x, z) > 0 and h < WATER_TOP - 1
+				if wet then
+					mat = Enum.Material.Sand
+				end
+				colH[ix][iz], colMat[ix][iz], colWater[ix][iz] = h, mat, wet
 			end
 		end
 		local materials, occupancy = {}, {}
@@ -110,6 +175,12 @@ for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องช
 					local mat = colMat[ix][iz]
 					if occ > 0 and y < -4 * RES - 0.5 then
 						mat = Enum.Material.Ground -- ชั้นดินใต้ผิว
+					end
+					if occ <= 0 and colWater[ix][iz] then
+						local wocc = math.clamp((WATER_TOP - SURFACE_OFFSET - (y - RES / 2)) / RES, 0, 1)
+						if wocc > 0 then
+							mat, occ = Enum.Material.Water, wocc
+						end
 					end
 					materials[ix][iy][iz] = occ > 0 and mat or Enum.Material.Air
 					occupancy[ix][iy][iz] = occ
