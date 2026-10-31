@@ -1,0 +1,87 @@
+--!strict
+-- HUD: หลอดเลือด พลังงาน ท่าไม้ตาย เลเวล/EXP และคูลดาวน์สกิล
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Config = require(ReplicatedStorage.Shared.CombatConfig)
+local player = Players.LocalPlayer
+
+local COLORS = {
+	Health = Color3.fromHex("EF233C"),
+	Stamina = Color3.fromHex("7EC8E3"),
+	Ult = Color3.fromHex("FFE066"),
+	Exp = Color3.fromHex("FFB7C5"),
+	Panel = Color3.fromHex("2B2D42"),
+}
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "Hud"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local function bar(name: string, y: number, color: Color3): (Frame, TextLabel)
+	local back = Instance.new("Frame")
+	back.Name = name
+	back.Size = UDim2.fromOffset(260, 18)
+	back.Position = UDim2.fromOffset(16, y)
+	back.BackgroundColor3 = COLORS.Panel
+	back.BackgroundTransparency = 0.2
+	back.Parent = gui
+	Instance.new("UICorner", back).CornerRadius = UDim.new(0, 9)
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = color
+	fill.Parent = back
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 9)
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.5
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 13
+	label.ZIndex = 2
+	label.Parent = back
+	return fill, label
+end
+
+local healthFill, healthLabel = bar("Health", 16, COLORS.Health)
+local staminaFill, staminaLabel = bar("Stamina", 40, COLORS.Stamina)
+local ultFill, ultLabel = bar("Ult", 64, COLORS.Ult)
+local expFill, expLabel = bar("Exp", 88, COLORS.Exp)
+
+local info = Instance.new("TextLabel")
+info.Position = UDim2.fromOffset(16, 112)
+info.Size = UDim2.fromOffset(260, 20)
+info.BackgroundTransparency = 1
+info.TextXAlignment = Enum.TextXAlignment.Left
+info.TextColor3 = Color3.new(1, 1, 1)
+info.TextStrokeTransparency = 0.4
+info.Font = Enum.Font.FredokaOne
+info.TextSize = 14
+info.Parent = gui
+
+local function set(fill: Frame, label: TextLabel, value: number, max: number, text: string)
+	fill.Size = UDim2.fromScale(math.clamp(value / math.max(max, 1), 0, 1), 1)
+	label.Text = text
+end
+
+RunService.RenderStepped:Connect(function()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if char and hum then
+		set(healthFill, healthLabel, hum.Health, hum.MaxHealth, `เลือด {math.ceil(hum.Health)}/{math.ceil(hum.MaxHealth)}`)
+		local maxStamina = (char:GetAttribute("MaxStamina") :: number?) or Config.BaseStamina
+		local stamina = (char:GetAttribute("Stamina") :: number?) or maxStamina
+		set(staminaFill, staminaLabel, stamina, maxStamina, `พลังงาน {math.floor(stamina)}`)
+		local ult = (char:GetAttribute("Ult") :: number?) or 0
+		set(ultFill, ultLabel, ult, Config.UltMax, if ult >= Config.UltMax then "ไม้ตายพร้อม! (G)" else `ไม้ตาย {math.floor(ult)}%`)
+	end
+	local exp = (player:GetAttribute("Exp") :: number?) or 0
+	local need = (player:GetAttribute("ExpNeeded") :: number?) or 100
+	set(expFill, expLabel, exp, need, `EXP {exp}/{need}`)
+	info.Text = `Lv.{player:GetAttribute("Level") or 1}  {player:GetAttribute("Rank") or ""}  ¥{player:GetAttribute("Yen") or 0}`
+end)

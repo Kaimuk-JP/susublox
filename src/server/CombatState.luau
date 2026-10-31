@@ -100,7 +100,8 @@ end
 
 function CombatState.Regen(self: CombatState, dt: number)
 	if self.State ~= "Blocking" then
-		self.Stamina = math.min(Config.BaseStamina, self.Stamina + Config.StaminaRegen * dt)
+		local max = (self.Character:GetAttribute("MaxStamina") :: number?) or Config.BaseStamina
+		self.Stamina = math.min(max, self.Stamina + Config.StaminaRegen * dt)
 	end
 end
 

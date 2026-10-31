@@ -73,6 +73,29 @@ local function notify(attacker: CombatState.CombatState, position: Vector3, amou
 	end
 end
 
+-- ตำแหน่งอยู่ในโซนปลอดภัย (Part ที่มี Attribute SafeZone) หรือไม่
+local safeZones: { BasePart } = {}
+local safeZonesAt = -math.huge
+function Combat.InSafeZone(position: Vector3): boolean
+	if os.clock() - safeZonesAt > 5 then -- รีเฟรชรายการทุก 5 วินาที
+		safeZonesAt = os.clock()
+		table.clear(safeZones)
+		for _, inst in workspace:GetDescendants() do
+			if inst:IsA("BasePart") and inst:GetAttribute("SafeZone") then
+				table.insert(safeZones, inst)
+			end
+		end
+	end
+	for _, zone in safeZones do
+		local p = zone.CFrame:PointToObjectSpace(position)
+		local h = zone.Size / 2
+		if math.abs(p.X) <= h.X and math.abs(p.Y) <= h.Y and math.abs(p.Z) <= h.Z then
+			return true
+		end
+	end
+	return false
+end
+
 -- โจมตี 1 ครั้ง ผ่านระบบบล็อก/สวน/เบี่ยง/พาสซีฟ
 function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.CombatState, amount: number, opts: HitOpts?)
 	local o: HitOpts = opts or {}
@@ -82,6 +105,9 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 		return
 	end
 
+	if Combat.InSafeZone(vroot.Position) or Combat.InSafeZone(aroot.Position) then
+		return
+	end
 	if os.clock() < victim.DeflectUntil then
 		return -- ปัด/หลอกการโจมตีทั้งหมด
 	end
