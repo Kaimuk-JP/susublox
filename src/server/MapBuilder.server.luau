@@ -181,7 +181,7 @@ end
 
 ---------------------------------------------------------------- Terrain: หญ้า น้ำ เนินเขา
 -- ผิว Terrain จริงสูงกว่าขอบบนของบล็อก ~2 stud (voxel 4 stud) จึงวางที่ -8 ให้ผิวหญ้าอยู่ที่ y≈0 เสมอกับพื้นชิ้นส่วน
-terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("93D58B"))
+terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("B2EBA6"))
 terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromHex("F3E3B8"))
 terrain:FillBlock(CFrame.new(0, -8, 110), Vector3.new(760, 12, 800), Enum.Material.LeafyGrass)
 
@@ -196,9 +196,9 @@ end
 -- สระน้ำฝั่งตะวันออก (125, 95) รัศมี 17
 terrain:FillCylinder(CFrame.new(125, -2, 95), 4, 21, Enum.Material.Sand) -- ชายหาดรอบสระ
 terrain:FillCylinder(CFrame.new(125, -1.5, 95), 9, 17, Enum.Material.Air) -- ขุดแอ่ง
-terrain:FillCylinder(CFrame.new(125, -4.5, 95), 3, 17, Enum.Material.Water)
-terrain.WaterColor = C.water
-terrain.WaterTransparency = 0.6
+terrain:FillCylinder(CFrame.new(125, -6, 95), 6, 17, Enum.Material.Water)
+terrain.WaterColor = Color3.fromHex("8FD8FF")
+terrain.WaterTransparency = 0.45
 terrain.WaterWaveSize = 0.12
 terrain.WaterReflectance = 0.5
 
@@ -342,9 +342,10 @@ box("TowerBody", -8, 8, 17, 58, -59, -51, C.wall, tower)
 box("TowerTrimA", -8.6, 8.6, 30, 31, -59.6, -50.4, C.trim, tower)
 box("TowerTrimB", -8.6, 8.6, 45, 46, -59.6, -50.4, C.trim, tower)
 -- นาฬิกา
+cylinder("ClockRim", 5.7, 0.4, Vector3.new(0, 50, -50.5), C.navy, tower).CFrame = CFrame.new(0, 50, -50.5) * CFrame.Angles(0, math.rad(90), 0)
 cylinder("ClockFace", 5, 0.5, Vector3.new(0, 50, -50.2), C.white, tower).CFrame = CFrame.new(0, 50, -50.2) * CFrame.Angles(0, math.rad(90), 0)
-local hourHand = box("ClockHour", -0.25, 0.25, 50, 53, -50.5, -50.3, C.navy, tower)
-local minuteHand = box("ClockMinute", 0.8, 3.8, 49.75, 50.25, -50.5, -50.3, C.navy, tower)
+local hourHand = box("ClockHour", -0.25, 0.25, 50, 53.2, -49.9, -49.6, C.navy, tower)
+local minuteHand = box("ClockMinute", 0, 3.8, 49.75, 50.25, -49.9, -49.6, C.navy, tower)
 hourHand.Name, minuteHand.Name = "ClockHour", "ClockMinute"
 -- หลังคาเป็นขั้น + ยอดแหลม
 box("TowerRoof1", -10, 10, 58, 60, -61, -49, C.roof, tower)
@@ -380,6 +381,9 @@ for wx = 86, 174, 11 do
 		g.Transparency = 0.35
 		g.CanCollide = false
 	end
+end
+for _, z in { -20, 0, 20 } do
+	box("GymRoofStripe", 82, 178, 21, 21.12, z - 1.2, z + 1.2, C.trim, gym)
 end
 sign(gym, "GYM", Vector3.new(14, 4, 0.4), Vector3.new(79.4, 15, 0), 90, C.navy, C.yellow)
 -- เส้นสนามบาส
@@ -420,6 +424,9 @@ box("CafeWallEb", -101, -100, 0, 12, 7, 25, C.wall, cafe)
 box("CafeDoorTop", -101, -100, 9, 12, -7, 7, C.wall, cafe)
 box("CafeRoof", -161, -99, 12, 13, -26, 26, C.roof, cafe)
 box("CafeRoofTrim", -161.5, -98.5, 12, 12.8, -26.5, 26.5, C.trim, cafe)
+for _, z in { -12, 0, 12 } do
+	box("CafeRoofStripe", -158, -102, 13, 13.12, z - 1, z + 1, C.trim, cafe)
+end
 sign(cafe, "CAFETERIA", Vector3.new(16, 3.2, 0.4), Vector3.new(-99.4, 10.5, 0), -90, C.red, C.white)
 -- กระจกหน้าต่างยาว ผนังเหนือ-ใต้
 for wx = -152, -108, 11 do
@@ -489,18 +496,31 @@ end
 box("WarGateL", -11, -9, 0, 9, 207.5, 210.5, C.trim, war)
 box("WarGateR", 9, 11, 0, 9, 207.5, 210.5, C.trim, war)
 box("WarGateTop", -11, 11, 9, 11, 207.5, 210.5, C.trim, war)
+-- ขอบกำแพง + ธงผ้าสีประจำฝั่งตามผนังด้านใน
+box("WarCapN_a", -52, -10, 5, 5.5, 207.6, 210.4, C.trim, war)
+box("WarCapN_b", 10, 52, 5, 5.5, 207.6, 210.4, C.trim, war)
+box("WarCapS", -52, 52, 5, 5.5, 309.6, 312.4, C.trim, war)
+for _, x in { -52, 51 } do
+	box("WarCapSide", x - 0.4, x + 2.4, 5, 5.5, 207.6, 312.4, C.trim, war)
+end
+for z = 220, 300, 20 do
+	local color = if z < 260 then C.red else C.blue
+	for _, x in { -49.8, 49.8 } do
+		box("WarBanner", x - 0.1, x + 0.1, 1.2, 4.6, z - 2, z + 2, color, war)
+	end
+end
 sign(war, "WAR ARENA", Vector3.new(16, 2.4, 0.4), Vector3.new(0, 9.8, 207.2), 0, C.navy, C.yellow)
 for _, c in { { -50, 210 }, { 50, 210 }, { -50, 310 }, { 50, 310 } } do
 	cylinder("FloodPole", 0.6, 22, Vector3.new(c[1], 11, c[2]), C.darkConcrete, war)
 	local lamp = part("FloodLamp", Vector3.new(4, 1.4, 2), Vector3.new(c[1], 22.5, c[2]), C.white, war, Enum.Material.Neon)
 	noCollide(lamp)
-	pointLight(lamp, Color3.fromHex("FFF8E8"), 60, 1.6)
+	pointLight(lamp, Color3.fromHex("FFF8E8"), 45, 0.9)
 end
 -- ธงประจำฝั่ง
-cylinder("FlagPoleRed", 0.3, 14, Vector3.new(0, 7, 218), C.white, war)
-box("FlagRed", 0.3, 6, 10, 14, 217.8, 218.2, C.red, war)
-cylinder("FlagPoleBlue", 0.3, 14, Vector3.new(0, 7, 302), C.white, war)
-box("FlagBlue", 0.3, 6, 10, 14, 301.8, 302.2, C.blue, war)
+cylinder("FlagPoleRed", 0.3, 14, Vector3.new(16, 7, 218), C.white, war)
+box("FlagRed", 16.3, 22, 10, 14, 217.8, 218.2, C.red, war)
+cylinder("FlagPoleBlue", 0.3, 14, Vector3.new(-16, 7, 302), C.white, war)
+box("FlagBlue", -15.7, -10, 10, 14, 301.8, 302.2, C.blue, war)
 box("CoverRed", -12, -6, 0.3, 4, 225, 229, C.red, war)
 box("CoverRed", 6, 12, 0.3, 4, 225, 229, C.red, war)
 box("CoverBlue", -12, -6, 0.3, 4, 291, 295, C.blue, war)
@@ -538,7 +558,7 @@ for _, p in {
 	sakura(p[1], p[2], 1)
 end
 -- ต้นซากุระฉากหลัง (ใหญ่กว่า)
-for _, p in { { -100, 60 }, { 100, 60 }, { -170, 50 }, { 20, 160 }, { -20, 180 }, { 70, 25 } } do
+for _, p in { { -100, 40 }, { 100, 60 }, { -170, 50 }, { 20, 160 }, { -20, 180 }, { 70, 25 } } do
 	sakura(p[1], p[2], 1.3)
 end
 
@@ -644,8 +664,8 @@ box("Flag", 0.5, 8, 19, 24, 29.7, 30.3, C.red, props)
 -- ตู้กดน้ำริมทางเดินโรงอาหาร + ที่จอดจักรยาน + ถังขยะ
 for i, color in { C.red, C.blue } do
 	local z = -22 - i * 3.2
-	box("YardVending", -79, -76, 0.3, 6.8, z, z + 2.8, color, props)
-	local panel = part("YardVendingPanel", Vector3.new(0.2, 4, 2), Vector3.new(-75.9, 4, z + 1.4), C.white, props, Enum.Material.Neon)
+	box("YardVending", -77, -74, 0.3, 6.8, z, z + 2.8, color, props)
+	local panel = part("YardVendingPanel", Vector3.new(0.2, 4, 2), Vector3.new(-73.9, 4, z + 1.4), C.white, props, Enum.Material.Neon)
 	noCollide(panel)
 	pointLight(panel, C.white, 10, 0.7)
 end
@@ -661,7 +681,9 @@ end
 ---------------------------------------------------------------- สนามกีฬา (ฝั่งตะวันตกเฉียงใต้) x -140..-50, z 55..125
 local field = folder("Field")
 box("TrackOuter", -142, -48, -3, 0.28, 52, 128, C.track, field)
-box("FieldGrass", -137, -53, 0.28, 0.4, 57, 123, C.grassField, field, Enum.Material.Grass)
+for i = 0, 7 do -- ลายตัดหญ้าสลับสี
+	box("FieldGrass", -137 + i * 10.5, -137 + (i + 1) * 10.5, 0.28, 0.4, 57, 123, if i % 2 == 0 then C.grassField else Color3.fromHex("8CCB7A"), field, Enum.Material.Grass)
+end
 for _, def in { { -137, -53, 56.7, 57.3 }, { -137, -53, 122.7, 123.3 }, { -137.3, -136.7, 57, 123 }, { -53.3, -52.7, 57, 123 }, { -95.3, -94.7, 57, 123 } } do
 	box("FieldLine", def[1], def[2], 0.4, 0.45, def[3], def[4], C.white, field)
 end
@@ -702,10 +724,10 @@ end
 for i = 1, 9 do
 	local a = rng:NextNumber(0, math.pi * 2)
 	local r = rng:NextNumber(2, 13)
-	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, -0.9, 95 + math.sin(a) * r), Color3.fromHex("5FBF7A"), pond)
+	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, 0.06, 95 + math.sin(a) * r), Color3.fromHex("5FBF7A"), pond)
 	pad.CanCollide = false
 	if i % 3 == 0 then
-		local flower = ball("Lotus", 0.9, Vector3.new(pad.Position.X, -0.65, pad.Position.Z), C.trim, pond)
+		local flower = ball("Lotus", 0.9, Vector3.new(pad.Position.X, 0.3, pad.Position.Z), C.trim, pond)
 		flower.CanCollide = false
 	end
 end
@@ -775,11 +797,11 @@ Lighting.GlobalShadows = true
 Lighting.ClockTime = 14
 
 local atmosphere = Instance.new("Atmosphere")
-atmosphere.Color = Color3.fromHex("CFE6FF")
-atmosphere.Decay = Color3.fromHex("FFD5C8")
-atmosphere.Density = 0.25
-atmosphere.Haze = 1.0
-atmosphere.Glare = 0.2
+atmosphere.Color = Color3.fromHex("D6EBFF")
+atmosphere.Decay = Color3.fromHex("FFE3D6")
+atmosphere.Density = 0.3
+atmosphere.Haze = 0.4
+atmosphere.Glare = 0
 atmosphere.Parent = Lighting
 local bloom = Instance.new("BloomEffect")
 bloom.Intensity = 0.3
