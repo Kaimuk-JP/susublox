@@ -71,6 +71,12 @@ local function addExp(player: Player, amount: number)
 	if not p then
 		return
 	end
+	if p.Passes.Exp2x then
+		amount *= 2
+	end
+	if os.time() < p.ExpBoostUntil then
+		amount *= 2
+	end
 	local level, exp, points = Progression.AddExp(p.Level, p.Exp, amount, p.Prestige)
 	p.Level, p.Exp = level, exp
 	p.StatPoints += points

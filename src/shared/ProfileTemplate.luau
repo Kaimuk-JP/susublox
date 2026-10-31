@@ -18,6 +18,12 @@ export type Profile = {
 	Losses: number,
 	Quests: { DailyReset: number, WeeklyReset: number, Progress: { [string]: number }, Claimed: { [string]: boolean } },
 	Login: { Streak: number, Last: number },
+	RankPoints: number,
+	Gang: string,
+	Owned: { string },
+	Passes: { [string]: boolean },
+	ExpBoostUntil: number,
+	Receipts: { [string]: boolean },
 }
 
 local CURRENT_VERSION = 1
@@ -44,6 +50,12 @@ function ProfileTemplate.new(): Profile
 		Losses = 0,
 		Quests = { DailyReset = 0, WeeklyReset = 0, Progress = {}, Claimed = {} },
 		Login = { Streak = 0, Last = 0 },
+		RankPoints = 0,
+		Gang = "",
+		Owned = {},
+		Passes = {},
+		ExpBoostUntil = 0,
+		Receipts = {},
 	}
 end
 
