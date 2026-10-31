@@ -114,9 +114,39 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 	model.Name = "Building"
 	model.Parent = parent
 	local y0 = o.BaseY or 0
-	BK.box("Walls", cx - w / 2, cx + w / 2, y0, y0 + h, cz - d / 2, cz + d / 2, wall, model)
-	BK.box("RoofSlab", cx - w / 2 - 0.6, cx + w / 2 + 0.6, y0 + h, y0 + h + 0.8, cz - d / 2 - 0.6, cz + d / 2 + 0.6, roof, model)
-	BK.box("BaseTrim", cx - w / 2 - 0.3, cx + w / 2 + 0.3, y0, y0 + 1, cz - d / 2 - 0.3, cz + d / 2 + 0.3, hex("8E94A3"), model)
+	BK.box("Walls", cx - w / 2, cx + w / 2, y0, y0 + h, cz - d / 2, cz + d / 2, wall, model, o.Material or Enum.Material.Concrete)
+	BK.box("RoofSlab", cx - w / 2 - 0.6, cx + w / 2 + 0.6, y0 + h, y0 + h + 0.8, cz - d / 2 - 0.6, cz + d / 2 + 0.6, roof, model, Enum.Material.Slate)
+	BK.box("BaseTrim", cx - w / 2 - 0.3, cx + w / 2 + 0.3, y0, y0 + 1, cz - d / 2 - 0.3, cz + d / 2 + 0.3, hex("8E94A3"), model, Enum.Material.Concrete)
+	if o.Detail ~= false and h > 10 then
+		-- ช่องระบายบนดาดฟ้า + ขอบกันตก
+		for _ = 1, 2 do
+			local vx = cx + BK.rng:NextNumber(-w / 2 + 3, w / 2 - 3)
+			local vz = cz + BK.rng:NextNumber(-d / 2 + 3, d / 2 - 3)
+			BK.box("RoofVent", vx - 1.2, vx + 1.2, y0 + h + 0.8, y0 + h + 2.6, vz - 1.2, vz + 1.2, hex("8E94A3"), model, Enum.Material.Metal)
+		end
+		BK.box("RoofParapetN", cx - w / 2 - 0.6, cx + w / 2 + 0.6, y0 + h + 0.8, y0 + h + 1.7, cz - d / 2 - 0.6, cz - d / 2 - 0.3, hex("8E94A3"), model, Enum.Material.Concrete)
+		BK.box("RoofParapetS", cx - w / 2 - 0.6, cx + w / 2 + 0.6, y0 + h + 0.8, y0 + h + 1.7, cz + d / 2 + 0.3, cz + d / 2 + 0.6, hex("8E94A3"), model, Enum.Material.Concrete)
+		-- เครื่องปรับอากาศใต้หน้าต่างบางบาน
+		local acRows = math.max(1, math.floor((h - 3) / 6.5))
+		for r = 0, acRows - 1 do
+			if BK.rng:NextNumber() > 0.55 then
+				local ax = cx + BK.rng:NextNumber(-w / 2 + 4, w / 2 - 4)
+				local side = if BK.rng:NextNumber() > 0.5 then 1 else -1
+				local ay = y0 + 3 + r * 6.5
+				BK.box("AirCon", ax - 1.4, ax + 1.4, ay, ay + 1.6, math.min(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), math.max(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), hex("D8D8E0"), model, Enum.Material.Metal)
+			end
+		end
+		-- ท่อน้ำที่มุมด้านหน้า
+		for _, sx in { -1, 1 } do
+			BK.cylinder("Drainpipe", 0.25, h, Vector3.new(cx + sx * (w / 2 - 0.4), y0 + h / 2, cz + d / 2 + 0.3), hex("6B7280"), model, Enum.Material.Metal)
+		end
+		-- ระเบียงบางชั้น
+		if h > 16 and BK.rng:NextNumber() > 0.4 then
+			local by = y0 + 3 + 6.5
+			BK.box("Balcony", cx - 5, cx + 5, by, by + 0.4, cz + d / 2, cz + d / 2 + 2.2, hex("C9CED6"), model, Enum.Material.Concrete)
+			BK.box("BalconyRail", cx - 5, cx + 5, by + 0.4, by + 1.6, cz + d / 2 + 2, cz + d / 2 + 2.2, hex("2B2D42"), model, Enum.Material.Metal)
+		end
+	end
 	if o.Windows ~= false then
 		local cols = math.max(1, math.floor((w - 3) / 7))
 		local rows = math.max(1, math.floor((h - 3) / 6.5))
@@ -164,7 +194,7 @@ function BK.road(parent: Instance, x1: number, z1: number, x2: number, z2: numbe
 	local horizontal = (ax2 - ax1) >= (az2 - az1)
 	local asphalt = hex("4A4D5C")
 	if horizontal then
-		BK.box("Road", ax1, ax2, 0, 0.3, az1 - width / 2, az1 + width / 2, asphalt, parent)
+		BK.box("Road", ax1, ax2, 0, 0.3, az1 - width / 2, az1 + width / 2, asphalt, parent, Enum.Material.Asphalt)
 		for _, side in { -1, 1 } do
 			BK.box("Curb", ax1, ax2, 0, 0.55, az1 + side * (width / 2) - (if side == 1 then 0 else -0.4), az1 + side * (width / 2) + (if side == 1 then 0.4 else 0), hex("D8D8E0"), parent)
 		end
@@ -172,7 +202,7 @@ function BK.road(parent: Instance, x1: number, z1: number, x2: number, z2: numbe
 			BK.box("Dash", x, x + 5, 0.3, 0.34, az1 - 0.2, az1 + 0.2, hex("FFE066"), parent)
 		end
 	else
-		BK.box("Road", ax1 - width / 2, ax1 + width / 2, 0, 0.3, az1, az2, asphalt, parent)
+		BK.box("Road", ax1 - width / 2, ax1 + width / 2, 0, 0.3, az1, az2, asphalt, parent, Enum.Material.Asphalt)
 		for _, side in { -1, 1 } do
 			BK.box("Curb", ax1 + side * (width / 2) - (if side == 1 then 0 else -0.4), ax1 + side * (width / 2) + (if side == 1 then 0.4 else 0), 0, 0.55, az1, az2, hex("D8D8E0"), parent)
 		end

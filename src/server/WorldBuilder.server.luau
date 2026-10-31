@@ -53,7 +53,8 @@ for _, wall in {
 end
 
 -- ปูหญ้าเป็นแผ่น ๆ (ไม่ทับพื้นที่โรงเรียนที่ MapBuilder เติมไว้แล้ว ซ้ำก็ไม่เสียหาย)
-do
+-- ถ้าปั้นภูมิประเทศธรรมชาติไว้ใน Place แล้ว (tools/TerrainBake.luau ตั้ง TerrainBaked) จะไม่ปูทับ
+if workspace:GetAttribute("TerrainBaked") ~= true then
 	local tile = 400
 	for x = B.MinX, B.MaxX - 1, tile do
 		for z = B.MinZ, B.MaxZ - 1, tile do
