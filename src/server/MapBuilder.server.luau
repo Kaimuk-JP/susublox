@@ -315,7 +315,15 @@ npcs.Name = "Npcs"
 npcs.Parent = workspace
 
 task.spawn(function()
-	for i = 1, 4 do
-		RigFactory.Create("Gangster", Vector3.new(-15 + i * 8, 4, 110), npcs, { NpcLevel = 1 }, C.red)
+	-- ศัตรู 3 แบบ: ธรรมดา x3, เร็ว x1, ตัวหนัก x1 (เกิดใหม่เองหลังตายโดย NpcService)
+	local spawns = {
+		{ "Gangster", "Grunt", 1, C.red, -20 },
+		{ "Gangster", "Grunt", 1, C.red, -10 },
+		{ "Gangster", "Grunt", 2, C.red, 0 },
+		{ "Speedy", "Speedy", 2, Color3.fromHex("FFE066"), 10 },
+		{ "Brute", "Brute", 3, C.dark, 20 },
+	}
+	for _, s in spawns do
+		RigFactory.Create(s[1], Vector3.new(s[5], 4, 110), npcs, { NpcLevel = s[3], NpcType = s[2] }, s[4])
 	end
 end)

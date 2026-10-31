@@ -59,11 +59,12 @@ end
 
 local last: { [string]: number } = {}
 local function track(name: string, onIncrease: (delta: number, value: number) -> ())
-	local first = true
+	-- ข้ามเฉพาะค่าแรกที่เซิร์ฟเวอร์ตั้งตอนโหลด (ถ้าตอนเริ่มยังไม่มีค่า) ไม่ข้ามการเพิ่มครั้งแรกจริง
+	local initializing = player:GetAttribute(name) == nil
 	player:GetAttributeChangedSignal(name):Connect(function()
 		local v = (player:GetAttribute(name) :: number?) or 0
-		if first then
-			first = false
+		if initializing then
+			initializing = false
 			last[name] = v
 			return
 		end

@@ -49,6 +49,22 @@ local function replicate(player: Player)
 	player:SetAttribute("Fame", p.Fame)
 	player:SetAttribute("Rank", rankOf(p.Fame))
 	player:SetAttribute("StatPoints", p.StatPoints)
+	-- ตารางอันดับมุมขวาบน (leaderstats ของ Roblox)
+	local ls = player:FindFirstChild("leaderstats")
+	if not ls then
+		ls = Instance.new("Folder")
+		ls.Name = "leaderstats"
+		ls.Parent = player
+	end
+	for name, value in { Lv = p.Level, Fame = p.Fame, Wins = p.Wins, Rank = p.RankPoints } do
+		local v = ls:FindFirstChild(name) :: IntValue?
+		if not v then
+			v = Instance.new("IntValue")
+			v.Name = name
+			v.Parent = ls
+		end
+		(v :: IntValue).Value = value
+	end
 	player:SetAttribute("Style", p.EquippedStyle)
 	for stat, value in p.Stats :: any do
 		player:SetAttribute("Stat_" .. stat, value)
