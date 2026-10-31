@@ -72,6 +72,27 @@ feedback.OnClientEvent:Connect(function(kind: string, position: Vector3, amount:
 	end
 end)
 
+-- เสียงวูบตอนออกท่าของเรา (ชก/พุ่ง/สกิล) และเสียงบล็อก
+local function watchOwnAnim(character: Model)
+	character:GetAttributeChangedSignal("Anim"):Connect(function()
+		local value = character:GetAttribute("Anim")
+		if typeof(value) ~= "string" then
+			return
+		end
+		local name = value:split(":")[1]
+		if name == "Block" then
+			play("Block")
+		elseif name ~= "BlockEnd" and name ~= "Hit" and name ~= "Knockdown" and name ~= "BlockHit" then
+			play("Whoosh")
+		end
+	end)
+end
+local localPlayer = Players.LocalPlayer
+if localPlayer.Character then
+	watchOwnAnim(localPlayer.Character)
+end
+localPlayer.CharacterAdded:Connect(watchOwnAnim)
+
 -- เสียงเมื่อเลเวลขึ้น
 local lastLevel = 0
 Players.LocalPlayer:GetAttributeChangedSignal("Level"):Connect(function()
