@@ -175,13 +175,13 @@ local function activate(player: Player, key: string)
 		s.Ult = 0
 		Combat.Emit("Ultimate", s)
 	else
-		-- สกิล Z X C V กินมานา: ไม่พอก็ไม่ใช้ (ไม่เสียคูลดาวน์) แล้วแจ้ง client
+		-- สกิล Z X C V กินพลังงาน (หลอดเดียวกับแดช/บล็อก): ไม่พอก็ไม่ใช้ (ไม่เสียคูลดาวน์) แล้วแจ้ง client
 		local cost = StyleData.SkillCost(skill)
-		if s.Mana < cost then
+		if s.Stamina < cost then
 			player:SetAttribute("NoManaAt", workspace:GetServerTimeNow())
 			return
 		end
-		s.Mana -= cost
+		s.Stamina -= cost
 	end
 	s.SkillReady[key] = now + skill.Cooldown
 	s.State = "Attacking"

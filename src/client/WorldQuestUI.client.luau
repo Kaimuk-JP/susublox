@@ -138,7 +138,7 @@ end)
 
 ---------------------------------------------------------------- ตัวติดตามภารกิจ + ลูกศร
 local tracker = Instance.new("Frame")
-tracker.Position = UDim2.fromOffset(16, 200)
+tracker.Position = UDim2.fromOffset(16, 178)
 tracker.Size = UDim2.fromOffset(280, 0)
 tracker.AutomaticSize = Enum.AutomaticSize.Y
 tracker.BackgroundTransparency = 1

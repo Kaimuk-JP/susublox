@@ -116,7 +116,7 @@ RunService.RenderStepped:Connect(function()
 	for _, s in slots do
 		local isUlt = s.Key == "U"
 		local skill = if isUlt then style.Ultimate else (style.Skills :: any)[s.Key]
-		s.Name.Text = if isUlt then skill.Name else `{skill.Name}\n💧{StyleData.SkillCost(skill)}`
+		s.Name.Text = if isUlt then skill.Name else `{skill.Name}\n⚡{StyleData.SkillCost(skill)}`
 		local need = StyleData.MasteryUnlock[if isUlt then "Ultimate" else s.Key]
 		if mastery < need then
 			s.Lock.Visible = true

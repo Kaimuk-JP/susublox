@@ -12,6 +12,22 @@ local VERSION = 3
 local running = RunService:IsRunning()
 local prebuilt = workspace:FindFirstChild("World")
 if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttribute("Version") == VERSION then
+	-- โลกสร้างไว้แล้ว แต่ถ้าไม่ได้ปั้นภูมิประเทศ MapBuilder จะล้าง Terrain ตอนเริ่ม ต้องปูหญ้าเรียบใหม่ไม่งั้นไม่มีพื้น
+	if workspace:GetAttribute("TerrainBaked") ~= true then
+		task.wait(2)
+		local started = os.clock()
+		while workspace:GetAttribute("SchoolMapReady") ~= true and os.clock() - started < 240 do
+			task.wait(0.5)
+		end
+		local B = World.Bounds
+		local tile = 400
+		for x = B.MinX, B.MaxX - 1, tile do
+			for z = B.MinZ, B.MaxZ - 1, tile do
+				workspace.Terrain:FillBlock(CFrame.new(x + tile / 2, -6, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.Grass)
+			end
+			task.wait()
+		end
+	end
 	return true
 end
 

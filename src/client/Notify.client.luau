@@ -57,12 +57,12 @@ local function banner(text: string)
 	end)
 end
 
--- มานาไม่พอ: เตือนด้วยข้อความฟ้า (เซิร์ฟเวอร์ตั้ง NoManaAt ตอนปฏิเสธสกิล)
+-- พลังงานไม่พอใช้สกิล: เตือนด้วยข้อความฟ้า (เซิร์ฟเวอร์ตั้ง NoManaAt ตอนปฏิเสธสกิล)
 local lastNoMana = 0
 player:GetAttributeChangedSignal("NoManaAt"):Connect(function()
 	if os.clock() - lastNoMana > 0.5 then
 		lastNoMana = os.clock()
-		floatText("มานาไม่พอ!", Color3.fromHex("8FA0FF"), -30, 22)
+		floatText("พลังงานไม่พอ!", Color3.fromHex("7EC8E3"), -30, 22)
 	end
 end)
 

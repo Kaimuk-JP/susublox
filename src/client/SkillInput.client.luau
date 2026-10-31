@@ -24,12 +24,12 @@ local function canUse(key: string): boolean
 	if workspace:GetServerTimeNow() < readyAt then
 		return false
 	end
-	-- มานาพอไหม (ไม่พอก็ไม่ทำนายท่า server จะปฏิเสธ)
+	-- พลังงานพอไหม (ไม่พอก็ไม่ทำนายท่า server จะปฏิเสธ)
 	local styleId = player:GetAttribute("Style")
 	local style = typeof(styleId) == "string" and StyleData.Styles[styleId]
-	local mana = player.Character and player.Character:GetAttribute("Mana")
-	if style and typeof(mana) == "number" then
-		return mana >= StyleData.SkillCost((style.Skills :: any)[key])
+	local energy = player.Character and player.Character:GetAttribute("Stamina")
+	if style and typeof(energy) == "number" then
+		return energy >= StyleData.SkillCost((style.Skills :: any)[key])
 	end
 	return true
 end
