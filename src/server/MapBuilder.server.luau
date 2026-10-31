@@ -487,10 +487,13 @@ pointLight(cafeLight, Color3.fromHex("FFF3E0"), 40, 1.2)
 
 ---------------------------------------------------------------- หลังโรงเรียน (x -30..30, z 90..130) ซอยเท่ๆ
 local lot = folder("BackLot")
-box("FenceN", -30, 30, 0, 7, 129.5, 130, C.darkConcrete, lot)
+-- เว้นช่องทางเดินทะลุทางเหนือ (x -5..5) ให้ผู้เล่นเดินผ่านซอยไปได้
+box("FenceN", -30, -5, 0, 7, 129.5, 130, C.darkConcrete, lot)
+box("FenceN", 5, 30, 0, 7, 129.5, 130, C.darkConcrete, lot)
 box("FenceW", -30, -29.5, 0, 7, 90, 130, C.darkConcrete, lot)
 box("FenceE", 29.5, 30, 0, 7, 90, 130, C.darkConcrete, lot)
 for i, color in { Color3.fromHex("FF4D8D"), Color3.fromHex("4DE1FF"), C.yellow, Color3.fromHex("9B7BFF") } do
+	if i == 2 then continue end -- อยู่ตรงช่องทางเดิน
 	local g = box("Graffiti", -26 + i * 11, -20 + i * 11, 1.5, 5.5, 129.3, 129.5, color, lot, Enum.Material.Neon)
 	g.Transparency = 0.15
 end
