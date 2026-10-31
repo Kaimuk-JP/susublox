@@ -114,7 +114,7 @@ local function spawnDistrict(d: World.District)
 		return
 	end
 	st.Spawning = true
-	local count = 8 + math.floor(d.Radius / 25)
+	local count = 6 + math.floor(d.Radius / 45) -- ไม่มากเกินไป (ค่ายแก๊งมีลูกน้องเพิ่มอีกค่ายละ 7)
 	for _ = 1, count do
 		local pos = findSpawn(d)
 		if pos then

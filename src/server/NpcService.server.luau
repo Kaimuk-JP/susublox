@@ -30,6 +30,10 @@ local function runAI(npc: Model)
 	local s = Combat.Register(npc)
 	local hum = npc:WaitForChild("Humanoid") :: Humanoid
 	local root = npc:WaitForChild("HumanoidRootPart") :: BasePart
+	-- ให้เซิร์ฟเวอร์เป็นเจ้าของฟิสิกส์ NPC (ไม่ให้เครื่องผู้เล่นที่อยู่ใกล้ต้องคำนวณมอนเป็นสิบตัว ทำให้เครื่องแลค)
+	pcall(function()
+		root:SetNetworkOwner(nil)
+	end)
 	local level = (npc:GetAttribute("NpcLevel") :: number?) or 1
 	s.IsBoss = npc:GetAttribute("IsBoss") == true
 	-- ชนิดศัตรู: Grunt ธรรมดา / Speedy เร็วเลือดน้อย / Brute ช้าเลือดเยอะตีแรง
@@ -45,6 +49,7 @@ local function runAI(npc: Model)
 	local parent = npc.Parent -- ต้องจำไว้ก่อน เพราะ npc:Destroy() จะทำให้ Parent เป็น nil
 
 	task.spawn(function()
+		task.wait(math.random() * THINK_INTERVAL) -- กระจายเวลาคิดของมอน ไม่ให้ทำงานพร้อมกันทีเดียวทั้งฝูง
 		while hum.Health > 0 and npc.Parent do
 			local target = nearestPlayerRoot(root.Position)
 			if target then

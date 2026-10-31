@@ -1,14 +1,14 @@
 --!strict
 -- สกิลติดตัว ใส่ได้ 2 ช่อง ปลดล็อกตามเลเวลหลัก
-export type Passive = { Name: string, UnlockLevel: number }
+export type Passive = { Name: string, UnlockLevel: number, Desc: string }
 
 local Passives: { [string]: Passive } = {
-	FightingSpirit = { Name = "ใจสู้", UnlockLevel = 5 }, -- เลือด <30% ดาเมจ +15%
-	QuickRecovery = { Name = "ฟื้นตัวไว", UnlockLevel = 15 }, -- ลุกจากล้มเร็วขึ้น 40%
-	FireFeet = { Name = "เท้าไฟ", UnlockLevel = 25 }, -- Dash คูลดาวน์ -25%
-	IronWall = { Name = "กำแพงเหล็ก", UnlockLevel = 40 }, -- บล็อกเสียพลังงานน้อยลง 30%
-	BossHunter = { Name = "นักล่าบอส", UnlockLevel = 60 }, -- ดาเมจต่อบอส +20%
-	King = { Name = "ราชันย์", UnlockLevel = 80 }, -- ท่าไม้ตายชาร์จเร็วขึ้น 20%
+	FightingSpirit = { Name = "ใจสู้", UnlockLevel = 5, Desc = "เลือดต่ำกว่า 30% ดาเมจ +15%" },
+	QuickRecovery = { Name = "ฟื้นตัวไว", UnlockLevel = 15, Desc = "ลุกจากการล้ม/มึนเร็วขึ้น 40%" },
+	FireFeet = { Name = "เท้าไฟ", UnlockLevel = 25, Desc = "คูลดาวน์การหลบ (Dash) ลด 25%" },
+	IronWall = { Name = "กำแพงเหล็ก", UnlockLevel = 40, Desc = "บล็อกเสียพลังงานน้อยลง 30%" },
+	BossHunter = { Name = "นักล่าบอส", UnlockLevel = 60, Desc = "ดาเมจต่อบอสเพิ่ม 20%" },
+	King = { Name = "ราชันย์", UnlockLevel = 80, Desc = "หลอดท่าไม้ตายชาร์จเร็วขึ้น 20%" },
 }
 
 local MAX_SLOTS = 2

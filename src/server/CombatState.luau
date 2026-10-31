@@ -17,6 +17,7 @@ export type Data = {
 	LastDash: number,
 	BlockStart: number,
 	StunUntil: number,
+	StunImmuneUntil: number,
 	RootUntil: number,
 	Equipped: { string }, -- passive ที่ใส่อยู่
 	IsBoss: boolean,
@@ -38,6 +39,7 @@ function CombatState.new(character: Model): CombatState
 		LastDash = 0,
 		BlockStart = 0,
 		StunUntil = 0,
+		StunImmuneUntil = 0,
 		RootUntil = 0,
 		Equipped = {},
 		IsBoss = false,
@@ -55,15 +57,36 @@ function CombatState.CanAct(self: CombatState): boolean
 	return self.State == "Idle" and os.clock() >= self.RootUntil
 end
 
+-- ผู้เล่นที่ถูกมอนรุมต้องไม่ติดสตันตลอด: หลังหลุดสตัน/ลุกจากล้มมีช่วงภูมิคุ้มกันสตัน (กันสตันล็อก)
+local STUN_IMMUNITY = 0.7
+local KNOCKDOWN_IMMUNITY = 1.2
+
+local function isPlayer(self: CombatState): boolean
+	return game:GetService("Players"):GetPlayerFromCharacter(self.Character) ~= nil
+end
+
 function CombatState.Stun(self: CombatState, duration: number)
+	local now = os.clock()
+	if isPlayer(self) and now < self.StunImmuneUntil then
+		return
+	end
+	local d = duration * Passives.StunRecoveryMultiplier(self.Equipped)
 	self.State = "Stunned"
-	self.StunUntil = os.clock() + duration * Passives.StunRecoveryMultiplier(self.Equipped)
+	self.StunUntil = now + d
+	if isPlayer(self) then
+		self.StunImmuneUntil = now + d + STUN_IMMUNITY
+	end
 	self.Combo = 0
 end
 
 function CombatState.Knockdown(self: CombatState, duration: number)
+	local now = os.clock()
+	local d = duration * Passives.StunRecoveryMultiplier(self.Equipped)
 	self.State = "Ragdoll"
-	self.StunUntil = os.clock() + duration * Passives.StunRecoveryMultiplier(self.Equipped)
+	self.StunUntil = now + d
+	if isPlayer(self) then
+		self.StunImmuneUntil = now + d + KNOCKDOWN_IMMUNITY
+	end
 	self.Combo = 0
 end
 

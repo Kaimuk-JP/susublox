@@ -521,6 +521,8 @@ local function playTrack(character: Model, state: CharState, name: string, track
 	return animTrack
 end
 
+local predictedAt: { [string]: number } = {} -- ตระกูลท่า -> เวลาที่ client ทำนายท่าล่าสุด
+
 local function start(character: Model, name: string)
 	local id = Assets.Animations[name]
 	if id and id ~= 0 then
@@ -593,9 +595,31 @@ local function watch(character: Model)
 	end
 	character:GetAttributeChangedSignal("Anim"):Connect(function()
 		local value = character:GetAttribute("Anim")
-		if typeof(value) == "string" then
-			task.spawn(start, character, (value:split(":")[1]))
+		if typeof(value) ~= "string" then
+			return
 		end
+		local name, tag = value:match("^([^:]+):(.+)$")
+		if not name or not tag then
+			return
+		end
+		local isLocalChar = character == Players.LocalPlayer.Character
+		local fam = if name:match("^M1_") then "M1" else name
+		if isLocalChar then
+			if tag:sub(1, 1) == "L" then
+				-- ท่าที่ client ทำนายไว้ทันทีตอนกด
+				predictedAt[fam] = os.clock()
+			elseif predictedAt[fam] and os.clock() - predictedAt[fam] < 0.6 then
+				return -- server ส่งท่าเดียวกันตามมา ไม่เล่นซ้ำ
+			end
+		else
+			-- มอน/ผู้เล่นที่อยู่ไกลกล้อง ไม่ต้องเล่นแอนิเมชัน (ลดภาระเครื่องเมื่อมีมอนเยอะ)
+			local cam = workspace.CurrentCamera
+			local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if cam and root and (root.Position - cam.CFrame.Position).Magnitude > 110 then
+				return
+			end
+		end
+		task.spawn(start, character, name)
 	end)
 end
 

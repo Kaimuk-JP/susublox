@@ -49,24 +49,42 @@ local function damageNumber(position: Vector3, amount: number, crit: boolean?)
 	Debris:AddItem(anchor, 0.6)
 end
 
+local lastShake, lastNumber, lastStop = 0, 0, 0
+local frozen = false
+
 feedback.OnClientEvent:Connect(function(kind: string, position: Vector3, amount: number)
 	if kind ~= "Hit" and kind ~= "Crit" then
 		return
 	end
 	local crit = kind == "Crit"
-	shake(if crit then 0.25 else 0.15, if crit then 0.8 else 0.4)
-	damageNumber(position, amount, crit)
-	-- hit-stop: หน่วงอนิเมชันของตัวเองสั้น ๆ
+	local now = os.clock()
+	-- กันของค้าง/หน่วงตอนตีโดนหลายตัวพร้อมกัน: จำกัดความถี่ของกล้องสั่น เลขดาเมจ และฮิตสต็อป
+	if now - lastShake > 0.12 or crit then
+		lastShake = now
+		shake(if crit then 0.25 else 0.15, if crit then 0.8 else 0.4)
+	end
+	if now - lastNumber > 0.05 then
+		lastNumber = now
+		damageNumber(position, amount, crit)
+	end
+	-- hit-stop: หน่วงอนิเมชันของตัวเองสั้น ๆ (ไม่ซ้อนกัน และไม่เกินครั้งละ 0.25 วินาที)
+	if frozen or now - lastStop < 0.25 then
+		return
+	end
 	local char = Players.LocalPlayer.Character
 	local hum = char and char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		for _, track in hum:GetPlayingAnimationTracks() do
+		frozen = true
+		lastStop = now
+		local tracks = hum:GetPlayingAnimationTracks()
+		for _, track in tracks do
 			track:AdjustSpeed(0)
 		end
 		task.delay(Config.HitStop, function()
-			for _, track in hum:GetPlayingAnimationTracks() do
+			for _, track in tracks do
 				track:AdjustSpeed(1)
 			end
+			frozen = false
 		end)
 	end
 end)

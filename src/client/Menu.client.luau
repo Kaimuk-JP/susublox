@@ -147,11 +147,26 @@ views.stats = function()
 			menu:FireServer("Prestige")
 		end)
 	end
+	local used = (player:GetAttribute("PassiveSlots") :: number?) or 0
+	row(`สกิลติดตัว: ใส่ได้ {Passives.MaxSlots} ช่อง (ใช้อยู่ {used}/{Passives.MaxSlots}) — กดซ้ำเพื่อถอด`)
 	for id, passive in Passives.All do
 		local unlocked = level >= passive.UnlockLevel
-		row(`{passive.Name} (Lv.{passive.UnlockLevel})`, if unlocked then "ใส่/ถอด" else nil, function()
-			menu:FireServer("EquipPassive", id)
-		end)
+		local on = player:GetAttribute("Passive_" .. id) == true
+		local full = used >= Passives.MaxSlots
+		local label = `{if on then "✓ " elseif unlocked then "" else "🔒 "}{passive.Name} (Lv.{passive.UnlockLevel})\n{passive.Desc}`
+		if on then
+			row(label, "ถอด", function()
+				menu:FireServer("EquipPassive", id)
+			end)
+		elseif unlocked and not full then
+			row(label, "ใส่", function()
+				menu:FireServer("EquipPassive", id)
+			end)
+		elseif unlocked then
+			row(label .. "  (ช่องเต็ม ถอดตัวอื่นก่อน)")
+		else
+			row(label)
+		end
 	end
 end
 

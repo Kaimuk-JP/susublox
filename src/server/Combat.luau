@@ -198,7 +198,12 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 			victim:Knockdown(o.Knockdown)
 			Combat.PlayAnim(victim.Character, "Knockdown")
 		else
-			victim:Stun(o.Stun or 0.4)
+			-- มอนตีผู้เล่นแค่สะดุ้งสั้นๆ (0.2 วิ) ไม่ให้ติดสตันตอนถูกรุม
+			local stunTime = o.Stun or 0.4
+			if Players:GetPlayerFromCharacter(victim.Character) and not Players:GetPlayerFromCharacter(attacker.Character) then
+				stunTime = math.min(stunTime, 0.2)
+			end
+			victim:Stun(stunTime)
 			Combat.PlayAnim(victim.Character, "Hit")
 		end
 		local push = o.Knockback or (o.Final and Config.FinisherKnockback) or 0
@@ -260,9 +265,16 @@ function Combat.QueryRadius(attacker: CombatState.CombatState, radius: number): 
 	if not root then
 		return found
 	end
-	for model, v in states do
-		local vroot = rootOf(v)
-		if v ~= attacker and vroot and (vroot.Position - root.Position).Magnitude <= radius then
+	-- ใช้การค้นหาตามพื้นที่ของ engine แทนการวนทุกตัวใน states (มอนเยอะแล้วหน่วง O(N²))
+	local params = OverlapParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { attacker.Character }
+	local seen: { [Model]: boolean } = {}
+	for _, part in workspace:GetPartBoundsInRadius(root.Position, radius, params) do
+		local model = part:FindFirstAncestorOfClass("Model")
+		local v = model and states[model]
+		if model and v and not seen[model] then
+			seen[model] = true
 			table.insert(found, v)
 		end
 	end
@@ -291,19 +303,21 @@ function Combat.M1(s: CombatState.CombatState)
 	s.State = "Attacking"
 	Combat.PlayAnim(s.Character, `M1_{if final then Config.ComboLength else s.Combo}`)
 	-- พุ่งเข้าหาศัตรูที่อยู่ใกล้ข้างหน้าเท่านั้น (ห่างเกินระยะตีแต่ไม่เกิน 10) ถ้าไม่มีเป้าหมายอยู่กับที่
-	local look = root.CFrame.LookVector
-	local nearestDist = math.huge
-	for _, v in Combat.QueryRadius(s, 10) do
-		local vroot = rootOf(v)
-		if vroot then
-			local offset = vroot.Position - root.Position
-			if offset.Unit:Dot(look) > 0.5 then
-				nearestDist = math.min(nearestDist, offset.Magnitude)
+	if Players:GetPlayerFromCharacter(s.Character) then -- ผู้เล่นเท่านั้น (มอนไม่ต้องคำนวณ ลดภาระเซิร์ฟเวอร์)
+		local look = root.CFrame.LookVector
+		local nearestDist = math.huge
+		for _, v in Combat.QueryRadius(s, 10) do
+			local vroot = rootOf(v)
+			if vroot then
+				local offset = vroot.Position - root.Position
+				if offset.Magnitude > 0.1 and offset.Unit:Dot(look) > 0.5 then
+					nearestDist = math.min(nearestDist, offset.Magnitude)
+				end
 			end
 		end
-	end
-	if nearestDist > 4 and nearestDist < 10 then
-		Combat.Impulse(s, look * 14, 0.08)
+		if nearestDist > 4 and nearestDist < 10 then
+			Combat.Impulse(s, look * 14, 0.08)
+		end
 	end
 	local cf = root.CFrame * CFrame.new(0, 0, -Config.HitboxForward)
 	for _, v in Combat.QueryBox(s, cf, Config.HitboxSize, Config.MaxHitRange) do

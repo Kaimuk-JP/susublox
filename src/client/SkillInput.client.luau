@@ -1,13 +1,43 @@
 --!strict
+-- ปุ่มสกิล Z X C V และไม้ตาย (G): ส่งไป server และทำนายท่าทันทีถ้าพร้อมใช้ (Mastery ถึง, คูลดาวน์หมด, หลอดไม้ตายเต็ม)
 local ContextActionService = game:GetService("ContextActionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Config = require(ReplicatedStorage.Shared.CombatConfig)
+local StyleData = require(ReplicatedStorage.Shared.Styles)
 local remote = ReplicatedStorage:WaitForChild("SkillRemote") :: RemoteEvent
+local player = Players.LocalPlayer
+local localId = 0
+
+local function canUse(key: string): boolean
+	local mastery = (player:GetAttribute("MasteryLevel") :: number?) or 1
+	local need = StyleData.MasteryUnlock[if key == "U" then "Ultimate" else key]
+	if mastery < need then
+		return false
+	end
+	if key == "U" then
+		local ult = player.Character and player.Character:GetAttribute("Ult")
+		return typeof(ult) == "number" and ult >= Config.UltMax
+	end
+	local readyAt = (player:GetAttribute("CD_" .. key) :: number?) or 0
+	return workspace:GetServerTimeNow() >= readyAt
+end
+
+local function press(key: string)
+	remote:FireServer(key)
+	local styleId = player:GetAttribute("Style")
+	local char = player.Character
+	if typeof(styleId) == "string" and char and canUse(key) then
+		localId += 1
+		char:SetAttribute("Anim", `{styleId}_{if key == "U" then "Ultimate" else key}:L{localId}`)
+	end
+end
 
 local function bind(name: string, key: string, code: Enum.KeyCode, pad: Enum.KeyCode, title: string)
 	ContextActionService:BindAction(name, function(_, state)
 		if state == Enum.UserInputState.Begin then
-			remote:FireServer(key)
+			press(key)
 		end
 		return Enum.ContextActionResult.Pass
 	end, true, code, pad)

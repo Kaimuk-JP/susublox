@@ -66,6 +66,11 @@ local function replicate(player: Player)
 		(v :: IntValue).Value = value
 	end
 	player:SetAttribute("Style", p.EquippedStyle)
+	-- สถานะสกิลติดตัวที่ใส่อยู่ (ให้เมนูแสดง ✓ และจำนวนช่อง)
+	for id in Passives.All do
+		player:SetAttribute("Passive_" .. id, table.find(p.Passives, id) ~= nil)
+	end
+	player:SetAttribute("PassiveSlots", #p.Passives)
 	for stat, value in p.Stats :: any do
 		player:SetAttribute("Stat_" .. stat, value)
 	end
