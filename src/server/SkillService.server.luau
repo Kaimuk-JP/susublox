@@ -184,7 +184,9 @@ local function activate(player: Player, key: string)
 			s.State = "Idle"
 		end
 	end)
-	player:SetAttribute("CD_" .. key, now + skill.Cooldown)
+	-- เวลาเซิร์ฟเวอร์ (client เทียบด้วย workspace:GetServerTimeNow()) ไม่ใช้ os.clock ที่ต่างกันแต่ละเครื่อง
+	player:SetAttribute("CD_" .. key, workspace:GetServerTimeNow() + skill.Cooldown)
+	player:SetAttribute("CDLen_" .. key, skill.Cooldown)
 end
 
 remote.OnServerEvent:Connect(function(player: Player, key: unknown)
