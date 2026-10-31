@@ -18,6 +18,7 @@ local shopRemote = ReplicatedStorage:WaitForChild("ShopRemote") :: RemoteEvent
 local BP = require(ReplicatedStorage.Shared.BattlePass)
 local Outfits = require(ReplicatedStorage.Shared.Outfits)
 local World = require(ReplicatedStorage.Shared.World)
+local Story = require(ReplicatedStorage.Shared.Story)
 local WQ = require(ReplicatedStorage.Shared.WorldQuests)
 local worldRemote = ReplicatedStorage:WaitForChild("WorldRemote") :: RemoteEvent
 local outfitRemote = ReplicatedStorage:WaitForChild("OutfitRemote") :: RemoteEvent
@@ -46,7 +47,7 @@ toggle.Parent = gui
 Instance.new("UICorner", toggle)
 
 local window = Instance.new("Frame")
-window.Size = UDim2.new(0, 700, 0, 380)
+window.Size = UDim2.new(0, 780, 0, 400)
 window.Position = UDim2.fromScale(0.5, 0.5)
 window.AnchorPoint = Vector2.new(0.5, 0.5)
 window.BackgroundColor3 = PANEL
@@ -54,7 +55,7 @@ window.Visible = false
 window.Parent = gui
 Instance.new("UICorner", window)
 local constraint = Instance.new("UISizeConstraint")
-constraint.MaxSize = Vector2.new(700, 380)
+constraint.MaxSize = Vector2.new(780, 400)
 constraint.Parent = window
 
 local tabs = Instance.new("Frame")
@@ -280,6 +281,35 @@ views.gang = function()
 	end
 end
 
+views.story = function()
+	local index = (player:GetAttribute("StoryIndex") :: number?) or 1
+	local total = #Story.Steps
+	row(`เส้นทางสู่ราชาโรงเรียน: ผ่านแล้ว {math.min(index - 1, total)}/{total} ขั้น`)
+	-- ขั้นที่ผ่านแล้ว 2 ขั้นล่าสุด, ขั้นปัจจุบัน, และขั้นถัดไปอีก 3 ขั้น
+	for i = math.max(1, index - 2), math.min(total, index + 3) do
+		local step = Story.Steps[i]
+		local r = step.Reward
+		local rewardLine = `รางวัล: ¥{r.Yen}{if r.Exp > 0 then ` +{r.Exp} EXP` else ""}{if r.Outfit then " + ชุด" else ""}`
+		if i < index then
+			row(`✓ {step.Title}`)
+		elseif i == index then
+			row(`▶ {step.Title} ({Story.Acts[step.Act]})\n{player:GetAttribute("StoryText") or step.Desc}\n{rewardLine}`)
+		else
+			row(`🔒 {step.Title}  (ขั้นที่ {i}, {Story.Acts[step.Act]})`)
+		end
+	end
+	if index > total then
+		row("จบเนื้อเรื่องหลักแล้ว คุณคือราชาโรงเรียน! รับใบสั่งล่าต่อได้ไม่จำกัด")
+	end
+	-- ใบสั่งล่าแก๊ง (ทำซ้ำได้ไม่จบ)
+	local bounty = player:GetAttribute("BountyText")
+	if typeof(bounty) == "string" then
+		row(`🎯 {bounty}\nรางวัล: {player:GetAttribute("BountyReward") or ""}  |  ทำสำเร็จแล้ว {player:GetAttribute("BountyDone") or 0} ครั้ง`, "เปลี่ยนใบ", function()
+			worldRemote:FireServer("RerollBounty", "")
+		end)
+	end
+end
+
 views.map = function()
 	row("แผนที่โลก: เดินทางด่วนไปย่านที่เคยค้นพบแล้ว (รอ 12 วินาทีระหว่างการเดินทาง)")
 	row("โรงเรียนซูซูบล็อกซ์ (จุดเริ่มต้น)", "เดินทาง", function()
@@ -359,6 +389,7 @@ local tabList = {
 	{ "stats", "สเตตัส" },
 	{ "styles", "สไตล์" },
 	{ "outfits", "ชุด" },
+	{ "story", "เนื้อเรื่อง" },
 	{ "quests", "เควส" },
 	{ "worldQuests", "ภารกิจโลก" },
 	{ "map", "แผนที่" },
@@ -373,7 +404,7 @@ for _, t in tabList do
 	b.BackgroundColor3 = PANEL
 	b.TextColor3 = ACCENT
 	b.Font = Enum.Font.FredokaOne
-	b.TextSize = 13
+	b.TextSize = 12
 	b.Text = t[2]
 	b.Parent = tabs
 	b.Activated:Connect(function()

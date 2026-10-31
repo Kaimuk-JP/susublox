@@ -30,6 +30,10 @@ local function endDuel(winner: Player?, loser: Player?)
 		if pw then
 			pw.RankPoints += WIN_POINTS
 			winner:SetAttribute("RankPoints", pw.RankPoints)
+			local storyEvent = game:GetService("ServerStorage"):FindFirstChild("StoryEvent") :: BindableEvent?
+			if storyEvent then
+				storyEvent:Fire(winner, "DuelWin")
+			end
 		end
 	end
 	if loser then

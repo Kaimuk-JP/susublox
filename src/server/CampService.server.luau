@@ -226,6 +226,11 @@ local function onCleared(c: Camp)
 			p.Yen += level * 20
 			p.Fame += 8
 			changed:Fire(player)
+			-- นับเข้าเนื้อเรื่อง/ใบสั่งล่า
+			local storyEvent = ServerStorage:FindFirstChild("StoryEvent") :: BindableEvent?
+			if storyEvent then
+				storyEvent:Fire(player, "CampCleared", c.District.Id)
+			end
 			remote:FireClient(player, "Toast", `เคลียร์ค่ายแก๊ง{c.District.EnemyName}! +{exp} EXP +¥{level * 20}`)
 		end
 	end

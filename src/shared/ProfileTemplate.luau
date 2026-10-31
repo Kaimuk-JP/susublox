@@ -28,6 +28,9 @@ export type Profile = {
 	TutorialDone: boolean,
 	EquippedOutfit: string,
 	DailyBonus: { Day: number, Used: number },
+	StoryStep: number,
+	Counters: { Kills: number?, BossKills: number?, WorldBossKills: number?, CampsCleared: number?, DuelWins: number? },
+	Bounty: { Active: { Kind: string, District: string, Target: number, Progress: number, Yen: number, Exp: number, Fame: number }?, Done: number?, RerollAt: number? },
 	World: { Active: { [string]: number }, Done: { [string]: boolean }, Discovered: { [string]: boolean } },
 }
 
@@ -65,6 +68,9 @@ function ProfileTemplate.new(): Profile
 		TutorialDone = false,
 		EquippedOutfit = "Uniform_School",
 		DailyBonus = { Day = 0, Used = 0 },
+		StoryStep = 1,
+		Counters = { Kills = 0, BossKills = 0, WorldBossKills = 0, CampsCleared = 0, DuelWins = 0 },
+		Bounty = { Done = 0, RerollAt = 0 },
 		World = { Active = {}, Done = {}, Discovered = {} },
 	}
 end
