@@ -285,7 +285,21 @@ function Combat.M1(s: CombatState.CombatState)
 	end
 	s.State = "Attacking"
 	Combat.PlayAnim(s.Character, `M1_{if final then Config.ComboLength else s.Combo}`)
-	Combat.Impulse(s, root.CFrame.LookVector * 16, 0.1) -- พุ่งตัวเข้าหาตอนชก ให้มีน้ำหนัก
+	-- พุ่งเข้าหาศัตรูที่อยู่ใกล้ข้างหน้าเท่านั้น (ห่างเกินระยะตีแต่ไม่เกิน 10) ถ้าไม่มีเป้าหมายอยู่กับที่
+	local look = root.CFrame.LookVector
+	local nearestDist = math.huge
+	for _, v in Combat.QueryRadius(s, 10) do
+		local vroot = rootOf(v)
+		if vroot then
+			local offset = vroot.Position - root.Position
+			if offset.Unit:Dot(look) > 0.5 then
+				nearestDist = math.min(nearestDist, offset.Magnitude)
+			end
+		end
+	end
+	if nearestDist > 4 and nearestDist < 10 then
+		Combat.Impulse(s, look * 14, 0.08)
+	end
 	local cf = root.CFrame * CFrame.new(0, 0, -Config.HitboxForward)
 	for _, v in Combat.QueryBox(s, cf, Config.HitboxSize, Config.MaxHitRange) do
 		Combat.Hit(s, v, Config.M1Damage, { Final = final })
