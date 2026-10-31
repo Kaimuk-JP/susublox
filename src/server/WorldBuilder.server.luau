@@ -111,6 +111,12 @@ if workspace:GetAttribute("TerrainBaked") ~= true then
 		mountain(B.MinX - pad, z + 30, 85 + (z % 3) * 12)
 		mountain(B.MaxX + pad, z + 30, 80 + (z % 4) * 10)
 	end
+	-- แนวนอกอีกชั้น ถี่ขึ้น ปิดช่องว่างระหว่างภูเขาแนวแรก (ด้านเหนือ/ใต้)
+	local pad2 = 250
+	for x = -1050, 1050, 100 do
+		mountain(x, B.MinZ - pad2, 80 + (x % 3) * 10)
+		mountain(x, B.MaxZ + pad2, 80 + (x % 4) * 8)
+	end
 end
 
 ---------------------------------------------------------------- ถนน
