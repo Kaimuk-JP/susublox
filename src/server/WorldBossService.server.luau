@@ -165,6 +165,7 @@ local function runBoss()
 		NpcType = "Brute",
 		IsBoss = true,
 		WorldBoss = true,
+		Aggressive = true, -- บอสสุ่มเดินเข้ามาหาเอง (ศัตรูอื่นสู้เมื่อถูกยั่วหรือถูกตี)
 		HpMult = tier.HpMult,
 		RespawnTime = 1e9,
 		District = d.Id,

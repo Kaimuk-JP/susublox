@@ -85,6 +85,7 @@ local function guards(d: World.District, center: Vector3, count: number, levelBo
 				District = d.Id,
 				RespawnTime = 1e9,
 				EventTag = tag,
+				Aggressive = tag:sub(1, 3) == "war", -- ศึกชิงถนน: นักเลงบุกมาเอง; ผู้คุมหีบ: สู้เมื่อถูกยั่ว
 			}, Color3.fromHex(d.EnemyColor))
 			if rig then
 				local hum = rig:FindFirstChildOfClass("Humanoid")

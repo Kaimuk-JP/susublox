@@ -4,14 +4,23 @@ local Players = game:GetService("Players")
 
 local Combat = require(script.Parent.Combat)
 
-local AGGRO_RANGE = 40
+-- ศัตรูไม่วิ่งไล่ผู้เล่นเอง จะสู้เมื่อ (1) ถูกตี (2) ผู้เล่นเดินเข้าใกล้เกิน PROVOKE_RANGE (หาเรื่อง)
+-- (3) เป็นศัตรูแบบ Aggressive เช่นบอสสุ่ม/ศึกชิงถนน ที่บุกเข้ามาเอง เมื่อสู้แล้วไล่ต่อ CHASE_MEMORY วินาที
+-- เพื่อนในค่ายเดียวกัน/ใกล้กันช่วยสู้เมื่อมีคนถูกตี พอเลิกสู้แล้วเดินกลับจุดเดิม
+local AGGRO_RANGE = 40 -- ระยะมองเห็นของศัตรูแบบ Aggressive
+local PROVOKE_RANGE = 9
+local CHASE_MEMORY = 12
+local LEASH = 90
+local GROUP_ALERT = 35
 local ATTACK_RANGE = 6
 local BLOCK_CHANCE = 0.2
 local THINK_INTERVAL = 0.25
 local RESPAWN_TIME = 15
 
-local function nearestPlayerRoot(from: Vector3): BasePart?
-	local best: BasePart?, bestDist = nil, AGGRO_RANGE
+local provoked: { [Model]: { Player: Player, Until: number } } = {}
+
+local function nearestPlayerRoot(from: Vector3, range: number): BasePart?
+	local best: BasePart?, bestDist = nil, range
 	for _, p in Players:GetPlayers() do
 		local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
@@ -52,9 +61,42 @@ local function runAI(npc: Model)
 
 	task.spawn(function()
 		task.wait(math.random() * THINK_INTERVAL) -- กระจายเวลาคิดของมอน ไม่ให้ทำงานพร้อมกันทีเดียวทั้งฝูง
+		local aggressive = npc:GetAttribute("Aggressive") == true
 		while hum.Health > 0 and npc.Parent do
-			local target = nearestPlayerRoot(root.Position)
-			if target then
+			local target: BasePart? = nil
+			local entry = provoked[npc]
+			if entry then
+				local char = entry.Player.Character
+				local r = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+				local h = char and char:FindFirstChildOfClass("Humanoid")
+				if
+					os.clock() < entry.Until
+					and r
+					and h
+					and h.Health > 0
+					and not Combat.InSafeZone(r.Position)
+					and (r.Position - root.Position).Magnitude < LEASH
+				then
+					target = r
+				else
+					provoked[npc] = nil
+				end
+			end
+			if not target then
+				-- ผู้เล่นเดินเข้ามาใกล้เกินไป = หาเรื่อง (หรือศัตรูแบบ Aggressive ที่มองเห็นไกลกว่า)
+				target = nearestPlayerRoot(root.Position, if aggressive then AGGRO_RANGE else PROVOKE_RANGE)
+				local tp = target and Players:GetPlayerFromCharacter(target.Parent)
+				if tp then
+					provoked[npc] = { Player = tp, Until = os.clock() + CHASE_MEMORY }
+				end
+			end
+			if not target then
+				-- ไม่มีใครให้สู้ ยืนอยู่ที่จุดของตัวเอง ถ้าถูกไล่ไปไกลให้เดินกลับ
+				Combat.BlockEnd(s)
+				if (root.Position - home.Position).Magnitude > 8 then
+					hum:MoveTo(home.Position)
+				end
+			else
 				local dist = (target.Position - root.Position).Magnitude
 				if dist > ATTACK_RANGE then
 					Combat.BlockEnd(s)
@@ -76,6 +118,7 @@ local function runAI(npc: Model)
 
 	-- เกิดใหม่ที่เดิมหลังตาย
 	hum.Died:Once(function()
+		provoked[npc] = nil
 		-- ศัตรูที่ถูกเก็บออกเพราะไม่มีผู้เล่นอยู่ใกล้ (Despawned) ไม่เกิดใหม่
 		if npc:GetAttribute("Despawned") ~= true then
 			local wait = (npc:GetAttribute("RespawnTime") :: number?) or RESPAWN_TIME
@@ -95,6 +138,32 @@ local function runAI(npc: Model)
 end
 
 local folder = workspace:WaitForChild("Npcs", 15)
+
+-- ผู้เล่นตีศัตรู -> ศัตรูตัวนั้นหันมาสู้ และเพื่อนในค่ายเดียวกัน/ใกล้กันช่วยสู้ด้วย
+Combat.OnHit(function(attacker, victim)
+	local player = Players:GetPlayerFromCharacter(attacker.Character)
+	local model = victim.Character
+	if not player or not folder or model:GetAttribute("NpcLevel") == nil then
+		return
+	end
+	local untilAt = os.clock() + CHASE_MEMORY
+	provoked[model] = { Player = player, Until = untilAt }
+	local camp = model:GetAttribute("Camp")
+	local district = model:GetAttribute("District")
+	local pos = model:GetPivot().Position
+	for _, other in folder:GetChildren() do
+		if other ~= model and other:IsA("Model") and other:GetAttribute("NpcLevel") ~= nil then
+			local sameCamp = camp ~= nil and other:GetAttribute("Camp") == camp
+			local near = district ~= nil
+				and other:GetAttribute("District") == district
+				and (other:GetPivot().Position - pos).Magnitude < GROUP_ALERT
+			if sameCamp or near then
+				provoked[other] = { Player = player, Until = untilAt }
+			end
+		end
+	end
+end)
+
 if folder then
 	for _, npc in folder:GetChildren() do
 		if npc:IsA("Model") then
