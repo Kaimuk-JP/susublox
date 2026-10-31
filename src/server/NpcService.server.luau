@@ -40,7 +40,9 @@ local function runAI(npc: Model)
 	local npcType = (npc:GetAttribute("NpcType") :: string?) or "Grunt"
 	-- HpMult (Attribute) ใช้แทนตัวคูณตามชนิด เช่น บอสสุ่มของโลก
 	local hpMult = (npc:GetAttribute("HpMult") :: number?) or ({ Grunt = 1, Speedy = 0.7, Brute = 2.5 } :: { [string]: number })[npcType] or 1
-	hum.WalkSpeed = ({ Grunt = 14, Speedy = 24, Brute = 10 } :: { [string]: number })[npcType] or 14
+	local walk = ({ Grunt = 14, Speedy = 24, Brute = 10 } :: { [string]: number })[npcType] or 14
+	npc:SetAttribute("BaseWalkSpeed", walk)
+	hum.WalkSpeed = walk
 	hum.MaxHealth = (100 + 20 * (level - 1)) * (if s.IsBoss then 8 else 1) * hpMult
 	hum.Health = hum.MaxHealth
 	local dmgMult = ({ Grunt = 1, Speedy = 0.8, Brute = 1.6 } :: { [string]: number })[npcType] or 1

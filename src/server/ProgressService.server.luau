@@ -96,7 +96,7 @@ local function applyToCharacter(player: Player)
 	local ratio = hum.Health / hum.MaxHealth
 	hum.MaxHealth = Config.BaseHealth + 5 * p.Stats.Health
 	hum.Health = hum.MaxHealth * ratio
-	hum.WalkSpeed = 16 + 0.3 * p.Stats.Speed
+	char:SetAttribute("BaseWalkSpeed", 16 + 0.3 * p.Stats.Speed) -- CombatState.ApplyMovement ใช้ค่านี้ (ไม่ตั้ง WalkSpeed ตรงๆ)
 	char:SetAttribute("DamageMult", 1 + 0.05 * p.Stats.Strength) -- +5% ต่อแต้ม (ดูตัวเลขจริงในเมนูสเตตัส)
 	char:SetAttribute("MaxStamina", Config.BaseStamina + 5 * p.Stats.Stamina)
 	char:SetAttribute("MaxMana", Config.BaseMana + 5 * p.Stats.Stamina)

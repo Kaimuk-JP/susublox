@@ -19,6 +19,9 @@ export type Data = {
 	BlockStart: number,
 	StunUntil: number,
 	StunImmuneUntil: number,
+	MoveLock: boolean,
+	SlowUntil: number,
+	SlowFactor: number,
 	RootUntil: number,
 	Equipped: { string }, -- passive ที่ใส่อยู่
 	IsBoss: boolean,
@@ -42,6 +45,9 @@ function CombatState.new(character: Model): CombatState
 		BlockStart = 0,
 		StunUntil = 0,
 		StunImmuneUntil = 0,
+		MoveLock = false,
+		SlowUntil = 0,
+		SlowFactor = 0,
 		RootUntil = 0,
 		Equipped = {},
 		IsBoss = false,
@@ -72,8 +78,12 @@ function CombatState.Stun(self: CombatState, duration: number)
 	if isPlayer(self) and now < self.StunImmuneUntil then
 		return
 	end
+	if self.State == "Ragdoll" and now < self.StunUntil then
+		return -- ล้มอยู่ ไม่ให้โดนตีแล้วลุกเร็วกว่ากำหนด
+	end
 	local d = duration * Passives.StunRecoveryMultiplier(self.Equipped)
 	self.State = "Stunned"
+	self.MoveLock = d >= 0.35 -- สะดุ้งสั้นๆ ยังเดินได้ สตันนานเดินไม่ได้
 	self.StunUntil = now + d
 	if isPlayer(self) then
 		self.StunImmuneUntil = now + d + STUN_IMMUNITY
@@ -83,8 +93,13 @@ end
 
 function CombatState.Knockdown(self: CombatState, duration: number)
 	local now = os.clock()
-	local d = duration * Passives.StunRecoveryMultiplier(self.Equipped)
+	if self.State == "Ragdoll" and now < self.StunUntil then
+		return
+	end
+	-- ล้มลง + ช่วงลุกขึ้น 0.3 วินาที (ระหว่างนี้เดิน/กระโดด/ใช้ท่าไม่ได้)
+	local d = duration * Passives.StunRecoveryMultiplier(self.Equipped) + 0.3
 	self.State = "Ragdoll"
+	self.MoveLock = true
 	self.StunUntil = now + d
 	if isPlayer(self) then
 		self.StunImmuneUntil = now + d + KNOCKDOWN_IMMUNITY
@@ -94,28 +109,45 @@ end
 
 function CombatState.Root(self: CombatState, duration: number)
 	self.RootUntil = math.max(self.RootUntil, os.clock() + duration)
-	local hum = self.Character:FindFirstChildOfClass("Humanoid")
-	if hum then
-		local base = hum.WalkSpeed
-		hum.WalkSpeed = 0
-		task.delay(duration, function()
-			if hum.Parent then
-				hum.WalkSpeed = base
-			end
-		end)
-	end
 end
 
 function CombatState.Slow(self: CombatState, fraction: number, duration: number)
+	self.SlowUntil = math.max(self.SlowUntil, os.clock() + duration)
+	self.SlowFactor = math.max(self.SlowFactor, fraction)
+end
+
+-- ควบคุมการเดิน/กระโดดจากที่เดียว: ล้ม/ตรึง/สตันนานเดินไม่ได้ ช้าลงตามผลหน่วง คำนวณจากความเร็วพื้นฐาน (BaseWalkSpeed)
+-- (เดิมต่างคนต่างตั้ง WalkSpeed ทำให้ตอนล้มยังเดินได้ และค่าที่คืนอาจผิด)
+function CombatState.ApplyMovement(self: CombatState)
+	local now = os.clock()
+	-- หมดเวลาสตัน/ล้มแล้วกลับสู่ปกติ (ไม่รอให้มีคนเรียก CanAct)
+	if (self.State == "Stunned" or self.State == "Ragdoll") and now >= self.StunUntil then
+		self.State = "Idle"
+		self.MoveLock = false
+	end
+	if now >= self.SlowUntil then
+		self.SlowFactor = 0
+	end
 	local hum = self.Character:FindFirstChildOfClass("Humanoid")
-	if hum and hum.WalkSpeed > 0 then
-		local base = hum.WalkSpeed
-		hum.WalkSpeed = base * (1 - fraction)
-		task.delay(duration, function()
-			if hum.Parent and hum.WalkSpeed > 0 then
-				hum.WalkSpeed = base
-			end
-		end)
+	if not hum or hum.Health <= 0 then
+		return
+	end
+	local locked = self.State == "Ragdoll" or (self.State == "Stunned" and self.MoveLock) or now < self.RootUntil
+	local base = (self.Character:GetAttribute("BaseWalkSpeed") :: number?) or 16
+	local speed = if locked then 0 else base * (1 - self.SlowFactor)
+	if hum.WalkSpeed ~= speed then
+		hum.WalkSpeed = speed
+	end
+	if hum.UseJumpPower then
+		local jump = if locked then 0 else ((self.Character:GetAttribute("BaseJumpPower") :: number?) or 50)
+		if hum.JumpPower ~= jump then
+			hum.JumpPower = jump
+		end
+	else
+		local height = if locked then 0 else ((self.Character:GetAttribute("BaseJumpHeight") :: number?) or 7.2)
+		if hum.JumpHeight ~= height then
+			hum.JumpHeight = height
+		end
 	end
 end
 
@@ -124,6 +156,7 @@ function CombatState.AddUlt(self: CombatState, amount: number)
 end
 
 function CombatState.Regen(self: CombatState, dt: number)
+	self:ApplyMovement()
 	local maxMana = (self.Character:GetAttribute("MaxMana") :: number?) or Config.BaseMana
 	self.Mana = math.min(maxMana, self.Mana + Config.ManaRegen * dt)
 	if self.State ~= "Blocking" then
