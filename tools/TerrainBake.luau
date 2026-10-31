@@ -92,6 +92,8 @@ local function naturalMask(x, z)
 		m = math.min(m, smooth((math.sqrt(dx * dx + dz * dz) - 20) / 80))
 	end
 	m = math.min(m, smooth((distanceToRoad(x, z) - 25) / 60))
+	-- แนวแม่น้ำคิโซ (z=420, กว้าง 40; CityDressing ขุดตอนเริ่มเกม) ต้องเรียบ ไม่มีเนินค้างกลางน้ำ
+	m = math.min(m, smooth((math.abs(z - 420) - 45) / 60))
 	return m
 end
 
