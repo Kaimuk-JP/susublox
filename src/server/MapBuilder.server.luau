@@ -9,8 +9,8 @@ local Lighting = game:GetService("Lighting")
 local RigFactory = require(script.Parent.RigFactory)
 
 local C = {
-	paving = Color3.fromHex("F1E4D3"),
-	pavingAlt = Color3.fromHex("FBD3DC"),
+	paving = Color3.fromHex("E8D5BC"),
+	pavingAlt = Color3.fromHex("F7B8CA"),
 	concrete = Color3.fromHex("C9CED6"),
 	darkConcrete = Color3.fromHex("8E94A3"),
 	wall = Color3.fromHex("F7F1E5"),
@@ -41,6 +41,11 @@ for _, name in { "Baseplate", "Map", "Npcs" } do
 	local old = workspace:FindFirstChild(name)
 	if old and name ~= "Npcs" then
 		old:Destroy()
+	end
+end
+for _, child in workspace:GetChildren() do
+	if child:IsA("SpawnLocation") then
+		child:Destroy() -- จุดเกิดเริ่มต้นของเทมเพลต Studio (มีลายดาว) ใช้ Map.Spawn แทน
 	end
 end
 local terrain = workspace.Terrain
@@ -122,15 +127,35 @@ local function pointLight(p: BasePart, color: Color3, range: number, brightness:
 end
 
 -- ทางลาด/บันไดเอียงตามแกน X จาก (x1,y1) ไป (x2,y2) ที่ศูนย์กลาง z กว้าง width
-local function ramp(name: string, x1: number, y1: number, x2: number, y2: number, zc: number, width: number, parent: Instance)
+local function ramp(name: string, x1: number, y1: number, x2: number, y2: number, zc: number, width: number, parent: Instance, supports: boolean?)
 	local dx, dy = x2 - x1, y2 - y1
 	local length = math.sqrt(dx * dx + dy * dy)
 	local mid = Vector3.new((x1 + x2) / 2, (y1 + y2) / 2, zc)
 	local p = part(name, Vector3.new(length, 1, width), mid, C.concrete, parent)
 	p.CFrame = CFrame.new(mid - Vector3.new(0, 0.5, 0)) * CFrame.Angles(0, 0, math.atan2(dy, dx))
 	for _, side in { -1, 1 } do
-		local rail = part(name .. "Rail", Vector3.new(length, 3, 0.4), mid, C.trim, parent)
-		rail.CFrame = CFrame.new(mid + Vector3.new(0, 1.5, side * (width / 2 - 0.2))) * CFrame.Angles(0, 0, math.atan2(dy, dx))
+		local rail = part(name .. "Rail", Vector3.new(length, 2.4, 0.4), mid, C.trim, parent)
+		rail.CFrame = CFrame.new(mid + Vector3.new(0, 1.2, side * (width / 2 - 0.2))) * CFrame.Angles(0, 0, math.atan2(dy, dx))
+	end
+	-- เส้นขั้นบันไดตกแต่งบนทางลาด (ไม่ชน) และเสาค้ำยันถึงพื้น
+	local angle = math.atan2(dy, dx)
+	for i = 1, math.floor(length / 3) - 1 do
+		local t = (i * 3) / length
+		local c = Vector3.new(x1 + dx * t, y1 + dy * t, zc)
+		local tread = part(name .. "Tread", Vector3.new(0.3, 0.05, width - 0.6), c, C.white, parent)
+		tread.CFrame = CFrame.new(c + Vector3.new(0, 0.03, 0)) * CFrame.Angles(0, 0, angle)
+		noCollide(tread)
+	end
+	if supports then
+		for i = 1, math.floor(length / 12) do
+			local t = (i * 12) / length
+			local py = y1 + dy * t - 1
+			if py > 1.5 then
+				for _, side in { -1, 1 } do
+					box(name .. "Post", x1 + dx * t - 0.4, x1 + dx * t + 0.4, 0, py, zc + side * (width / 2 - 0.5) - 0.4, zc + side * (width / 2 - 0.5) + 0.4, C.stone, parent)
+				end
+			end
+		end
 	end
 end
 
@@ -155,18 +180,23 @@ local function window(parent: Instance, axis: string, a: number, y: number, fixe
 end
 
 ---------------------------------------------------------------- Terrain: หญ้า น้ำ เนินเขา
-terrain:FillBlock(CFrame.new(0, -6, 110), Vector3.new(760, 12, 800), Enum.Material.Grass)
+-- ผิว Terrain จริงสูงกว่าขอบบนของบล็อก ~2 stud (voxel 4 stud) จึงวางที่ -8 ให้ผิวหญ้าอยู่ที่ y≈0 เสมอกับพื้นชิ้นส่วน
+terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("93D58B"))
+terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromHex("F3E3B8"))
+terrain:FillBlock(CFrame.new(0, -8, 110), Vector3.new(760, 12, 800), Enum.Material.LeafyGrass)
 
 -- เนินเขารอบฉาก
 for _, h in {
 	{ -360, -140, 55 }, { -300, 80, 60 }, { -340, 300, 70 }, { 360, -120, 60 }, { 330, 120, 55 },
 	{ 350, 320, 70 }, { -120, -260, 65 }, { 80, -270, 70 }, { 0, 470, 75 }, { -200, 430, 55 }, { 220, 440, 60 },
 } do
-	terrain:FillBall(Vector3.new(h[1], -h[3] * 0.55, h[2]), h[3], Enum.Material.Grass)
+	terrain:FillBall(Vector3.new(h[1], -h[3] * 0.55, h[2]), h[3], Enum.Material.LeafyGrass)
 end
 
 -- สระน้ำฝั่งตะวันออก (125, 95) รัศมี 17
-terrain:FillCylinder(CFrame.new(125, -3.4, 95), 6, 17, Enum.Material.Water)
+terrain:FillCylinder(CFrame.new(125, -2, 95), 4, 21, Enum.Material.Sand) -- ชายหาดรอบสระ
+terrain:FillCylinder(CFrame.new(125, -1.5, 95), 9, 17, Enum.Material.Air) -- ขุดแอ่ง
+terrain:FillCylinder(CFrame.new(125, -4.5, 95), 3, 17, Enum.Material.Water)
 terrain.WaterColor = C.water
 terrain.WaterTransparency = 0.6
 terrain.WaterWaveSize = 0.12
@@ -179,16 +209,24 @@ clouds.Color = Color3.fromHex("FFFFFF")
 clouds.Parent = terrain
 
 ---------------------------------------------------------------- พื้นและทางเดิน
+-- ขุด Terrain ใต้พื้นปูทุกโซนทิ้ง (เว้นขอบ 1 stud) กันใบหญ้าโผล่ทะลุแผ่นพื้นบาง
+for _, z in {
+	{ -80, 80, -60, 60 }, { -160, -100, -25, 25 }, { 80, 180, -35, 35 }, { -30, 30, 90, 130 }, { -50, 50, 210, 310 },
+	{ -100, -80, -10, 10 }, { -10, 10, 60, 90 }, { -10, 10, 130, 210 }, { -142, -48, 52, 128 }, { -61, 61, -121, -59 },
+} do
+	terrain:FillBlock(CFrame.new((z[1] + z[2]) / 2, -1.5, (z[3] + z[4]) / 2), Vector3.new(z[2] - z[1] - 2, 9, z[4] - z[3] - 2), Enum.Material.Air)
+end
+
 local ground = folder("Ground")
-box("SchoolYard", -80, 80, 0, 0.3, -60, 60, C.paving, ground)
-box("Cafeteria_Floor", -160, -100, 0, 0.3, -25, 25, C.paving, ground)
-box("Gym_Floor", 80, 180, 0, 0.3, -35, 35, C.wood, ground, Enum.Material.WoodPlanks)
-box("BackLot", -30, 30, 0, 0.3, 90, 130, C.darkConcrete, ground)
-box("War_Floor_Red", -50, 50, 0, 0.3, 210, 260, Color3.fromHex("F4B6B6"), ground)
-box("War_Floor_Blue", -50, 50, 0, 0.3, 260, 310, Color3.fromHex("B6D4F4"), ground)
-box("Path_Cafeteria", -100, -80, 0, 0.3, -10, 10, C.concrete, ground)
-box("Path_BackLot", -10, 10, 0, 0.3, 60, 90, C.concrete, ground)
-box("Path_War", -10, 10, 0, 0.3, 130, 210, C.concrete, ground)
+box("SchoolYard", -80, 80, -3, 0.3, -60, 60, C.paving, ground)
+box("Cafeteria_Floor", -160, -100, -3, 0.3, -25, 25, C.paving, ground)
+box("Gym_Floor", 80, 180, -3, 0.3, -35, 35, C.wood, ground, Enum.Material.WoodPlanks)
+box("BackLot", -30, 30, -3, 0.3, 90, 130, C.darkConcrete, ground)
+box("War_Floor_Red", -50, 50, -3, 0.3, 210, 260, Color3.fromHex("F4B6B6"), ground)
+box("War_Floor_Blue", -50, 50, -3, 0.3, 260, 310, Color3.fromHex("B6D4F4"), ground)
+box("Path_Cafeteria", -100, -80, -3, 0.3, -10, 10, C.concrete, ground)
+box("Path_BackLot", -10, 10, -3, 0.3, 60, 90, C.concrete, ground)
+box("Path_War", -10, 10, -3, 0.3, 130, 210, C.concrete, ground)
 -- ขอบทางเดิน
 for _, z in { -10.4, 10.4 } do
 	box("PathEdge", -100, -80, 0, 0.45, z - 0.3, z + 0.3, C.white, ground)
@@ -211,7 +249,7 @@ end
 local school = folder("School")
 local X1, X2, Z1, Z2 = -60, 60, -120, -60
 
-box("Plinth", X1 - 1, X2 + 1, 0, 1.2, Z1 - 1, Z2 + 1, C.darkConcrete, school)
+box("Plinth", X1 - 1, X2 + 1, -3, 0.3, Z1 - 1, Z2 + 1, C.darkConcrete, school)
 
 for level = 0, 2 do
 	local y0 = level * 16
@@ -246,6 +284,9 @@ for level = 0, 2 do
 	end
 	for wz = -112, -68, 11 do
 		window(school, "z", wz, y0 + 9, X2, 1)
+		if not (level == 1 and wz < -98) then
+			window(school, "z", wz, y0 + 9, X1, -1)
+		end
 	end
 end
 box("Slab_Floor2", X1, X2, 15.5, 16, Z1, Z2, C.concrete, school)
@@ -282,12 +323,15 @@ cylinder("Antenna", 0.3, 14, Vector3.new(-52, 55, -112), C.navy, school)
 ball("AntennaLight", 1.2, Vector3.new(-52, 62.4, -112), C.red, school, Enum.Material.Neon)
 
 -- บันไดหนีไฟด้านตะวันตก 3 ช่วง: ชั้น1 -> ชั้น2 -> ดาดฟ้า
-ramp("EscapeF1", -116, 0, -68, 16, -105, 8, school)
+ramp("EscapeF1", -116, 0, -68, 16, -105, 8, school, true)
 box("EscapeLanding1", -68, -60, 15.5, 16, -109, -92, C.concrete, school)
-ramp("EscapeF2", -68, 16, -116, 32, -96, 8, school)
+ramp("EscapeF2", -68, 16, -116, 32, -96, 8, school, true)
 box("EscapeLanding2", -124, -116, 31.5, 32, -100, -83, C.concrete, school)
-ramp("EscapeF3", -116, 32, -68, 48, -87, 8, school)
+ramp("EscapeF3", -116, 32, -68, 48, -87, 8, school, true)
 box("EscapeLanding3", -68, -60, 47.5, 48, -91, -83, C.concrete, school)
+for _, post in { { -124, -100, 31.5 }, { -124, -83.8, 31.5 }, { -68, -109, 15.5 }, { -68, -92.8, 15.5 }, { -68, -91, 47.5 }, { -68, -83.8, 47.5 } } do
+	box("LandingPost", post[1], post[1] + 0.8, 0, post[3], post[2], post[2] + 0.8, C.stone, school)
+end
 
 -- หอนาฬิกา + ซุ้มประตูทางเข้า (ยื่นออกหน้าอาคาร z -60..-50)
 local tower = folder("ClockTower")
@@ -298,7 +342,7 @@ box("TowerBody", -8, 8, 17, 58, -59, -51, C.wall, tower)
 box("TowerTrimA", -8.6, 8.6, 30, 31, -59.6, -50.4, C.trim, tower)
 box("TowerTrimB", -8.6, 8.6, 45, 46, -59.6, -50.4, C.trim, tower)
 -- นาฬิกา
-cylinder("ClockFace", 5, 0.5, Vector3.new(0, 50, -50.2), C.white, tower).CFrame = CFrame.new(0, 50, -50.2) * CFrame.Angles(math.rad(90), 0, 0)
+cylinder("ClockFace", 5, 0.5, Vector3.new(0, 50, -50.2), C.white, tower).CFrame = CFrame.new(0, 50, -50.2) * CFrame.Angles(0, math.rad(90), 0)
 local hourHand = box("ClockHour", -0.25, 0.25, 50, 53, -50.5, -50.3, C.navy, tower)
 local minuteHand = box("ClockMinute", 0.8, 3.8, 49.75, 50.25, -50.5, -50.3, C.navy, tower)
 hourHand.Name, minuteHand.Name = "ClockHour", "ClockMinute"
@@ -331,7 +375,7 @@ box("GymStripeS", 80, 180, 8, 10, 34.6, 35, C.trim, gym)
 box("GymRim", 79, 181, 20, 21, -36, 36, C.roof, gym)
 -- หน้าต่างแถบสูงใต้ขอบหลังคา
 for wx = 86, 174, 11 do
-	for _, wz in { -34.7, 34.7 } do
+	for _, wz in { -35.1, 35.1 } do
 		local g = part("GymWindow", Vector3.new(7, 3, 0.2), Vector3.new(wx, 16, wz), C.glass, gym, Enum.Material.Glass)
 		g.Transparency = 0.35
 		g.CanCollide = false
@@ -355,7 +399,7 @@ for _, side in { 1, -1 } do
 end
 -- ป้ายแขวนธงสี + ไฟเพดานโรงยิม
 for i, color in { C.red, C.blue, C.yellow, C.trim } do
-	box("Banner", 95 + i * 18, 99 + i * 18, 12, 18, -34.6, -34.4, color, gym)
+	box("Banner", 95 + i * 18, 99 + i * 18, 11, 17, -33.9, -33.7, color, gym)
 end
 for i = 0, 3 do
 	local lamp = part("GymLight", Vector3.new(10, 0.4, 2), Vector3.new(100 + i * 27, 19.5, 0), C.white, gym, Enum.Material.Neon)
@@ -376,10 +420,10 @@ box("CafeWallEb", -101, -100, 0, 12, 7, 25, C.wall, cafe)
 box("CafeDoorTop", -101, -100, 9, 12, -7, 7, C.wall, cafe)
 box("CafeRoof", -161, -99, 12, 13, -26, 26, C.roof, cafe)
 box("CafeRoofTrim", -161.5, -98.5, 12, 12.8, -26.5, 26.5, C.trim, cafe)
-sign(cafe, "CAFETERIA", Vector3.new(16, 3.2, 0.4), Vector3.new(-99.4, 10.5, 0), 90, C.red, C.white)
+sign(cafe, "CAFETERIA", Vector3.new(16, 3.2, 0.4), Vector3.new(-99.4, 10.5, 0), -90, C.red, C.white)
 -- กระจกหน้าต่างยาว ผนังเหนือ-ใต้
 for wx = -152, -108, 11 do
-	for _, wz in { -24.6, 24.6 } do
+	for _, wz in { -25.1, 25.1 } do
 		local g = part("CafeWindow", Vector3.new(7, 4, 0.2), Vector3.new(wx, 7, wz), C.glass, cafe, Enum.Material.Glass)
 		g.Transparency = 0.35
 		g.CanCollide = false
@@ -471,10 +515,10 @@ local props = folder("Props")
 -- ต้นซากุระ: ลำต้น + มงกุฎหลายก้อน + กลีบร่วง
 local function sakura(x: number, z: number, scale: number)
 	cylinder("Trunk", 1.2 * scale, 9 * scale, Vector3.new(x, 4.5 * scale, z), C.trunk, props, Enum.Material.Wood)
-	local crown = ball("Crown", 15 * scale, Vector3.new(x, 13 * scale, z), C.petal, props, Enum.Material.Grass)
-	ball("Crown", 10 * scale, Vector3.new(x + 4 * scale, 11 * scale, z + 3 * scale), C.petalLight, props, Enum.Material.Grass)
-	ball("Crown", 9 * scale, Vector3.new(x - 4 * scale, 12 * scale, z - 3 * scale), C.petal, props, Enum.Material.Grass)
-	ball("Crown", 8 * scale, Vector3.new(x + 1 * scale, 17 * scale, z - 2 * scale), C.petalLight, props, Enum.Material.Grass)
+	local crown = ball("Crown", 15 * scale, Vector3.new(x, 13 * scale, z), C.petal, props, Enum.Material.SmoothPlastic)
+	ball("Crown", 10 * scale, Vector3.new(x + 4 * scale, 11 * scale, z + 3 * scale), C.petalLight, props, Enum.Material.SmoothPlastic)
+	ball("Crown", 9 * scale, Vector3.new(x - 4 * scale, 12 * scale, z - 3 * scale), C.petal, props, Enum.Material.SmoothPlastic)
+	ball("Crown", 8 * scale, Vector3.new(x + 1 * scale, 17 * scale, z - 2 * scale), C.petalLight, props, Enum.Material.SmoothPlastic)
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	e.Color = ColorSequence.new(C.petal, C.petalLight)
@@ -516,12 +560,12 @@ petals.LightEmission = 0.3
 petals.Parent = petalSky
 
 -- น้ำพุกลางลาน (ด้านหน้าอาคาร)
-cylinder("FountainBasin", 7.5, 1.4, Vector3.new(0, 1, -30), C.stone, props, Enum.Material.Marble)
+cylinder("FountainBasin", 7.5, 1.4, Vector3.new(0, 1, -30), C.stone, props, Enum.Material.SmoothPlastic)
 local water = cylinder("FountainWater", 6.6, 0.3, Vector3.new(0, 1.55, -30), C.water, props, Enum.Material.Neon)
 water.Transparency = 0.35
 water.CanCollide = false
-cylinder("FountainPillar", 0.9, 4, Vector3.new(0, 3.2, -30), C.stone, props, Enum.Material.Marble)
-local fountainTop = ball("FountainTop", 2.2, Vector3.new(0, 5.4, -30), C.white, props, Enum.Material.Marble)
+cylinder("FountainPillar", 0.9, 4, Vector3.new(0, 3.2, -30), C.stone, props, Enum.Material.SmoothPlastic)
+local fountainTop = ball("FountainTop", 2.2, Vector3.new(0, 5.4, -30), C.white, props, Enum.Material.SmoothPlastic)
 local jet = Instance.new("ParticleEmitter")
 jet.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 jet.Color = ColorSequence.new(Color3.fromHex("BFE9FF"), C.white)
@@ -588,7 +632,7 @@ local function lamp(x: number, z: number)
 	local bulb = ball("Bulb", 2, Vector3.new(x, 12.8, z), C.yellow, props, Enum.Material.Neon)
 	pointLight(bulb, C.yellow, 30, 1.2)
 end
-for _, p in { { -20, 20 }, { 20, 20 }, { -20, -30 }, { 20, -30 }, { -50, 0 }, { 50, 0 }, { 0, 75 }, { 0, 150 }, { -90, 0 }, { 0, 190 } } do
+for _, p in { { -20, 20 }, { 20, 20 }, { -20, -30 }, { 20, -30 }, { -50, 0 }, { 50, 0 }, { 8, 75 }, { -8, 150 }, { -90, 8 }, { 8, 190 } } do
 	lamp(p[1], p[2])
 end
 
@@ -616,7 +660,7 @@ end
 
 ---------------------------------------------------------------- สนามกีฬา (ฝั่งตะวันตกเฉียงใต้) x -140..-50, z 55..125
 local field = folder("Field")
-box("TrackOuter", -142, -48, 0.05, 0.28, 52, 128, C.track, field)
+box("TrackOuter", -142, -48, -3, 0.28, 52, 128, C.track, field)
 box("FieldGrass", -137, -53, 0.28, 0.4, 57, 123, C.grassField, field, Enum.Material.Grass)
 for _, def in { { -137, -53, 56.7, 57.3 }, { -137, -53, 122.7, 123.3 }, { -137.3, -136.7, 57, 123 }, { -53.3, -52.7, 57, 123 }, { -95.3, -94.7, 57, 123 } } do
 	box("FieldLine", def[1], def[2], 0.4, 0.45, def[3], def[4], C.white, field)
@@ -658,10 +702,10 @@ end
 for i = 1, 9 do
 	local a = rng:NextNumber(0, math.pi * 2)
 	local r = rng:NextNumber(2, 13)
-	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, -0.35, 95 + math.sin(a) * r), Color3.fromHex("5FBF7A"), pond)
+	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, -0.9, 95 + math.sin(a) * r), Color3.fromHex("5FBF7A"), pond)
 	pad.CanCollide = false
 	if i % 3 == 0 then
-		local flower = ball("Lotus", 0.9, Vector3.new(pad.Position.X, -0.1, pad.Position.Z), C.trim, pond)
+		local flower = ball("Lotus", 0.9, Vector3.new(pad.Position.X, -0.65, pad.Position.Z), C.trim, pond)
 		flower.CanCollide = false
 	end
 end
@@ -676,7 +720,7 @@ for i = 1, 60 do
 	cylinder("PineTrunk", 0.9, h * 0.35, Vector3.new(x, h * 0.17, z), C.trunk, scenery)
 	for layer = 0, 2 do
 		local s = (3 - layer) * 3.2
-		local cone = ball("PineLeaves", s, Vector3.new(x, h * 0.35 + layer * h * 0.2 + s * 0.3, z), Color3.fromHex("4FA06A"), scenery, Enum.Material.Grass)
+		local cone = ball("PineLeaves", s, Vector3.new(x, h * 0.35 + layer * h * 0.2 + s * 0.3, z), Color3.fromHex("4FA06A"), scenery, Enum.Material.SmoothPlastic)
 		cone.Size = Vector3.new(s, s * 1.3, s)
 	end
 end
@@ -701,6 +745,11 @@ spawn.Color = C.trim
 spawn.Material = Enum.Material.SmoothPlastic
 spawn.Neutral = true
 spawn.Parent = map
+for _, d in spawn:GetChildren() do
+	if d:IsA("Decal") then
+		d:Destroy()
+	end
+end
 
 local safe = part("SafeZone", Vector3.new(160, 30, 120), Vector3.new(0, 14, 0), C.roof, map)
 safe.Transparency = 1
@@ -716,19 +765,20 @@ for _, name in { "Atmosphere", "BloomEffect", "SunRaysEffect", "ColorCorrectionE
 		e:Destroy()
 	end
 end
-Lighting.Brightness = 2.6
+Lighting.Brightness = 2.2
 Lighting.EnvironmentDiffuseScale = 0.7
 Lighting.EnvironmentSpecularScale = 0.4
-Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 175)
-Lighting.Ambient = Color3.fromRGB(120, 120, 140)
+Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 180)
+Lighting.Ambient = Color3.fromRGB(135, 135, 150)
+Lighting.ColorShift_Top = Color3.fromHex("FFF1DA")
 Lighting.GlobalShadows = true
 Lighting.ClockTime = 14
 
 local atmosphere = Instance.new("Atmosphere")
-atmosphere.Color = Color3.fromHex("FFE9F0")
-atmosphere.Decay = Color3.fromHex("FFC8DD")
-atmosphere.Density = 0.22
-atmosphere.Haze = 0.6
+atmosphere.Color = Color3.fromHex("CFE6FF")
+atmosphere.Decay = Color3.fromHex("FFD5C8")
+atmosphere.Density = 0.25
+atmosphere.Haze = 1.0
 atmosphere.Glare = 0.2
 atmosphere.Parent = Lighting
 local bloom = Instance.new("BloomEffect")
