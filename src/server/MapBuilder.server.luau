@@ -193,13 +193,7 @@ if not baked then
 	terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("B2EBA6"))
 	terrain:FillBlock(CFrame.new(0, -8, 110), Vector3.new(760, 12, 800), Enum.Material.LeafyGrass)
 
-	-- เนินเขารอบฉาก
-	for _, h in {
-		{ -360, -140, 55 }, { -300, 80, 60 }, { -340, 300, 70 }, { 360, -120, 60 }, { 330, 120, 55 },
-		{ 350, 320, 70 }, { -120, -260, 65 }, { 80, -270, 70 },
-	} do
-		terrain:FillBall(Vector3.new(h[1], -h[3] * 0.55, h[2]), h[3], Enum.Material.LeafyGrass)
-	end
+	-- เนินเขารอบฉากย้ายไปเป็นแนวเขานอกขอบโลกใน WorldBuilder (เนินกลางโลกเคยทับสวน ถนน บ้าน)
 end
 
 -- สระน้ำฝั่งตะวันออก (125, 95) รัศมี 17

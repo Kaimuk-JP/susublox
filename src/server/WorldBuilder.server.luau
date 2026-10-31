@@ -21,8 +21,8 @@ if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttri
 		end
 		local B = World.Bounds
 		local tile = 400
-		for x = B.MinX, B.MaxX - 1, tile do
-			for z = B.MinZ, B.MaxZ - 1, tile do
+		for x = B.MinX - 400, B.MaxX + 399, tile do
+			for z = B.MinZ - 400, B.MaxZ + 399, tile do
 				workspace.Terrain:FillBlock(CFrame.new(x + tile / 2, -8, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.LeafyGrass)
 			end
 			task.wait()
@@ -90,11 +90,26 @@ end
 -- ถ้าปั้นภูมิประเทศธรรมชาติไว้ใน Place แล้ว (tools/TerrainBake.luau ตั้ง TerrainBaked) จะไม่ปูทับ
 if workspace:GetAttribute("TerrainBaked") ~= true then
 	local tile = 400
-	for x = B.MinX, B.MaxX - 1, tile do
-		for z = B.MinZ, B.MaxZ - 1, tile do
+	-- ปูหญ้าเกินขอบโลก 400 studs (เป็นฉากด้านนอกกำแพงล่องหน)
+	for x = B.MinX - 400, B.MaxX + 399, tile do
+		for z = B.MinZ - 400, B.MaxZ + 399, tile do
 			terrain:FillBlock(CFrame.new(x + tile / 2, -8, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.LeafyGrass)
 		end
 		task.wait()
+	end
+	-- แนวเขาล้อมเมืองอยู่นอกขอบโลกทั้งหมด (ผู้เล่นเข้าไม่ถึง) ใช้เป็นฉากหลังให้สุดสายตาไม่โล่ง
+	local function mountain(x: number, z: number, r: number)
+		terrain:FillBall(Vector3.new(x, -r * 0.45, z), r, Enum.Material.LeafyGrass)
+		terrain:FillBall(Vector3.new(x, -r * 0.45 + r * 0.55, z), r * 0.55, Enum.Material.Rock) -- ยอดเขาเป็นหิน
+	end
+	local pad = 150
+	for x = B.MinX - pad, B.MaxX + pad, 150 do
+		mountain(x, B.MinZ - pad, 85 + (x % 3) * 12)
+		mountain(x + 40, B.MaxZ + pad, 80 + (x % 4) * 10)
+	end
+	for z = B.MinZ - pad, B.MaxZ + pad, 150 do
+		mountain(B.MinX - pad, z + 30, 85 + (z % 3) * 12)
+		mountain(B.MaxX + pad, z + 30, 80 + (z % 4) * 10)
 	end
 end
 
