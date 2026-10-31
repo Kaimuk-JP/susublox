@@ -1,5 +1,6 @@
 --!strict
 -- แกนต่อสู้ที่ผู้เล่นและ NPC ใช้ร่วมกัน (ไม่ผูกกับ Remote)
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -59,7 +60,17 @@ function Combat.Impulse(s: CombatState.CombatState, velocity: Vector3, duration:
 	end
 	local root = s.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if root then
-		root.AssemblyLinearVelocity = velocity
+		-- Humanoid ทับ AssemblyLinearVelocity ทุกเฟรม (NPC แทบไม่ขยับ) จึงใช้ LinearVelocity คงไว้ช่วงสั้น ๆ
+		local attachment = Instance.new("Attachment")
+		attachment.Parent = root
+		local lv = Instance.new("LinearVelocity")
+		lv.Attachment0 = attachment
+		lv.RelativeTo = Enum.ActuatorRelativeTo.World
+		lv.MaxForce = 1e6
+		lv.VectorVelocity = velocity
+		lv.Parent = root
+		Debris:AddItem(lv, duration)
+		Debris:AddItem(attachment, duration)
 	end
 end
 
