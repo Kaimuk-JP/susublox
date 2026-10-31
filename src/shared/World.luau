@@ -30,7 +30,7 @@ local Districts: { District } = {
 		Pois = { Vector3.new(-90, 0, 40), Vector3.new(80, 0, -40), Vector3.new(0, 0, 90) },
 	},
 	{
-		Id = "ForestCamp", Name = "ค่ายในป่า", Theme = "forest", Center = Vector3.new(-700, 0, -100), Radius = 130,
+		Id = "ForestCamp", Name = "ค่ายในป่า", Theme = "forest", Center = Vector3.new(-640, 0, -100), Radius = 130,
 		Levels = { 9, 15 }, EnemyName = "โจรป่า", EnemyColor = "4FA06A", BossName = "หัวหน้าโจรป่า",
 		BossOffset = Vector3.new(30, 0, -10), GiverName = "ลุงนักสำรวจ", GiverOffset = Vector3.new(60, 0, 70),
 		Pois = { Vector3.new(-70, 0, -60), Vector3.new(20, 0, 80), Vector3.new(-30, 0, 20) },
@@ -42,19 +42,19 @@ local Districts: { District } = {
 		Pois = { Vector3.new(-150, 0, 0), Vector3.new(60, 0, -60), Vector3.new(260, 0, 0) },
 	},
 	{
-		Id = "TempleHill", Name = "ศาลเจ้าบนเนิน", Theme = "temple", Center = Vector3.new(700, 0, -150), Radius = 120,
+		Id = "TempleHill", Name = "ศาลเจ้าบนเนิน", Theme = "temple", Center = Vector3.new(660, 0, -150), Radius = 120,
 		Levels = { 16, 24 }, EnemyName = "นักรบศาลเจ้า", EnemyColor = "EF233C", BossName = "ผู้พิทักษ์ศาลเจ้า",
 		BossOffset = Vector3.new(0, 27, -16), GiverName = "แม่ชีศาลเจ้า", GiverOffset = Vector3.new(0, 0, 78),
 		Pois = { Vector3.new(15, 27, 0), Vector3.new(-70, 0, 20), Vector3.new(70, 0, 20) },
 	},
 	{
-		Id = "Kurogane", Name = "โรงเรียนคุโรกาเนะ", Theme = "rivalSchool", Center = Vector3.new(-750, 0, 600), Radius = 150,
+		Id = "Kurogane", Name = "โรงเรียนคุโรกาเนะ", Theme = "rivalSchool", Center = Vector3.new(-520, 0, 600), Radius = 150,
 		Levels = { 20, 30 }, EnemyName = "นักเรียนคุโรกาเนะ", EnemyColor = "9B7BFF", BossName = "ประธานแก๊งคุโรกาเนะ",
 		BossOffset = Vector3.new(0, 0, 10), GiverName = "นักเรียนผู้ทรยศ", GiverOffset = Vector3.new(-60, 0, 70),
 		Pois = { Vector3.new(-90, 0, -30), Vector3.new(90, 0, -30), Vector3.new(0, 0, -70) },
 	},
 	{
-		Id = "Docks", Name = "ท่าเรืออุตสาหกรรม", Theme = "industrial", Center = Vector3.new(750, 0, 620), Radius = 150,
+		Id = "Docks", Name = "ท่าเรืออุตสาหกรรม", Theme = "industrial", Center = Vector3.new(560, 0, 620), Radius = 150,
 		Levels = { 28, 40 }, EnemyName = "คนงานแก๊งท่าเรือ", EnemyColor = "FFE066", BossName = "ราชาแห่งท่าเรือ",
 		BossOffset = Vector3.new(60, 0, -20), GiverName = "กัปตันเรือ", GiverOffset = Vector3.new(-80, 0, 70),
 		Pois = { Vector3.new(-80, 0, -35), Vector3.new(90, 0, 40), Vector3.new(0, 0, -100) },
@@ -63,13 +63,19 @@ local Districts: { District } = {
 
 -- ถนนเชื่อมย่าน (แนวแกน): {x1, z1, x2, z2, กว้าง}
 local Roads = {
-	{ -1000, 170, 1000, 170, 16 }, -- ถนนสายหลัก ผ่านสวนซากุระ-โรงเรียน-ถนนการค้า
+	{ -800, 170, 800, 170, 16 }, -- ถนนสายหลัก ผ่านสวนซากุระ-โรงเรียน-ถนนการค้า
 	{ -90, 170, -90, 600, 14 }, -- ลงใต้ไปย่านสถานี
-	{ -800, 600, 800, 600, 14 }, -- ถนนย่านสถานี-คุโรกาเนะ-ท่าเรือ
+	{ -680, 600, 700, 600, 14 }, -- ถนนย่านสถานี-คุโรกาเนะ-ท่าเรือ (ฝั่งใต้แม่น้ำคิโซ)
+	{ -370, 170, -370, 600, 14 }, -- สะพานตะวันตก ลงใต้ไปโรงเรียนคุโรกาเนะ
 	{ -560, -100, -560, 170, 14 }, -- ขึ้นเหนือไปค่ายในป่า
-	{ -700, -100, -560, -100, 14 },
-	{ 560, -150, 560, 170, 14 }, -- ขึ้นเหนือไปศาลเจ้า
-	{ 560, -86, 700, -86, 14 }, -- ต่อถึงเชิงบันไดศาลเจ้า (ฐานเนินอยู่ที่ z=-90)
+	{ -640, -100, -560, -100, 14 },
+	{ 570, -150, 570, 600, 14 }, -- ทางสายตะวันออก ขึ้นเหนือไปศาลเจ้า ลงใต้ข้ามสะพานไปท่าเรือ
+	{ 570, -86, 660, -86, 14 }, -- ต่อถึงเชิงบันไดศาลเจ้า (ฐานเนินอยู่ที่ z=-90)
+	-- ถนนวงแหวนรอบโรงเรียน
+	{ -235, -190, 235, -190, 12 },
+	{ -235, 350, 235, 350, 12 },
+	{ -235, -190, -235, 350, 12 },
+	{ 235, -190, 235, 350, 12 },
 }
 
 -- พื้นที่ปูแข็งของแต่ละย่าน (Terrain ใต้เป็นวัสดุเมือง ไม่ใช่หญ้า): {x1, x2, z1, z2, วัสดุ}
@@ -78,21 +84,21 @@ local Paved = {
 	{ -300, 300, 555, 645, "Pavement" }, -- ย่านสถานี แถวตึกตะวันออก-ตะวันตก
 	{ -135, -45, 230, 560, "Pavement" }, -- ย่านสถานี แถวตึกเหนือ-ใต้
 	{ 100, 240, 640, 730, "Pavement" }, -- สถานี + ชานชาลา
-	{ 625, 872, 490, 745, "Concrete" }, -- ท่าเรือ (ลานตู้คอนเทนเนอร์)
-	{ -860, -640, 520, 715, "Pavement" }, -- โรงเรียนคุโรกาเนะ
+	{ 485, 732, 490, 745, "Concrete" }, -- ท่าเรือ (ลานตู้คอนเทนเนอร์)
+	{ -640, -400, 520, 715, "Pavement" }, -- โรงเรียนคุโรกาเนะ
 }
 
 -- เนินที่ปั้นด้วย Terrain: ลาดชันคงที่ r0..r1 ยอดราบสูง top (บันไดศาลเจ้าวิ่งตามแนวลาดนี้)
 local Hills = {
-	{ x = 700, z = -150, r0 = 22, r1 = 58, top = 27 },
+	{ x = 660, z = -150, r0 = 22, r1 = 58, top = 27 },
 }
 
 -- แอ่งน้ำ (ขุด Terrain แล้วเติมน้ำ): กล่อง {x1, x2, z1, z2}
 local Water = {
-	{ 875, 985, 430, 850 }, -- อ่าวท่าเรือ
+	{ 685, 795, 430, 850 }, -- อ่าวท่าเรือ (ต่อจากแม่น้ำคิโซ)
 }
 
-local Bounds = { MinX = -1050, MaxX = 1050, MinZ = -450, MaxZ = 960 }
+local Bounds = { MinX = -800, MaxX = 800, MinZ = -450, MaxZ = 900 }
 
 return {
 	Districts = Districts,

@@ -24,7 +24,7 @@ local function skip(x: number): boolean
 	if math.abs(x) < 235 then
 		return true -- พื้นที่โรงเรียน
 	end
-	if math.abs(x - -560) < 18 or math.abs(x - 560) < 18 then
+	if math.abs(x - -560) < 18 or math.abs(x - -370) < 18 or math.abs(x - 570) < 18 then
 		return true -- ทางแยกขึ้นเหนือ
 	end
 	for _, d in World.Districts do
@@ -114,7 +114,7 @@ local function busStop(x: number, side: number)
 	BK.cylinder("BusSignPole", 0.15, 8, Vector3.new(x + 5.5, 4, z), hex("C9CED6"), f, Enum.Material.Metal)
 	BK.sign(f, "BUS", Vector3.new(2.4, 2.4, 0.2), Vector3.new(x + 5.5, 8.4, z), if side == 1 then 180 else 0, hex("4D7CFE"), hex("FFFFFF"))
 end
-for _, spec in { { -780, 1 }, { -300, -1 }, { 300, 1 }, { 780, -1 }, { -900, -1 }, { 900, 1 } } do
+for _, spec in { { -700, 1 }, { -300, -1 }, { 300, 1 }, { 700, -1 }, { -250, 1 }, { 250, -1 } } do
 	if not skip(spec[1]) then
 		busStop(spec[1], spec[2])
 	end
