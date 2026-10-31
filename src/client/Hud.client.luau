@@ -64,6 +64,20 @@ info.Font = Enum.Font.FredokaOne
 info.TextSize = 14
 info.Parent = gui
 
+local safeLabel = Instance.new("TextLabel")
+safeLabel.AnchorPoint = Vector2.new(0.5, 0)
+safeLabel.Position = UDim2.new(0.5, 0, 0, 90)
+safeLabel.Size = UDim2.fromOffset(340, 34)
+safeLabel.BackgroundColor3 = COLORS.Panel
+safeLabel.BackgroundTransparency = 0.2
+safeLabel.TextColor3 = Color3.fromHex("7EC8E3")
+safeLabel.Font = Enum.Font.FredokaOne
+safeLabel.TextSize = 16
+safeLabel.Text = "โซนปลอดภัย: ต่อสู้ไม่ได้ ไปหลังโรงเรียนเพื่อสู้กับศัตรู"
+safeLabel.Visible = false
+safeLabel.Parent = gui
+Instance.new("UICorner", safeLabel)
+
 local function set(fill: Frame, label: TextLabel, value: number, max: number, text: string)
 	fill.Size = UDim2.fromScale(math.clamp(value / math.max(max, 1), 0, 1), 1)
 	label.Text = text
@@ -83,5 +97,6 @@ RunService.RenderStepped:Connect(function()
 	local exp = (player:GetAttribute("Exp") :: number?) or 0
 	local need = (player:GetAttribute("ExpNeeded") :: number?) or 100
 	set(expFill, expLabel, exp, need, `EXP {exp}/{need}`)
+	safeLabel.Visible = player:GetAttribute("InSafeZone") == true
 	info.Text = `Lv.{player:GetAttribute("Level") or 1}  {player:GetAttribute("Rank") or ""}  ¥{player:GetAttribute("Yen") or 0}`
 end)

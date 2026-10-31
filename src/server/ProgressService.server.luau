@@ -170,6 +170,8 @@ task.spawn(function()
 			local char = player.Character
 			local s = Combat.Get(char)
 			if char and s then
+				local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+				player:SetAttribute("InSafeZone", root ~= nil and Combat.InSafeZone(root.Position))
 				char:SetAttribute("Stamina", s.Stamina)
 				char:SetAttribute("Ult", s.Ult)
 			end

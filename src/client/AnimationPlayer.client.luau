@@ -7,9 +7,32 @@ local Assets = require(ReplicatedStorage.Shared.Assets)
 
 local cache: { [Animator]: { [string]: AnimationTrack } } = {}
 
+-- ตัวแทนชั่วคราวเมื่อยังไม่มี asset แอนิเมชัน: วงฟันสั้น ๆ หน้าตัวละคร ให้เห็นว่ากดท่าแล้ว
+local function fallbackSlash(character: Model, name: string)
+	local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root or name == "Block" then
+		return
+	end
+	local slash = Instance.new("Part")
+	slash.Anchored, slash.CanCollide, slash.CanQuery, slash.CanTouch = true, false, false, false
+	slash.Material = Enum.Material.Neon
+	slash.Color = if name == "Dash" then Color3.fromHex("7EC8E3") else Color3.fromHex("FFFFFF")
+	slash.Size = Vector3.new(0.2, 1, 4)
+	slash.CFrame = root.CFrame * CFrame.new(0, 0.5, -3.5) * CFrame.Angles(0, 0, math.rad(35))
+	slash.Parent = workspace
+	local tween = game:GetService("TweenService"):Create(
+		slash,
+		TweenInfo.new(0.18),
+		{ Transparency = 1, Size = Vector3.new(0.2, 4, 6) }
+	)
+	tween:Play()
+	game:GetService("Debris"):AddItem(slash, 0.25)
+end
+
 local function playOn(character: Model, name: string)
 	local id = Assets.Animations[name]
 	if not id or id == 0 then
+		fallbackSlash(character, name)
 		return
 	end
 	local hum = character:FindFirstChildOfClass("Humanoid")
