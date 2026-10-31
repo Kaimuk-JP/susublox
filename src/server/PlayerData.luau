@@ -3,6 +3,7 @@
 -- หมายเหตุ: ควรเปลี่ยนไปใช้ ProfileStore เมื่อลงผ่าน Wally แล้ว (ดู docs/DATA.md)
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local ProfileTemplate = require(game.ReplicatedStorage.Shared.ProfileTemplate)
 
@@ -52,6 +53,13 @@ function PlayerData.Load(player: Player): ProfileTemplate.Profile?
 			local profile = ProfileTemplate.Migrate(data)
 			profiles[player] = profile
 			return profile
+		end
+		if not ok and RunService:IsStudio() then
+			-- Studio ที่ยังไม่ publish/ไม่เปิด API Services: ใช้ profile ชั่วคราว (ไม่เซฟ) แทนการ Kick
+			warn("[PlayerData] DataStore ใช้ไม่ได้ใน Studio ใช้ profile ชั่วคราว: " .. tostring(data))
+			local p = ProfileTemplate.new()
+			profiles[player] = p
+			return p
 		end
 		task.wait(3)
 	end
