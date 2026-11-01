@@ -273,10 +273,19 @@ end
 
 -- ต้นไม้จริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Trees) ข้อตกลง: Pivot = โคนต้นที่พื้น สูงราว 12 studs ไม่มีสคริปต์
 -- ถ้ามีจะใช้แทนต้นไม้ที่ประกอบจากก้อนกลม; ถ้าไม่มีก็ใช้แบบเดิม
-function BK.importedTree(parent: Instance, x: number, z: number, scale: number): boolean
+function BK.importedTree(parent: Instance, x: number, z: number, scale: number, names: { string }?): boolean
 	local assets = game:GetService("ServerStorage"):FindFirstChild("ImportedAssets")
 	local folder = assets and assets:FindFirstChild("Trees")
 	local list = folder and folder:GetChildren() or {}
+	if names and folder then
+		list = {}
+		for _, n in names do
+			local c = folder:FindFirstChild(n)
+			if c then
+				table.insert(list, c)
+			end
+		end
+	end
 	if #list == 0 then
 		return false
 	end
@@ -298,8 +307,8 @@ function BK.importedTree(parent: Instance, x: number, z: number, scale: number):
 	return true
 end
 
-function BK.roundTree(parent: Instance, x: number, z: number, scale: number, leaf: Color3?)
-	if BK.importedTree(parent, x, z, scale) then
+function BK.roundTree(parent: Instance, x: number, z: number, scale: number, leaf: Color3?, names: { string }?)
+	if BK.importedTree(parent, x, z, scale, names) then
 		return
 	end
 	local s = scale

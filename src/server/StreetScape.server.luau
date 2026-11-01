@@ -36,6 +36,7 @@ local function skip(x: number): boolean
 end
 
 ---------------------------------------------------------------- กำแพงหิน + เสา + โคมแดง
+local STREET_TREES = { "Tree_Zelkova", "Tree_Zelkova", "Tree_GinkgoYellow", "Tree_GoldGreen" } -- ต้นใบกว้างธรรมชาติ (เซลโคว่า/แปะก๊วยเหลือง) ริมถนน
 local STONE, STONE_DARK, PLASTER, TILE = hex("9A9488"), hex("6F6B62"), hex("B3AB9B"), hex("5B5D6B")
 
 for _, side in { -1, 1 } do
@@ -57,7 +58,7 @@ for _, side in { -1, 1 } do
 	-- ต้นไม้ใหญ่หลังกำแพง
 	for x = B.MinX + 60, B.MaxX - 60, 26 do
 		if not skip(x) then
-			BK.roundTree(f, x + rng:NextNumber(-4, 4), MAIN_Z + side * (24 + rng:NextNumber(0, 10)), rng:NextNumber(1.1, 1.7), if rng:NextNumber() > 0.7 then hex("8FB85A") else nil)
+			BK.roundTree(f, x + rng:NextNumber(-4, 4), MAIN_Z + side * (24 + rng:NextNumber(0, 10)), rng:NextNumber(1.1, 1.7), if rng:NextNumber() > 0.7 then hex("6E8E50") else nil, STREET_TREES)
 		end
 	end
 end
@@ -74,11 +75,14 @@ for x = B.MinX + 50, B.MaxX - 50, POLE_STEP do
 		for _, ox in { -2.6, 0, 2.6 } do
 			BK.cylinder("Insulator", 0.22, 0.7, Vector3.new(x + ox, 18.2, POLE_SIDE_Z), hex("A5A7A8"), f)
 		end
-		BK.box("Transformer", x + 0.5, x + 1.9, 13.2, 15, POLE_SIDE_Z - 0.7, POLE_SIDE_Z + 0.7, hex("70747A"), f, Enum.Material.Metal)
+		for _, oz in { -0.9, 0.9 } do
+			BK.cylinder("Transformer", 0.7, 2.2, Vector3.new(x + 1.5, 14.2, POLE_SIDE_Z + oz), hex("70747A"), f, Enum.Material.Metal)
+		end
+		BK.box("PoleCableBox", x - 0.8, x + 0.8, 10.4, 12.4, POLE_SIDE_Z - 0.8, POLE_SIDE_Z - 0.45, hex("44464D"), f, Enum.Material.Metal)
 	end
 end
 
-local function wire(p1: Vector3, p2: Vector3, sag: number)
+local function wire(p1: Vector3, p2: Vector3, sag: number, thick: number?)
 	local segments = 8
 	local prev = p1
 	for i = 1, segments do
@@ -86,7 +90,7 @@ local function wire(p1: Vector3, p2: Vector3, sag: number)
 		local pos = p1:Lerp(p2, t) - Vector3.new(0, sag * 4 * t * (1 - t), 0)
 		local mid = (prev + pos) / 2
 		local length = (pos - prev).Magnitude
-		local w = BK.part("Wire", Vector3.new(0.12, 0.12, length), mid, hex("1B1C20"), f)
+		local w = BK.part("Wire", Vector3.new(thick or 0.12, thick or 0.12, length), mid, hex("1B1C20"), f)
 		w.CFrame = CFrame.lookAt(mid, pos)
 		w.CanCollide, w.CanQuery, w.CanTouch = false, false, false
 		prev = pos
@@ -97,6 +101,15 @@ for i = 1, #poles - 1 do
 	if poles[i + 1] - poles[i] <= POLE_STEP + 1 then
 		for _, ox in { -2.6, 0, 2.6 } do
 			wire(Vector3.new(poles[i] + ox, 18.5, POLE_SIDE_Z), Vector3.new(poles[i + 1] + ox, 18.5, POLE_SIDE_Z), 1.6)
+		end
+	end
+end
+
+-- สายสื่อสาร/เคเบิลทีวีรวมเป็นมัดหนา หย่อนกว่าสายไฟ ห้อยอยู่ใต้สายไฟสามเส้น
+for i = 1, #poles - 1 do
+	if poles[i + 1] - poles[i] <= POLE_STEP + 1 then
+		for _, oz in { -0.3, 0.3 } do
+			wire(Vector3.new(poles[i], 12.3, POLE_SIDE_Z - 0.7 + oz), Vector3.new(poles[i + 1], 12.3, POLE_SIDE_Z - 0.7 + oz), 2.6, 0.32)
 		end
 	end
 end

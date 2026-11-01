@@ -283,10 +283,7 @@ local function buildTown(d: World.District, f: Folder)
 		BK.box("ArchBeam", x - 1.4, x + 1.4, 11, 13, 170 - 11.4, 170 + 11.4, hex("9E3B33"), f)
 		BK.sign(f, "SHOTENGAI", Vector3.new(16, 2.2, 0.4), Vector3.new(x, 14.2, 170), if x < cx then -90 else 90, hex("2A2C32"), hex("B8944A"))
 	end
-	-- ตู้กดน้ำและม้านั่งริมทาง
-	for i, x in { cx - 50, cx + 30, cx + 90 } do
-		BK.box("Vending", x, x + 3, 0.45, 7, 170 - 10.5 - 2.5, 170 - 10.5, if i % 2 == 0 then hex("9E3B33") else hex("3F566E"), f)
-	end
+	-- ตู้กดน้ำ ถังรีไซเคิล ที่จอดจักรยาน: วางโดย StreetFurniture.server.luau
 	stone(d, f, Vector3.new(cx + 10, 0, 170 - 10.5))
 end
 
