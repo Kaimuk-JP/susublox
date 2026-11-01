@@ -6,6 +6,9 @@ local Loot = require(script.Parent.Loot)
 local rng = Random.new()
 
 Combat.OnKill(function(_killer, victim)
+	if victim.Character:GetAttribute("Trial") then
+		return
+	end
 	local level = victim.Character:GetAttribute("NpcLevel")
 	local root = victim.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if typeof(level) ~= "number" or not root then

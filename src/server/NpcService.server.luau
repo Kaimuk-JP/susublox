@@ -24,7 +24,7 @@ local function nearestPlayerRoot(from: Vector3, range: number): BasePart?
 	for _, p in Players:GetPlayers() do
 		local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
-		if root and hum and hum.Health > 0 and not Combat.InSafeZone(root.Position) then
+		if root and hum and hum.Health > 0 and not Combat.InSafeZone(root.Position) and not p.Character:GetAttribute("ArenaSpec") then
 			local d = (root.Position - from).Magnitude
 			if d < bestDist then
 				best, bestDist = root, d

@@ -432,6 +432,16 @@ local function captain(ctx: Ctx, _accent: Color3)
 	applyHair(ctx, "oldman", "grey")
 end
 
+-- ผู้ตัดสินสนามประลอง: สูทดำ เสื้อเชิ้ตขาวตัดกับผ้าคาดหัวแดง
+local function referee(ctx: Ctx, _accent: Color3)
+	local suit = hex("1B1C22")
+	paint(ctx.Rig, ctx.Skin, hex("F0EEE8"), suit, hex("0E0E10"))
+	longCoat(ctx, suit)
+	tie(ctx, hex("A9372D"))
+	headband(ctx, hex("B03A2E"))
+	applyHair(ctx, "short", "black")
+end
+
 local function questGirl(ctx: Ctx, _accent: Color3)
 	paint(ctx.Rig, ctx.Skin, hex("F2C8D0"), hex("4A5670"), hex("F4F4F6"))
 	applyHair(ctx, "ponytail", "brown")
@@ -507,6 +517,7 @@ local LOOKS: { [string]: Look } = {
 	miko = { Scale = { Height = 0.95, Width = 0.9, Head = 1.0 }, Build = miko },
 	stationStaff = { Scale = { Height = 1.0, Width = 1.0, Head = 1.0 }, Build = stationStaff },
 	captain = { Scale = { Height = 1.04, Width = 1.08, Head = 1.0 }, Build = captain },
+	referee = { Scale = { Height = 1.04, Width = 1.04, Head = 1.0 }, Build = referee },
 	questGirl = { Scale = { Height = 0.95, Width = 0.9, Head = 1.0 }, Build = questGirl },
 	gang = { Scale = { Height = 1.0, Width = 1.0, Head = 1.0 }, Build = function(c, a) gang(c, a, nil) end },
 	brute = { Scale = { Height = 1.06, Width = 1.18, Head = 1.0 }, Build = function(c, a) gang(c, a, nil) end },
@@ -527,6 +538,7 @@ local NAME_LOOKS: { [string]: string } = {
 	["แม่ชีศาลเจ้า"] = "miko",
 	["นักเรียนผู้ทรยศ"] = "schoolboy",
 	["กัปตันเรือ"] = "captain",
+	["ผู้ตัดสินสนามประลอง"] = "referee",
 }
 
 local function inferLook(name: string, attributes: { [string]: any }?): string

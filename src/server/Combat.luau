@@ -151,6 +151,16 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	if Combat.InSafeZone(vroot.Position) or Combat.InSafeZone(aroot.Position) then
 		return
 	end
+	-- ผู้ชมในสนามประลองตีใครไม่ได้/ถูกตีไม่ได้ และผู้เล่นตีกันได้เฉพาะในสนามประลองเดียวกันที่แมตช์กำลังดำเนิน
+	if attacker.Character:GetAttribute("ArenaSpec") or victim.Character:GetAttribute("ArenaSpec") then
+		return
+	end
+	if Players:GetPlayerFromCharacter(attacker.Character) and Players:GetPlayerFromCharacter(victim.Character) then
+		local arenaId = attacker.Character:GetAttribute("ArenaId")
+		if arenaId == nil or arenaId ~= victim.Character:GetAttribute("ArenaId") then
+			return
+		end
+	end
 	local team = attacker.Character:GetAttribute("Team")
 	if team ~= nil and team == victim.Character:GetAttribute("Team") then
 		return -- ไม่ยิงพวกเดียวกัน (สงครามแก๊ง)

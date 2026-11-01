@@ -168,6 +168,9 @@ Combat.OnKill(function(killer, victim)
 	if not player or not p then
 		return
 	end
+	if victim.Character:GetAttribute("Trial") then
+		return -- บอทศึกฝึกซ้อมมีรางวัลของตัวเอง ไม่นับ EXP ฟาร์มซ้ำ
+	end
 	local victimPlayer = Players:GetPlayerFromCharacter(victim.Character)
 	local npcLevel = (victim.Character:GetAttribute("NpcLevel") :: number?) or 1
 	local exp = if victimPlayer then 50 else 30 * npcLevel * (if victim.IsBoss then 5 else 1)

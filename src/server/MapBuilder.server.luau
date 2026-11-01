@@ -8,6 +8,7 @@ local Lighting = game:GetService("Lighting")
 
 local RigFactory = require(script.Parent.RigFactory)
 local BK = require(script.Parent.BuildKit)
+local ArenaKit = require(script.Parent.ArenaKit)
 
 local C = {
 	paving = Color3.fromHex("B8AE9C"),
@@ -503,50 +504,18 @@ local cafeLight = part("CafeLight", Vector3.new(30, 0.3, 2), Vector3.new(-130, 1
 noCollide(cafeLight)
 pointLight(cafeLight, Color3.fromHex("FFF3E0"), 40, 1.2)
 
----------------------------------------------------------------- อารีน่าสงครามแก๊ง (x -50..50, z 210..310)
+---------------------------------------------------------------- สนามประลอง (x±52 z208..312): ภายนอกโคลอสเซียมกรีก + ลานหน้าสนาม
+-- ตัวสนามจริงเป็น instance ไกลเมือง (ArenaManager/ArenaKit) ที่นี่คือทางเข้า คีออสก์ผู้ตัดสิน และกระดาน
 local war = folder("WarArena")
--- กำแพงเหนือเว้นช่องประตูกว้าง 20 ให้เดินเข้าจากทางเดิน
-box("WarWallNa", -51, -10, 0, 5, 208, 210, C.navy, war)
-box("WarWallNb", 10, 51, 0, 5, 208, 210, C.navy, war)
-box("WarWallS", -51, 51, 0, 5, 310, 312, C.navy, war)
-for _, x in { -51, 51 } do
-	box("WarWallSide", x - 1, x + 1, 0, 5, 208, 312, C.navy, war)
+do
+	local exterior = ArenaKit.BuildExterior(war)
+	exterior:PivotTo(CFrame.new(ArenaKit.SITE))
+	-- ลานหน้าสนามเป็นโซนปลอดภัย (ใครก็สู้กันไม่ได้ก่อนเข้าแมตช์)
+	local zone = part("ArenaLobbySafe", Vector3.new(104, 40, 34), Vector3.new(0, 18, 225), C.roof, war)
+	zone.Transparency = 1
+	noCollide(zone)
+	zone:SetAttribute("SafeZone", true)
 end
-box("WarGateL", -11, -9, 0, 9, 207.5, 210.5, C.trim, war)
-box("WarGateR", 9, 11, 0, 9, 207.5, 210.5, C.trim, war)
-box("WarGateTop", -11, 11, 9, 11, 207.5, 210.5, C.trim, war)
--- ขอบกำแพง + ธงผ้าสีประจำฝั่งตามผนังด้านใน
-box("WarCapN_a", -52, -10, 5, 5.5, 207.6, 210.4, C.trim, war)
-box("WarCapN_b", 10, 52, 5, 5.5, 207.6, 210.4, C.trim, war)
-box("WarCapS", -52, 52, 5, 5.5, 309.6, 312.4, C.trim, war)
-for _, x in { -52, 51 } do
-	box("WarCapSide", x - 0.4, x + 2.4, 5, 5.5, 207.6, 312.4, C.trim, war)
-end
-for z = 220, 300, 20 do
-	local color = if z < 260 then C.red else C.blue
-	for _, x in { -49.8, 49.8 } do
-		box("WarBanner", x - 0.1, x + 0.1, 1.2, 4.6, z - 2, z + 2, color, war)
-	end
-end
-sign(war, "WAR ARENA", Vector3.new(16, 2.4, 0.4), Vector3.new(0, 9.8, 207.2), 0, C.navy, C.yellow)
-for _, c in { { -50, 210 }, { 50, 210 }, { -50, 310 }, { 50, 310 } } do
-	cylinder("FloodPole", 0.6, 22, Vector3.new(c[1], 11, c[2]), C.darkConcrete, war)
-	local lamp = part("FloodLamp", Vector3.new(4, 1.4, 2), Vector3.new(c[1], 22.5, c[2]), C.white, war, Enum.Material.Neon)
-	noCollide(lamp)
-	pointLight(lamp, Color3.fromHex("FFF8E8"), 45, 0.9)
-end
--- ธงประจำฝั่ง
-cylinder("FlagPoleRed", 0.3, 14, Vector3.new(16, 7, 218), C.white, war)
-box("FlagRed", 16.3, 22, 10, 14, 217.8, 218.2, C.red, war)
-cylinder("FlagPoleBlue", 0.3, 14, Vector3.new(-16, 7, 302), C.white, war)
-box("FlagBlue", -15.7, -10, 10, 14, 301.8, 302.2, C.blue, war)
-box("CoverRed", -12, -6, 0.3, 4, 225, 229, C.red, war)
-box("CoverRed", 6, 12, 0.3, 4, 225, 229, C.red, war)
-box("CoverBlue", -12, -6, 0.3, 4, 291, 295, C.blue, war)
-box("CoverBlue", 6, 12, 0.3, 4, 291, 295, C.blue, war)
-box("CoverMid", -4, 4, 0.3, 4, 258, 262, C.concrete, war)
-cylinder("MidCircle", 9, 0.1, Vector3.new(0, 0.36, 260), C.white, war)
-cylinder("MidCircleInner", 8.5, 0.12, Vector3.new(0, 0.38, 260), Color3.fromHex("BFC3C6"), war)
 
 ---------------------------------------------------------------- ของตกแต่งสนามหน้าโรงเรียน
 local props = folder("Props")

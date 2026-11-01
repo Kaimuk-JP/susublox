@@ -632,7 +632,7 @@ remote.OnServerEvent:Connect(function(player: Player, action: unknown, arg: unkn
 			remote:FireClient(player, "Toast", "รอสักครู่ก่อนเดินทางอีกครั้ง")
 			return
 		end
-		if player:GetAttribute("InDuel") or player:GetAttribute("InWar") then
+		if player:GetAttribute("InDuel") or player:GetAttribute("InWar") or player:GetAttribute("ArenaRole") then
 			return
 		end
 		local char = player.Character

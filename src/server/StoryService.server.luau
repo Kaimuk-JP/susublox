@@ -233,7 +233,7 @@ end
 Combat.OnKill(function(killer, victim)
 	local player = Players:GetPlayerFromCharacter(killer.Character)
 	local p = player and PlayerData.Get(player)
-	if not player or not p then
+	if not player or not p or victim.Character:GetAttribute("Trial") then
 		return
 	end
 	inc(p, "Kills", 1)

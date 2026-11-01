@@ -84,7 +84,7 @@ end)
 
 Combat.OnKill(function(killer, victim)
 	local pl = playerOf(killer)
-	if not pl then
+	if not pl or victim.Character:GetAttribute("Trial") then
 		return
 	end
 	progress(pl, "Win", 1)
