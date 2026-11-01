@@ -245,15 +245,18 @@ task.spawn(function()
 end)
 
 -- เมนู: ลงสเตตัส, เปลี่ยนสไตล์, ใส่พาสซีฟ, Prestige
-menu.OnServerEvent:Connect(function(player: Player, action: unknown, arg: unknown)
+menu.OnServerEvent:Connect(function(player: Player, action: unknown, arg: unknown, amount: unknown)
 	local p = PlayerData.Get(player)
 	if not p or typeof(action) ~= "string" then
 		return
 	end
 	if action == "AddStat" and typeof(arg) == "string" then
 		if p.StatPoints > 0 and (p.Stats :: any)[arg] ~= nil then
-			(p.Stats :: any)[arg] += 1
-			p.StatPoints -= 1
+			-- ลงทีละหลายแต้มได้ (amount); ไม่ส่งมา = 1; ไม่เกินแต้มที่มี
+			local n = if typeof(amount) == "number" and amount == amount then math.floor(amount) else 1
+			n = math.clamp(n, 1, p.StatPoints);
+			(p.Stats :: any)[arg] += n
+			p.StatPoints -= n
 		end
 	elseif action == "AutoStats" then
 		-- กระจายแต้มที่เหลือเท่าๆ กันทุกสเตตัส (ขี้เกียจกดทีละแต้ม)

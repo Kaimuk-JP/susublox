@@ -123,6 +123,7 @@ local function row(text: string, buttonText: string?, onClick: (() -> ())?)
 end
 
 local current = "stats"
+local statAmount = 10
 local render: () -> ()
 
 local views: { [string]: () -> () } = {}
@@ -142,10 +143,62 @@ views.stats = function()
 			menu:FireServer("AutoStats")
 		end)
 	end
+	local points = (player:GetAttribute("StatPoints") :: number?) or 0
+	if points > 0 then
+		-- ช่องกรอกจำนวนแต้มที่จะลงต่อการกดหนึ่งครั้ง (กรอกแล้วกดปุ่ม "ลง" ที่สเตตัสที่ต้องการ)
+		local f = Instance.new("Frame")
+		f.Size = UDim2.new(1, -8, 0, 44)
+		f.BackgroundColor3 = Color3.fromHex("3A3D5C")
+		order += 1
+		f.LayoutOrder = order
+		f.Parent = content
+		Instance.new("UICorner", f)
+		local l = Instance.new("TextLabel")
+		l.Size = UDim2.new(1, -190, 1, 0)
+		l.Position = UDim2.fromOffset(8, 0)
+		l.BackgroundTransparency = 1
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.TextColor3 = Color3.new(1, 1, 1)
+		l.Font = Enum.Font.FredokaOne
+		l.TextSize = 14
+		l.Text = "จำนวนแต้มที่จะลงต่อครั้ง"
+		l.Parent = f
+		local box = Instance.new("TextBox")
+		box.Size = UDim2.fromOffset(70, 32)
+		box.Position = UDim2.new(1, -176, 0.5, -16)
+		box.BackgroundColor3 = Color3.fromHex("22243A")
+		box.TextColor3 = Color3.new(1, 1, 1)
+		box.Font = Enum.Font.FredokaOne
+		box.TextSize = 16
+		box.ClearTextOnFocus = true
+		box.Text = tostring(math.min(statAmount, points))
+		box.Parent = f
+		Instance.new("UICorner", box)
+		box.FocusLost:Connect(function()
+			local n = tonumber(box.Text)
+			statAmount = if n then math.clamp(math.floor(n), 1, 9999) else 1
+			render()
+		end)
+		local maxB = Instance.new("TextButton")
+		maxB.Size = UDim2.fromOffset(92, 32)
+		maxB.Position = UDim2.new(1, -98, 0.5, -16)
+		maxB.BackgroundColor3 = ACCENT
+		maxB.TextColor3 = PANEL
+		maxB.Font = Enum.Font.FredokaOne
+		maxB.TextSize = 14
+		maxB.Text = "ใช้ทั้งหมด"
+		maxB.Parent = f
+		Instance.new("UICorner", maxB)
+		maxB.Activated:Connect(function()
+			statAmount = points
+			render()
+		end)
+	end
 	for _, stat in Progression.Stats do
 		local v = (player:GetAttribute("Stat_" .. stat) :: number?) or 0
-		row(`{names[stat]}  {v} แต้ม  ({effects[stat](v)})`, "+1", function()
-			menu:FireServer("AddStat", stat)
+		local n = math.max(1, math.min(statAmount, math.max(points, 1)))
+		row(`{names[stat]}  {v} แต้ม  ({effects[stat](v)})`, `+{n}`, function()
+			menu:FireServer("AddStat", stat, n)
 		end)
 	end
 	if level >= Progression.MaxLevel then
