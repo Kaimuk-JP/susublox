@@ -7,6 +7,7 @@ local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 
 local RigFactory = require(script.Parent.RigFactory)
+local BK = require(script.Parent.BuildKit)
 
 local C = {
 	paving = Color3.fromHex("B8AE9C"),
@@ -549,25 +550,9 @@ cylinder("MidCircleInner", 8.5, 0.12, Vector3.new(0, 0.38, 260), Color3.fromHex(
 ---------------------------------------------------------------- ของตกแต่งสนามหน้าโรงเรียน
 local props = folder("Props")
 
--- ต้นซากุระ: ลำต้น + มงกุฎหลายก้อน + กลีบร่วง
+-- ต้นซากุระ: ใช้โมเดลนำเข้าจริงผ่าน BuildKit (ไม่มีโมเดลจะใช้ต้นไม้สำรองแบบกิ่งก้านเล็ก ไม่ใช่ลูกบอลก้อนใหญ่)
 local function sakura(x: number, z: number, scale: number)
-	cylinder("Trunk", 1.2 * scale, 9 * scale, Vector3.new(x, 4.5 * scale, z), C.trunk, props, Enum.Material.Wood)
-	local crown = ball("Crown", 15 * scale, Vector3.new(x, 13 * scale, z), C.petal, props, Enum.Material.Grass)
-	ball("Crown", 10 * scale, Vector3.new(x + 4 * scale, 11 * scale, z + 3 * scale), C.petalLight, props, Enum.Material.Grass)
-	ball("Crown", 9 * scale, Vector3.new(x - 4 * scale, 12 * scale, z - 3 * scale), C.petal, props, Enum.Material.Grass)
-	ball("Crown", 8 * scale, Vector3.new(x + 1 * scale, 17 * scale, z - 2 * scale), C.petalLight, props, Enum.Material.Grass)
-	local e = Instance.new("ParticleEmitter")
-	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	e.Color = ColorSequence.new(C.petal, C.petalLight)
-	e.Size = NumberSequence.new(0.5)
-	e.Lifetime = NumberRange.new(6, 9)
-	e.Speed = NumberRange.new(0, 1)
-	e.Acceleration = Vector3.new(1.5, -2.2, 0.6)
-	e.RotSpeed = NumberRange.new(-60, 60)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Rate = 3
-	e.LightEmission = 0.3
-	e.Parent = crown
+	BK.sakura(props, x, z, scale)
 end
 for _, p in {
 	{ -62, -40 }, { -42, -40 }, { 42, -40 }, { 62, -40 }, { -62, 38 }, { -42, 38 }, { 42, 38 }, { 62, 38 },
@@ -576,7 +561,7 @@ for _, p in {
 end
 -- ต้นซากุระฉากหลัง (ใหญ่กว่า)
 for _, p in { { -100, 40 }, { 100, 60 }, { -170, 50 }, { 20, 160 }, { -20, 180 }, { 70, 25 } } do
-	sakura(p[1], p[2], 1.3)
+	sakura(p[1], p[2], 1.15)
 end
 
 -- กลีบซากุระโปรยทั่วสนาม

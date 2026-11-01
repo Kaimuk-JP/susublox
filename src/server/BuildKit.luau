@@ -261,7 +261,8 @@ function BK.blob(parent: Instance, pos: Vector3, d: number, color: Color3, mater
 end
 
 local PINE_TREES = { "Tree_Pine1", "Tree_Pine2", "Tree_Pine3" }
-local SAKURA_TREES = { "Tree_Sakura1", "Tree_Sakura2", "Tree_Sakura3", "Tree_SakuraPark" }
+-- Tree_Sakura1 ตรวจแล้วใบออกสีเขียว ไม่ใช้เป็นซากุระ
+local SAKURA_TREES = { "Tree_Sakura2", "Tree_Sakura3", "Tree_SakuraPark" }
 
 function BK.pine(parent: Instance, x: number, z: number, h: number)
 	if BK.importedTree(parent, x, z, h / 12, PINE_TREES, h * 0.55) then
@@ -369,14 +370,14 @@ function BK.sakura(parent: Instance, x: number, z: number, scale: number)
 		local crownC = fork + Vector3.new(0, 2 * s, 0)
 		-- กระจุกดอกเล็กๆ หลายก้อนบนกิ่งแยก ไม่ใช่ลูกบอลใหญ่
 		local pinks = { hex("F0B8C8"), hex("E8A7BB"), hex("F6CAD6"), hex("DE9AB0") }
-		for i = 1, 6 do
-			local a = i / 6 * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
+		for i = 1, 8 do
+			local a = i / 8 * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
 			local r = BK.rng:NextNumber(2.2, 3.6) * s
 			local tip = crownC + Vector3.new(math.cos(a) * r, BK.rng:NextNumber(-0.8, 1.6) * s, math.sin(a) * r)
 			BK.branch(parent, fork, tip, 0.2 * s, bark)
-			for _ = 1, 4 do
-				local o = Vector3.new(BK.rng:NextNumber(-1.2, 1.2), BK.rng:NextNumber(-0.8, 1.2), BK.rng:NextNumber(-1.2, 1.2)) * s
-				local b = BK.blob(parent, tip + o, BK.rng:NextNumber(1.6, 2.6) * s, jitter(pinks[BK.rng:NextInteger(1, 4)], 0.03), Enum.Material.SmoothPlastic)
+			for _ = 1, 10 do
+				local o = Vector3.new(BK.rng:NextNumber(-1.6, 1.6), BK.rng:NextNumber(-1.0, 1.4), BK.rng:NextNumber(-1.6, 1.6)) * s
+				local b = BK.blob(parent, tip + o, BK.rng:NextNumber(0.7, 1.3) * s, jitter(pinks[BK.rng:NextInteger(1, 4)], 0.03), Enum.Material.SmoothPlastic)
 				center = center or b
 			end
 		end

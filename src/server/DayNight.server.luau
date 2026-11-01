@@ -46,7 +46,7 @@ local sky = Instance.new("Sky")
 sky.Name = "NightSky"
 sky.CelestialBodiesShown = true
 sky.StarCount = 3500
-sky.MoonAngularSize = 14
+sky.MoonAngularSize = 9
 sky.SunAngularSize = 9
 sky.Parent = Lighting
 
@@ -68,6 +68,20 @@ local weatherMods: { [string]: { Dark: number, Fog: number, Haze: number, Grey: 
 }
 local greyFor = { Day = hex("B9BEC4"), GoldenHour = hex("B3A9A0"), Evening = hex("8F8890"), Night = hex("4A5068") }
 
+-- ที่ละติจูด 35 ดวงจันทร์ลอยเกือบกลางหัว (สูง 70-78°) ผู้เล่นไม่เห็น: กลางคืนค่อยๆ เลื่อนละติจูดให้พระจันทร์อยู่ต่ำ ~16-33° ทางทิศ +Z (ขึ้นด้าน +X ตกด้าน -X) เห็นได้ตอนยืนถนน
+local DAY_LAT, NIGHT_LAT = 35, 80
+local function latitudeAt(hour: number): number
+	local k = 0
+	if hour >= 18 and hour < 21 then
+		k = (hour - 18) / 3
+	elseif hour >= 21 or hour < 5 then
+		k = 1
+	elseif hour < 7 then
+		k = 1 - (hour - 5) / 2
+	end
+	return DAY_LAT + (NIGHT_LAT - DAY_LAT) * k
+end
+
 local lastName = ""
 local lastWeather = ""
 local start = os.clock()
@@ -77,7 +91,9 @@ local function apply(phase, instant: boolean?)
 	local m = weatherMods[weather] or weatherMods.Clear
 	local info = TweenInfo.new(if instant then 0.01 else (if weather ~= lastWeather then 8 else 5))
 	local grey = greyFor[phase.Name] or hex("B9BEC4")
+	local isNight = phase.Name == "Night"
 	TweenService:Create(Lighting, info, {
+		ColorShift_Top = if isNight then hex("8FA6E8") else Color3.new(0, 0, 0),
 		Brightness = phase.Brightness * m.Dark,
 		OutdoorAmbient = phase.Outdoor:Lerp(grey, m.Grey * 0.35),
 		Ambient = phase.Ambient:Lerp(grey, m.Grey * 0.25),
@@ -110,6 +126,7 @@ RunService.Heartbeat:Connect(function()
 		hour = frozen
 	end
 	Lighting.ClockTime = hour
+	Lighting.GeographicLatitude = latitudeAt(hour)
 	local phase = phaseAt(hour)
 	local weather = (workspace:GetAttribute("Weather") :: string?) or "Clear"
 	if phase.Name ~= lastName or weather ~= lastWeather then
