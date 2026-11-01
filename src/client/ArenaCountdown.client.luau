@@ -10,8 +10,8 @@ local remote = ReplicatedStorage:WaitForChild("ArenaCountdown") :: RemoteEvent
 local player = Players.LocalPlayer
 
 -- เสียง: ID ที่ตรวจแล้วว่าโหลดได้ใน Play (ดู docs/IMPORTED_ASSETS.md); 0 = ข้าม
-local TICK_ID = 0
-local FIGHT_ID = 0
+local TICK_ID = 7743999789 -- "countdown-beep" (0.17 วิ) ตรวจแล้ว IsLoaded=true
+local FIGHT_ID = 134674159296168 -- "Gong Hit" (2.65 วิ) ตรวจแล้ว IsLoaded=true
 local VOLUME = 0.6
 
 local tickSound = Instance.new("Sound")
@@ -50,11 +50,11 @@ local function label(size: number, y: number): TextLabel
 	return l
 end
 
-local header = label(30, 0.2)
+local header = label(30, 0.26)
 header.Text = "เตรียมตัว! ศึกจะเริ่มใน..."
 header.TextColor3 = Color3.fromHex("FFE066")
-local number = label(120, 0.34)
-local fight = label(110, 0.34)
+local number = label(120, 0.38)
+local fight = label(110, 0.38)
 fight.Text = "FIGHT! ลุย!"
 fight.TextColor3 = Color3.fromHex("FF5A4E")
 

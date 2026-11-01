@@ -101,3 +101,10 @@ Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่
 - ยังไม่ได้ลอง/ตรวจ: โกดัง (ผลค้นหาส่วนใหญ่เป็นโมเดลภายใน/ผู้สร้างไม่ระบุ ไม่ได้ดาวน์โหลดมาดู), ตู้คอนเทนเนอร์เดี่ยว, เรือประมง, ไฟท่าเรือ
 - `BK.importedProp(parent, name, cframe, scale?, folder?)` ใน BuildKit โคลนโมเดลจาก ImportedAssets (ลบสคริปต์/เสียง, Anchored, ไม่ชน); `BK.forklift` ใช้ Prop_Forklift ก่อน ถ้าไม่มีค่อยใช้แบบประกอบเอง (ใช้ทั้งท่าเรือและโกดัง รวม 9 คัน)
 - ไม่ได้วัดจำนวนสามเหลี่ยม/เวลา join ใหม่หลังเปลี่ยน
+
+## เสียงนับถอยหลังก่อนแมตช์ (Creator Store, ฟรี)
+ตรวจใน Play (Studio, ฝั่ง client): สร้าง Sound ใน SoundService + `ContentProvider:PreloadAsync` แล้วดู `IsLoaded` / `TimeLength`; คอนโซลไม่มี "not approved" ของ ID กลุ่มนี้
+- **ติ๊กทุกวินาที**: `7743999789` "countdown-beep" (complexlint) 0.17 วิ — เลข 3 วินาทีสุดท้ายเล่นด้วย `PlaybackSpeed = 1.5` (เสียงสูงขึ้น) ที่เหลือ 1.0
+- **FIGHT**: `134674159296168` "Gong Hit" (BuilderBillbert) 2.65 วิ
+- ID อื่นที่ตรวจแล้วโหลดได้ (สำรอง): 124455167265111 "shortbeep" 0.13 วิ, 126559859599109 sine_3140hz 0.10 วิ, 117751546358455 "Countdown beep" 1.02 วิ, 98572480937443 "Gong Hit" 2.84 วิ, 92089247804481 "Gong Hit 2 SZ" 1.70 วิ, 70731854804072 strongman_bell_01 3.01 วิ
+- **ไม่ได้ตรวจ**: การฟังจริงด้วยหู (ตรวจแค่โหลดได้/ความยาว/ชื่อ), ลิขสิทธิ์ต้นทางนอกเหนือจากที่ Roblox อนุมัติให้ใช้, ความดังเทียบกับเสียงเกมอื่น (ตั้งไว้ Volume 0.6 ใน `ArenaCountdown.client.luau`)

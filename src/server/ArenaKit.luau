@@ -537,9 +537,9 @@ local function scoreBoard(m: Model, a: number, Rb: number, yBottom: number, w: n
 	end
 end
 
-local function boardSize(R: number): (number, number)
-	local w = math.clamp(24 + (R - 30) * 0.3, 24, 54)
-	return w, w * 0.3
+local function boardSize(R: number, maxH: number?): (number, number)
+	local w = math.clamp(26 + (R - 30) * 0.45, 26, 66)
+	return w, math.min(w * 0.32, maxH or 99)
 end
 
 -- กำแพงกั้นล่องหนรอบสนามกันออก/กันกระโดดข้าม (ทั้งผู้เล่นและผู้ชม)
@@ -576,7 +576,25 @@ local function mast(m: Model, R: number, color: Color3, h: number)
 		local pos = Vector3.new(math.cos(a) * (R - 1.2), 0, math.sin(a) * (R - 1.2))
 		cyl(m, "MastPole", 0.3, h, CFrame.new(pos + Vector3.new(0, h / 2, 0)), DARK, M.Metal, false)
 		local lamp = ball(m, "MastLamp", Vector3.one * 1.6, CFrame.new(pos + Vector3.new(0, h + 0.4, 0)), color, M.Neon, false)
-		light(lamp, color, math.clamp(R * 0.6, 36, 60), 1.4)
+		light(lamp, color, math.clamp(R * 0.6, 36, 60), 1.8)
+	end
+end
+
+-- ไฟส่องพื้นสนามแบบลอยล่องหน (ไม่มีชิ้นให้เห็น) เป็นวงซ้อนห่างกัน ~70 สตั๊ด ให้ทั้งสนามสว่างพอแม้เป็นกลางคืน
+local function flood(m: Model, R: number, color: Color3)
+	local function ringLights(r: number, n: number)
+		for i = 0, n - 1 do
+			local a = i / n * TAU + r
+			local p = mk(m, "FloodLight", Vector3.one * 0.5, CFrame.new(math.cos(a) * r, 26, math.sin(a) * r), DARK, M.SmoothPlastic, false)
+			p.Transparency = 1
+			light(p, color, 60, 2.4)
+		end
+	end
+	ringLights(0, 1)
+	local r = R * 0.5
+	while r < R * 0.95 do
+		ringLights(r, math.max(5, math.ceil(TAU * r / 62)))
+		r += math.max(R * 0.4, 30)
 	end
 end
 
@@ -630,6 +648,7 @@ local function buildGreek(R: number): Model
 		mk(m, "Meander", Vector3.new(0.4 * sc, 0.1, 0.9 * sc), cf * CFrame.new(if i % 2 == 0 then 0.6 * sc else -0.6 * sc, 0.07, 0), BRONZE, M.Metal, false)
 	end)
 	mast(m, R, hex("FFD9A8"), 15)
+	flood(m, R, hex("FFE6C0"))
 	-- แนวกั้นฐาน + กำแพงล่องหน
 	local nPod = nseg(R + 2.2, 7, 36)
 	ring(nPod, R + 2.2, function(_, cf)
@@ -741,6 +760,7 @@ local function buildNeon(R: number): Model
 	kl.TextColor3 = PINK
 	kl.Parent = g
 	mast(m, R, hex("FFE9C4"), 12)
+	flood(m, R, hex("FFD9B0"))
 	-- กรงลวด
 	local nC = nseg(R + 1.6, 6, 40)
 	ring(nC, R + 1.6, function(i, cf)
@@ -814,7 +834,7 @@ local function buildNeon(R: number): Model
 	if R > 70 then
 		lamps(R * 0.92, 34)
 	end
-	local bw, bh = boardSize(R)
+	local bw, bh = boardSize(R, 16)
 	for k = 0, 3 do
 		scoreBoard(m, k * math.pi / 2, wallR - 3.4, 24, bw, bh, if k % 2 == 0 then PINK else CYAN, 24 + bh, CEIL - 0.5)
 	end
@@ -851,6 +871,7 @@ local function buildRooftop(R: number): Model
 	end
 	mk(m, "HMark", Vector3.new(4.4 * s, 0.05, 0.9 * s), CFrame.new(0, 0.16, 0), hex("E9E6DC"), M.Concrete, false)
 	mast(m, R, hex("FFE2A0"), 14)
+	flood(m, R, hex("FFE2B8"))
 	-- รั้วตาข่าย + ฐานพาราเพ็ต
 	local nF = nseg(R + 1.4, 7, 40)
 	ring(nF, R + 1.4, function(_, cf)

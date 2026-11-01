@@ -225,8 +225,7 @@ end
 
 -- เข้ากันได้กับโค้ดเดิม: ข้อความอิสระบรรทัดเดียวลงช่อง Note/Title
 function Arena.SetScore(inst: Inst, text: string)
-	inst.Model:SetAttribute("BNote", (text:gsub("<[^>]+>", ""):gsub("
-", " · ")))
+	inst.Model:SetAttribute("BNote", (string.gsub(string.gsub(text, "<[^>]+>", ""), "\n", " · ")))
 end
 
 function Arena.FighterCount(inst: Inst): number
@@ -294,10 +293,15 @@ function Arena.Exit(player: Player)
 	of[player] = nil
 	inst.Members[player] = nil
 	setStatus(player, nil, nil)
+	countdownRemote:FireClient(player, "Cancel") -- ปิดตัวเลขนับถอยหลังที่ค้างบนจอ (ถ้ามี)
 	local char = player.Character
 	if char then
 		char:SetAttribute("Team", nil)
 		char:SetAttribute("ArenaLocked", nil)
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and hum.WalkSpeed == 0 then
+			hum.WalkSpeed = (char:GetAttribute("BaseWalkSpeed") :: number?) or 16
+		end
 		if rootOf(player) then
 			warp(player, lobbySpot())
 		end
