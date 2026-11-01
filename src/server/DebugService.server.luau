@@ -11,7 +11,8 @@ end
 
 local DEBUG = {
 	Level = 100,
-	StatPoints = 300,
+	StatPoints = 0, -- แต้มที่เหลือ (สเตตัสถูกตั้งตายตัวด้านล่างแล้ว)
+	StatEach = 100, -- ทุกสเตตัส (พลังหมัด/เลือด/พลังงาน/ความเร็ว) ตั้งเป็นค่านี้เลย
 	Yen = 99999,
 	Mastery = 100, -- ทุกสไตล์ (สกิลทุกปุ่ม + ไม้ตายใช้ได้ทันที)
 	UltFull = true, -- หลอดไม้ตายเต็มตอนเกิด
@@ -38,8 +39,7 @@ local function boost(player: Player)
 	end
 	p.Level = DEBUG.Level
 	p.Exp = 0
-	p.StatPoints = math.max(p.StatPoints, DEBUG.StatPoints)
-	p.Yen = math.max(p.Yen, DEBUG.Yen)
+		p.Yen = math.max(p.Yen, DEBUG.Yen)
 	p.UnlockedStyles = {}
 	for id in StyleData.Styles do
 		table.insert(p.UnlockedStyles, id)
@@ -47,11 +47,11 @@ local function boost(player: Player)
 	end
 	-- ลงแต้มสเตตัสให้เต็มทุกช่อง (แบ่งเท่าๆ กัน) แล้วใส่พาสซีฟให้เต็มทุกช่อง
 	local statNames = { "Strength", "Health", "Stamina", "Speed" }
-	local share = math.floor(DEBUG.StatPoints / #statNames) -- ตั้งค่าตายตัว (ไม่บวกซ้ำทุกครั้งที่เข้าเกม)
+	local share = DEBUG.StatEach -- ตั้งค่าตายตัว (ไม่บวกซ้ำทุกครั้งที่เข้าเกม)
 	for _, name in statNames do
 		(p.Stats :: any)[name] = share
 	end
-	p.StatPoints = DEBUG.StatPoints - share * #statNames
+	p.StatPoints = DEBUG.StatPoints
 	table.clear(p.Passives)
 	local ids = {}
 	for id in Passives.All do
