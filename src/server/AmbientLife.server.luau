@@ -61,6 +61,12 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	end
 	model.PrimaryPart = primary
 	model:PivotTo(cf)
+	-- วางให้ท้องรถ/ล้อล่างสุดแตะพื้นพอดี (บางโมเดลจุดหมุนไม่ได้อยู่ใต้ล้อ รถเลยลอย เช่นสกูตเตอร์)
+	local bbCf, bbSize = model:GetBoundingBox()
+	local lift = cf.Position.Y - (bbCf.Position.Y - bbSize.Y / 2)
+	if math.abs(lift) > 0.05 and math.abs(lift) < 6 then
+		model:PivotTo(model:GetPivot() + Vector3.new(0, lift, 0))
+	end
 	model.Parent = parent
 	if not moving then
 		for _, d in model:GetDescendants() do
