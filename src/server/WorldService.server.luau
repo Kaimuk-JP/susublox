@@ -496,6 +496,31 @@ for _, d in World.Districts do
 	end
 end
 
+-- ให้ client รู้ว่าย่านไหนมีเควสเก็บของค้างอยู่ (Attribute "Orb_<ย่าน>") ของสะสมจะแสดงเฉพาะตอนนั้น
+task.spawn(function()
+	while true do
+		task.wait(1)
+		for _, pl in Players:GetPlayers() do
+			local p = PlayerData.Get(pl)
+			if p then
+				local on: { [string]: boolean } = {}
+				for qid, prog in p.World.Active do
+					local q = WQ.ById[qid]
+					if q and q.Kind == "Collect" and prog < q.Count then
+						on[q.District] = true
+					end
+				end
+				for _, d in World.Districts do
+					local want = on[d.Id] == true
+					if pl:GetAttribute("Orb_" .. d.Id) ~= want then
+						pl:SetAttribute("Orb_" .. d.Id, want)
+					end
+				end
+			end
+		end
+	end
+end)
+
 ---------------------------------------------------------------- ล้มศัตรู/บอสในย่าน -> ความคืบหน้า
 Combat.OnKill(function(killer, victim)
 	local player = Players:GetPlayerFromCharacter(killer.Character)
