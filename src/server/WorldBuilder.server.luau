@@ -408,7 +408,7 @@ end
 local function buildCity(d: World.District, f: Folder)
 	local cx = d.Center.X
 	local sx, sz = cx + 170, 600 + 52
-	BK.building(f, sx, sz, 110, 50, 18, hex("D9D0BE"), hex("2A2C32"), { SignText = "STATION", Facing = -1, SignBg = hex("2A2C32"), SignFg = hex("B8944A"), Awning = hex("3F566E") })
+	BK.building(f, sx, sz, 110, 50, 18, hex("D9D0BE"), hex("2A2C32"), { Facing = -1, Awning = hex("3F566E") })
 	-- ลานหน้าสถานี (ปูกระเบื้อง) + ที่จอดแท็กซี่
 	BK.box("StationPlaza", sx - 70, sx + 70, 0, 0.35, 610, sz - 25, hex("A39C8F"), f, Enum.Material.Pavement)
 	BK.box("Platform", sx - 55, sx + 55, 0, 1.2, sz + 25, sz + 45, hex("A5A7A8"), f)
@@ -431,6 +431,38 @@ local function buildCity(d: World.District, f: Folder)
 	BK.box("Canopy", sx - 55, sx + 55, 10, 10.6, sz + 25, sz + 46, hex("3F566E"), f)
 	for x = sx - 50, sx + 50, 25 do
 		BK.cylinder("CanopyPost", 0.4, 10, Vector3.new(x, 5.6, sz + 40), hex("2A2C32"), f)
+	end
+	-- ด้านหน้าสถานี (z = sz-25 หันไป -Z): เสาเซาะผนัง ทางเข้ากระจกพร้อมหลังคา ป้ายชื่อ ไม่ให้เป็นกำแพงเรียบยาว 110 stud
+	local fz = sz - 25
+	for x = sx - 50, sx + 50, 20 do
+		BK.box("StationPilaster", x - 1, x + 1, 0, 18, fz - 0.7, fz, hex("C4BBA8"), f)
+	end
+	BK.box("StationBand", sx - 55, sx + 55, 0, 1.2, fz - 0.4, fz, hex("8A8578"), f, Enum.Material.Concrete)
+	local glass = BK.box("StationEntrance", sx - 14, sx + 14, 0.2, 9.5, fz - 0.5, fz, hex("34495C"), f, Enum.Material.Glass)
+	glass.Transparency = 0.25
+	for x = sx - 14, sx + 14, 7 do
+		BK.box("EntranceMullion", x - 0.25, x + 0.25, 0.2, 9.5, fz - 0.7, fz - 0.4, hex("2A2C32"), f)
+	end
+	BK.box("EntranceCanopy", sx - 18, sx + 18, 10.5, 11.3, fz - 9, fz, hex("3F566E"), f)
+	for _, x in { sx - 17, sx + 17 } do
+		BK.cylinder("EntrancePost", 0.4, 10.5, Vector3.new(x, 5.25, fz - 8.5), hex("2A2C32"), f)
+	end
+	local board = BK.box("StationSign", sx - 17, sx + 17, 12.5, 17.5, fz - 1.2, fz - 0.2, hex("1E2A3A"), f)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.Parent = board
+	for _, row in { { "SUSU STATION", 0.06, 0.52, hex("F2EBD8") }, { "すーすー駅", 0.6, 0.34, hex("D9B25A") } } do
+		local label = Instance.new("TextLabel")
+		label.Position = UDim2.fromScale(0.04, row[2])
+		label.Size = UDim2.fromScale(0.92, row[3])
+		label.BackgroundTransparency = 1
+		label.Text = row[1]
+		label.TextColor3 = row[4]
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+		label.Parent = gui
 	end
 	stone(d, f)
 end
