@@ -28,12 +28,13 @@ Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่
 | Car_HijetTruck | van | 1086524580 | 2015 Daihatsu Hijet Truck SG | DaliuagTeam | 51 | 7.8 |
 | Bike_Moped (เดิม Car_Moped) | bike | 1322080939 | Moped (ทรง Vespa) | WiliFIN | 39 | 6.7 |
 | Bike_Dream305 | bike | 1935238850 | 1969 Honda Dream 305 | Ujiyasu | 95 | 7.8 |
-| Bike_CafeRacer | bike | 121605474431308 | Old Motorcycle (Cafe Racer) | HeroELStreamg171238 | 23 | 7.8 |
-| Bike_Peugeot103 | bike | 13791700343 | 1980 Peugeot 103 | "No. 05070336 BEIJING ICP" | 40 | 6.4 |
 | Bike_Underbone | bike | 88489555740035 | Moto (ทรง underbone/Honda Wave) | bvrchaff_flare | 56 | 7.1 |
+| Bike_SuperCub | bike | 18980811003 | 2012 Honda Dream 110i Super Cub | (ไม่ได้บันทึกชื่อผู้สร้าง) | 68 (ต้นฉบับ 174 → ตัด Wheel โปร่งใส/Seat/R15 dummy/สคริปต์ 34) | 6.2 |
+| Bike_Rebel | bike | 4573621467 | Honda Rebel | (ไม่ได้บันทึกชื่อผู้สร้าง) | 68 (ต้นฉบับ 73) | 6.8 |
+| Car_CrownTaxi | taxi | 5061252915 | Toyota Crown taxi | (ไม่ได้บันทึกชื่อผู้สร้าง) | 110 (ต้นฉบับ 123) | 9.0 |
 
 ถอดออกจากพูลเพราะไม่เข้ายุค/ไม่ใช่รถญี่ปุ่น: Car_SovietSedan (Volga), Car_PolyVan (Ford Transit), Car_GreenSedan (เก๋งเขียวยุคใหม่)
-แท็กซี่: ไม่มีโมเดลแท็กซี่ที่จำนวนชิ้นผ่านเกณฑ์ (Crown Comfort ที่เจอมี 371 ชิ้น) จึงใช้ **ป้ายไฟหลังคา (TaxiLamp) บนรถเก๋ง** 10% ของรถที่สุ่ม — ยังไม่ได้ทาสีแท็กซี่
+แท็กซี่: ใช้ Car_CrownTaxi จริงแล้ว (ดูหัวข้อท้ายไฟล์)
 ที่ลองแล้วตัดทิ้ง (ชิ้นเกิน/สคริปต์เยอะ/ไม่เข้ายุค): Kei Truck 17248998748 (241 ชิ้น), Honda Acty 12374570495 (113), Nissan R32 1970532634 (113, mesh 109), Ninja 650 477270814 (192), Fireblade 11126200354 (162), Crown taxi 678438548 (371), Yellow cab 8627987379 (ทรง Camry ยุคใหม่)
 **ไม่ได้ตรวจ**: ความถูกต้องของรุ่น/ปีตามจริง (ดูจากภาพ preview เท่านั้น), ไม่ได้วัดจำนวนสามเหลี่ยม, ปี/ยี่ห้อมาจากชื่อผู้สร้าง; Bike_CafeRacer ทรงคล้าย Ural/Dnepr (ไม่ใช่ญี่ปุ่น), Peugeot 103 เป็นมอเตอร์ไซค์เล็กฝรั่งเศสยุค 80
 ทิศหน้า: ตรวจด้วยภาพจากด้าน -Z ทุกคัน (AE86/RX7/Hijet Truck/CafeRacer/Peugeot ถูกกลับ 180° ตอน import) และวัดใน Play: รถวิ่งหันหน้าตามทิศวิ่ง (dot = 1.00), รถจอดขนานแกนถนน, ล้อล่างสุดห่างพื้น ≤ 0.08 studs
@@ -73,3 +74,13 @@ Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่
 
 ## ตรวจรถญี่ปุ่นเพิ่ม (ยังไม่ได้นำเข้า — ไม่ได้ดูรูปทรงด้วยตา เพราะ viewport Edit ขึ้นขาว)
 ตรวจจำนวนชิ้น/สคริปต์หลังแทรกเข้า Studio (ก่อนลบ Seat/ชิ้นโปร่งใส): Honda Super Cub 18980811003 = 174 ชิ้น/34 สคริปต์ (เกิน), Crown taxi 5061252915 = 123, Crown 2018 11010241182 = 178, 2011 Toyota Cab 1683082373 = 68 ชิ้น แต่เป็นทรง Camry แท็กซี่อเมริกัน (ข้อความ "Ridgefeild Cab Service" + ป้ายโฆษณาหลังคา), Honda Rebel 4573621467 = 73 ชิ้น/17 สคริปต์ (ผ่านเกณฑ์จำนวนชิ้นหลังลบสคริปต์ แต่ยังไม่ได้ดูทรง/ทิศหน้า), "CB600R" 3106461058 ที่จริงคือ BMW R1200GS (ไม่ใช่ญี่ปุ่น). ผลที่ยังค้าง: Bike_CafeRacer / Bike_Peugeot103 ยังอยู่ในพูล, แท็กซี่ยังเป็นป้ายไฟบนเก๋ง
+
+
+## รอบแทนรถไม่ใช่ญี่ปุ่น + แท็กซี่จริง
+- เอา Bike_CafeRacer / Bike_Peugeot103 ออกจากพูลและลบจาก ServerStorage แล้ว; เพิ่ม Super Cub / Rebel (bike, มีคนขี่) และ Crown (Kind=taxi, 10% ของรถ)
+- ผ่อนเกณฑ์ชิ้นส่วนเป็น ~180 สำหรับ 3 โมเดลนี้ (รถวิ่งจำกัด ~8 คัน) วัดใน Play: เฉลี่ย 17.0 ms/เฟรม (~59 fps) ขณะมีแท็กซี่ Crown 1 คันวิ่ง + 1 คันจอด และ Rebel วิ่ง
+- ลบ Script/Sound/Decal/Texture/Gui/Seat/Constraint/Joint ออก, ชิ้นโปร่งใสถูกลบ (ล้อของ Cub อยู่ใต้ชิ้นโปร่งใสต้องย้ายออกมาก่อน ไม่งั้นล้อหาย), Anchored/ไม่ชน, หน้ารถ -Z, Pivot กึ่งกลางใต้ล้อ; Rebel และ Crown ต้นฉบับหันหน้า +Z จึงหมุน 180° ตอน import
+- Crown ต้นฉบับสีขาวแถบน้ำเงิน/แดง: `AmbientLife` ทาตัวถังขาวเป็นเหลือง F2B705 และแถบสีฉูดฉาดชิ้นใหญ่เป็นดำตอน spawn (ไม่แก้ไฟท้าย/ไฟหน้า); ป้ายไฟหลังคามากับโมเดล ไม่ใช้ TaxiLamp แล้ว (ยังเก็บไว้เป็น fallback ถ้าไม่มีโมเดล Kind=taxi)
+- Crown ที่ลองแล้วไม่ใช้: 11010241182 (178 ชิ้น) ล้อหาย/ไม่มีชิ้นล้อในโมเดล
+- ตำแหน่งคนขี่: Super Cub RiderY 3.3 RiderZ 1.0 ท่า scooter, Rebel RiderY 3.2 RiderZ 0.9 ท่า bike (ตั้งจากภาพ Play ด้านข้าง)
+- **ไม่ได้ตรวจ**: ชื่อผู้สร้างจริง, ว่ารุ่นตรงตามชื่อ (ดูจากภาพ), ตัวถัง Crown เป็นรุ่นไหน/ลายโลโก้บนเมช, ภาพ Play ตรวจผ่าน ViewportFrame ฝั่ง client เพราะ viewport 3D ปกติถ่ายออกมาขาว

@@ -71,7 +71,7 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	if #list == 0 then
 		return nil
 	end
-	-- สัดส่วนยุค ~1985-2005: เล็ก/kei 40%, เก๋ง 20%, ตู้/กระบะ 15%, มอเตอร์ไซค์ 15% (มีคนขี่), แท็กซี่ 10% (ติดป้ายไฟหลังคาบนเก๋ง)
+	-- สัดส่วนยุค ~1985-2005: เล็ก/kei 40%, เก๋ง 20%, ตู้/กระบะ 15%, มอเตอร์ไซค์ 15% (มีคนขี่), แท็กซี่ 10% (Crown จริง)
 	local byKind: { [string]: { Instance } } = {}
 	for _, c in list do
 		local k = c:GetAttribute("Kind")
@@ -91,9 +91,11 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	else
 		kind = "taxi"
 	end
-	local isTaxi = kind == "taxi"
-	if isTaxi then
+	-- แท็กซี่: ใช้โมเดล Crown จริง (Kind=taxi) ถ้าไม่มีก็ถอยไปใช้เก๋งธรรมดา + ป้ายไฟหลังคา
+	local isTaxi = false
+	if kind == "taxi" and not byKind.taxi then
 		kind = "sedan"
+		isTaxi = true
 	end
 	local pool = byKind[kind] or list
 	local src = pool[rng:NextInteger(1, #pool)]
@@ -106,8 +108,20 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	-- สีตัวถังของโมเดลนำเข้าบางคันเป็นสีดิบ (#00FF00 / #FF0000) ให้เปลี่ยนเป็นสีรถจริงหม่น ๆ (ตัวถัง) หรือดำด้าน (ชิ้นแต่ง)
 	local paints = { "D8D6D0", "2E3036", "8A8D91", "3F566E", "7A2E2A", "B8B2A4" }
 	local paint = Color3.fromHex(paints[rng:NextInteger(1, #paints)])
+	local isRealTaxi = src:GetAttribute("Kind") == "taxi"
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
+			-- แท็กซี่ Crown ต้นฉบับเป็นสีขาวลายแถบ: ตัวถังขาว/เทาอ่อนทาเหลืองแท็กซี่ แถบน้ำเงิน/แดงขนาดใหญ่ทาดำ (ไฟท้าย/ไฟหน้าชิ้นเล็กไม่แตะ)
+			if isRealTaxi then
+				local c = d.Color
+				local big = d.Size.Magnitude > 1.2
+				local mx, mn = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
+				if big and mn > 0.8 and d.Transparency < 0.3 then
+					d.Color = Color3.fromHex("F2B705")
+				elseif big and mx - mn > 0.45 and (c.B > c.R or c.R > 0.6) and d.Transparency < 0.3 then
+					d.Color = Color3.fromHex("1C1D21")
+				end
+			end
 			local hexColor = d.Color:ToHex():upper()
 			if hexColor == "00FF00" then
 				d.Color = if d.Name:find("trim") or d.Name:find("Weight") or d.Name:find("bumper_glass") then Color3.fromHex("1C1D21") else paint
