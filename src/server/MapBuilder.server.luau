@@ -229,7 +229,7 @@ local ground = folder("Ground")
 box("SchoolYard", -80, 80, -3, 0.3, -60, 60, C.paving, ground)
 box("Cafeteria_Floor", -160, -100, -3, 0.3, -25, 25, C.paving, ground)
 box("Gym_Floor", 80, 180, -3, 0.3, -35, 35, C.wood, ground, Enum.Material.WoodPlanks)
-box("BackLot", -30, 30, -3, 0.3, 90, 130, C.darkConcrete, ground)
+box("BackLot", -10, 10, -3, 0.3, 90, 130, C.concrete, ground) -- ซอยหลังโรงเรียนถูกรื้อ เหลือแค่ทางเดินต่อไปอารีน่า
 box("War_Floor_Red", -50, 50, -3, 0.3, 210, 260, Color3.fromHex("F4B6B6"), ground)
 box("War_Floor_Blue", -50, 50, -3, 0.3, 260, 310, Color3.fromHex("B6D4F4"), ground)
 box("Path_Cafeteria", -100, -80, -3, 0.3, -10, 10, C.concrete, ground)
@@ -478,32 +478,6 @@ end
 local cafeLight = part("CafeLight", Vector3.new(30, 0.3, 2), Vector3.new(-130, 11.6, 0), C.white, cafe, Enum.Material.Neon)
 noCollide(cafeLight)
 pointLight(cafeLight, Color3.fromHex("FFF3E0"), 40, 1.2)
-
----------------------------------------------------------------- หลังโรงเรียน (x -30..30, z 90..130) ซอยเท่ๆ
-local lot = folder("BackLot")
--- เว้นช่องทางเดินทะลุทางเหนือ (x -5..5) ให้ผู้เล่นเดินผ่านซอยไปได้
-box("FenceN", -30, -5, 0, 7, 129.5, 130, C.darkConcrete, lot)
-box("FenceN", 5, 30, 0, 7, 129.5, 130, C.darkConcrete, lot)
-box("FenceW", -30, -29.5, 0, 7, 90, 130, C.darkConcrete, lot)
-box("FenceE", 29.5, 30, 0, 7, 90, 130, C.darkConcrete, lot)
-for i, color in { Color3.fromHex("FF4D8D"), Color3.fromHex("4DE1FF"), C.yellow, Color3.fromHex("9B7BFF") } do
-	if i == 2 then continue end -- อยู่ตรงช่องทางเดิน
-	local g = box("Graffiti", -26 + i * 11, -20 + i * 11, 1.5, 5.5, 129.3, 129.5, color, lot, Enum.Material.Neon)
-	g.Transparency = 0.15
-end
-sign(lot, "BACK ALLEY", Vector3.new(14, 3, 0.4), Vector3.new(0, 9, 129.3), 180, Color3.fromHex("1A1A22"), Color3.fromHex("FF4D8D"))
--- ถังขยะ ถังน้ำมัน ยางรถ ลังไม้
-box("Dumpster", -28, -20, 0.3, 4.5, 118, 124, Color3.fromHex("3E7A52"), lot)
-box("DumpsterLid", -28.3, -19.7, 4.5, 5, 117.7, 124.3, Color3.fromHex("2F5E40"), lot)
-for i = 0, 2 do
-	cylinder("Barrel", 1.4, 3.6, Vector3.new(22 + (i % 2) * 3, 2.1, 98 + i * 3.6), C.red, lot)
-	cylinder("Tire", 1.7, 1, Vector3.new(-24 + i * 4, 0.8, 96), Color3.fromHex("1A1A22"), lot)
-end
-for i = 0, 3 do
-	box("Crate", -26 + i * 4, -23 + i * 4, 0.3, 3.3 + (i % 2) * 2, 100, 103, C.wood, lot, Enum.Material.Wood)
-end
-local alleyLamp = ball("AlleyLamp", 1.4, Vector3.new(0, 8, 110), Color3.fromHex("FFB36B"), lot, Enum.Material.Neon)
-pointLight(alleyLamp, Color3.fromHex("FFB36B"), 36, 1.2)
 
 ---------------------------------------------------------------- อารีน่าสงครามแก๊ง (x -50..50, z 210..310)
 local war = folder("WarArena")
