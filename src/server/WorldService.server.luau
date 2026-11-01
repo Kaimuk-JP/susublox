@@ -389,6 +389,38 @@ local function makeGiver(d: World.District)
 	prompt.Triggered:Connect(function(player)
 		onGiverTriggered(player, d)
 	end)
+
+	-- พฤติกรรมเล็กๆ: หันหาผู้เล่นที่เดินเข้าใกล้ + โบกมือเมื่อมีภารกิจให้รับ (ตรวจทุก 0.4 วินาที เฉพาะตอนมีคนอยู่ใกล้)
+	local homeCf = root.CFrame
+	local lastWave: { [Player]: number } = {}
+	task.spawn(function()
+		while rig.Parent do
+			task.wait(0.4)
+			local nearest: Player?, best = nil, 28
+			for _, pl in Players:GetPlayers() do
+				local c = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if c then
+					local dist = (c.Position - root.Position).Magnitude
+					if dist < best then
+						nearest, best = pl, dist
+					end
+				end
+			end
+			local target = homeCf
+			if nearest then
+				local c = (nearest.Character :: Model).HumanoidRootPart :: BasePart
+				target = CFrame.lookAt(root.Position, Vector3.new(c.Position.X, root.Position.Y, c.Position.Z))
+				local pd = PlayerData.Get(nearest)
+				local q = pd and nextQuest(pd, d.Id)
+				local waveOk = q ~= nil and pd.World.Active[q.Id] == nil and pd.Level >= q.ReqLevel
+				if waveOk and best < 20 and os.clock() - (lastWave[nearest] or -99) > 15 then
+					lastWave[nearest] = os.clock()
+					RigFactory.Wave(rig)
+				end
+			end
+			root.CFrame = root.CFrame:Lerp(CFrame.new(root.Position) * (target - target.Position), 0.45)
+		end
+	end)
 end
 
 for _, d in World.Districts do

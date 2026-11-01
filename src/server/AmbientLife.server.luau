@@ -326,31 +326,9 @@ local function spawnPedestrians(d: World.District)
 	for _ = 1, PEDESTRIANS do
 		local pos = randomSpot(d)
 		if pos then
-			local colors = { "FFE9F0", "D6F0FF", "E3F8D8", "FFE2C9", "F3DCFF" }
-			local rig = RigFactory.Create("คนเดินถนน", pos + Vector3.new(0, 3, 0), npcFolder, nil, hex(colors[rng:NextInteger(1, #colors)]))
+			local rig = RigFactory.Create("คนเดินถนน", pos + Vector3.new(0, 3, 0), npcFolder)
 			if rig then
 				table.insert(spawned[d.Id], rig)
-				-- แต่งตัวคนเดินถนนให้ดูเป็นคนธรรมดา: ผิว เสื้อสีหม่น กางเกงเข้ม รองเท้าดำ (ไม่ใช่หุ่นสีซีดทั้งตัว)
-				local skins = { "F1C9A5", "E0AC84", "C68E69", "F5D5B8" }
-				local shirts = { "6B7A8F", "A65E4E", "D9D2C3", "4F6B58", "8C7B9B", "2F3A4F", "B89B72", "C9C4BA" }
-				local pants = { "2B2D33", "3A4252", "5B5246", "1F2430" }
-				local skin = hex(skins[rng:NextInteger(1, #skins)])
-				local shirt = hex(shirts[rng:NextInteger(1, #shirts)])
-				local pant = hex(pants[rng:NextInteger(1, #pants)])
-				for _, part in rig:GetChildren() do
-					if part:IsA("BasePart") then
-						local n = part.Name
-						if n == "Head" or n:find("Hand") then
-							part.Color = skin
-						elseif n:find("Foot") then
-							part.Color = hex("1A1A1C")
-						elseif n:find("Leg") then
-							part.Color = pant
-						elseif n ~= "HumanoidRootPart" then
-							part.Color = shirt
-						end
-					end
-				end
 				local hum = rig:FindFirstChildOfClass("Humanoid")
 				local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if hum and root then
