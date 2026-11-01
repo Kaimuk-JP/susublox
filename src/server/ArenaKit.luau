@@ -576,7 +576,7 @@ local function mast(m: Model, R: number, color: Color3, h: number)
 		local pos = Vector3.new(math.cos(a) * (R - 1.2), 0, math.sin(a) * (R - 1.2))
 		cyl(m, "MastPole", 0.3, h, CFrame.new(pos + Vector3.new(0, h / 2, 0)), DARK, M.Metal, false)
 		local lamp = ball(m, "MastLamp", Vector3.one * 1.6, CFrame.new(pos + Vector3.new(0, h + 0.4, 0)), color, M.Neon, false)
-		light(lamp, color, math.clamp(R * 0.6, 36, 60), 1.8)
+		light(lamp, color, math.clamp(R * 0.6, 36, 60), 1.4)
 	end
 end
 
@@ -587,7 +587,7 @@ local function flood(m: Model, R: number, color: Color3)
 			local a = i / n * TAU + r
 			local p = mk(m, "FloodLight", Vector3.one * 0.5, CFrame.new(math.cos(a) * r, 26, math.sin(a) * r), DARK, M.SmoothPlastic, false)
 			p.Transparency = 1
-			light(p, color, 60, 2.4)
+			light(p, color, 60, 1.3)
 		end
 	end
 	ringLights(0, 1)
@@ -827,7 +827,7 @@ local function buildNeon(R: number): Model
 			cyl(m, "LampChain", 0.08, CEIL - y - 0.5, CFrame.new(pos + Vector3.new(0, (CEIL - y) / 2 - 0.25, 0)), hex("55585F"), M.Metal, false)
 			cyl(m, "LampShade", 2.2, 0.8, CFrame.new(pos), hex("2B2E34"), M.Metal, false)
 			local bulb = cyl(m, "LampBulb", 1.8, 0.2, CFrame.new(pos - Vector3.new(0, 0.45, 0)), hex("FFE9C4"), M.Neon, false)
-			light(bulb, hex("FFD9A8"), 60, if R > 70 then 1.8 else 2.6)
+			light(bulb, hex("FFD9A8"), 60, if R > 70 then 1.0 else 1.8)
 		end
 	end
 	lamps(R * 0.57, 34)
