@@ -339,6 +339,40 @@ for ri, r in World.Roads do
 	end
 end
 
+-- รถจอดซอย/ถนนรอง (กว้าง 10-13): ชิดขอบข้างเดียว ห่างกัน ~50 stud ไม่ซ้อนเลนถนนสายหลักที่รถวิ่ง
+local sideRng = Random.new(77)
+for ri, r in World.Roads do
+	local x1, z1, x2, z2, w = r[1], r[2], r[3], r[4], r[5]
+	local horizontal = math.abs(x2 - x1) >= math.abs(z2 - z1)
+	local length = if horizontal then math.abs(x2 - x1) else math.abs(z2 - z1)
+	local onRoute = horizontal and (z1 == 170 or z1 == 600)
+	if w >= 10 and w < 14 and r[6] ~= "T" and r[6] ~= "A" and not onRoute then
+		local side = if sideRng:NextNumber() > 0.5 then 1 else -1
+		local lane = side * (w / 2 - 3.2)
+		local intervals = World.FreeIntervals(ri, lane)
+		for t = 30, length - 30, 50 do
+			if sideRng:NextNumber() < 0.4 then
+				local along = (if horizontal then math.min(x1, x2) else math.min(z1, z2)) + t + sideRng:NextNumber(-8, 8)
+				local ok = false
+				for _, iv in intervals do
+					if along >= iv[1] + 10 and along <= iv[2] - 10 then
+						ok = true
+					end
+				end
+				local x = if horizontal then along else x1 + lane
+				local z = if horizontal then z1 + lane else along
+				if ok and not inSchoolZone(x, z) and math.abs(z - 420) > 36 then
+					local heading = if horizontal then math.rad(90) else 0
+					if sideRng:NextNumber() > 0.5 then
+						heading += math.pi
+					end
+					buildCar(parked, CFrame.new(x, 0.3, z) * CFrame.Angles(0, heading, 0), false)
+				end
+			end
+		end
+	end
+end
+
 -- รถวิ่งวนตามถนนสายหลัก/ถนนใต้แม่น้ำ (ไม่ชนผู้เล่น วิ่งช้าๆ เพื่อให้เมืองมีชีวิต)
 local traffic = Instance.new("Folder")
 traffic.Name = "Traffic"

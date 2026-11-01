@@ -190,7 +190,7 @@ for _, p in World.Plazas do
 		slide.CFrame = CFrame.new(slide.Position + Vector3.new(0, 2.2, 0)) * CFrame.Angles(math.rad(-22), 0, 0)
 		BK.box("SandBox", x1 + 2, x1 + 8, 0.3, 0.8, z1 + 2, z1 + 8, hex("C9B48A"), f, Enum.Material.Sand)
 		for _, o in { { 4, 14 }, { 34, 6 }, { 36, 34 }, { 6, 36 } } do
-			BK.roundTree(f, x1 + o[1], z1 + o[2], rng:NextNumber(0.8, 1.1))
+			BK.roundTree(f, x1 + o[1], z1 + o[2], rng:NextNumber(0.9, 1.15))
 		end
 	elseif kind == "lot" then
 		lotsDressed += 1
