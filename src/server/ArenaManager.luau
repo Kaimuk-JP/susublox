@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Kit = require(script.Parent.ArenaKit)
+local ArenaReset = require(script.Parent.ArenaReset)
 
 local countdownRemote = Instance.new("RemoteEvent")
 countdownRemote.Name = "ArenaCountdown"
@@ -21,6 +22,7 @@ export type Inst = {
 	Radius: number,
 	Markers: Folder,
 	Members: { [Player]: string }, -- "fighter" | "spec"
+	Spawns: { [Player]: string }, -- marker จุดเกิดของนักสู้ (วาร์ปกลับตอนรีเซ็ตรอบ)
 	Over: boolean,
 	OuterRadius: number,
 	Locked: boolean, -- ช่วงนับถอยหลัง: ล็อกนักสู้
@@ -187,6 +189,7 @@ function Arena.Create(kind: string, label: string, theme: string?, players: numb
 		CountdownCancel = false,
 		Markers = model:WaitForChild("Markers") :: Folder,
 		Members = {},
+		Spawns = {},
 		Over = false,
 	}
 	instances[inst.Id] = inst
@@ -262,6 +265,9 @@ function Arena.Enter(inst: Inst, player: Player, markerName: string?, role: stri
 	end
 	of[player] = inst
 	inst.Members[player] = role
+	if markerName and role == "fighter" then
+		inst.Spawns[player] = markerName
+	end
 	setStatus(player, inst, role)
 	local cf: CFrame
 	local pos = if markerName then Arena.MarkerPos(inst, markerName) else nil
@@ -292,6 +298,7 @@ function Arena.Exit(player: Player)
 	end
 	of[player] = nil
 	inst.Members[player] = nil
+	inst.Spawns[player] = nil
 	setStatus(player, nil, nil)
 	countdownRemote:FireClient(player, "Cancel") -- ปิดตัวเลขนับถอยหลังที่ค้างบนจอ (ถ้ามี)
 	local char = player.Character
@@ -302,6 +309,7 @@ function Arena.Exit(player: Player)
 		if hum and hum.Health > 0 and hum.WalkSpeed == 0 then
 			hum.WalkSpeed = (char:GetAttribute("BaseWalkSpeed") :: number?) or 16
 		end
+		ArenaReset.apply(player) -- กลับลานหน้าสนามด้วยเลือด/พลังงาน/คูลดาวน์เต็ม
 		if rootOf(player) then
 			warp(player, lobbySpot())
 		end
@@ -320,10 +328,78 @@ function Arena.Leave(player: Player)
 	Arena.Exit(player)
 end
 
+-- รีเซ็ตนักสู้ทุกคนให้พร้อมเริ่มรอบ: ฟื้นสถานะทั้งหมด (ArenaReset) เกิดใหม่ถ้าตาย แล้ววาร์ปกลับจุดเกิดของทีม
+function Arena.ResetFighters(inst: Inst)
+	local list: { Player } = {}
+	for player, role in inst.Members do
+		if role == "fighter" then
+			table.insert(list, player)
+		end
+	end
+	local pending = #list
+	for _, player in list do
+		task.spawn(function()
+			local ok = pcall(function()
+				local before = player.Character
+				if ArenaReset.apply(player, { respawn = true }) then
+					local mk = inst.Spawns[player]
+					local pos = if mk then Arena.MarkerPos(inst, mk) else nil
+					if pos then
+						local target = pos + Vector3.new(0, 4, 0)
+						if player.Character ~= before then
+							inst.Members[player] = "fighter" -- เกิดใหม่แล้ว onCharacter ตั้งเป็น spec: คืนเป็นนักสู้
+							setStatus(player, inst, "fighter")
+						end
+						warp(player, CFrame.lookAt(target, Vector3.new(inst.Origin.X, target.Y, inst.Origin.Z)))
+					end
+				end
+			end)
+			if not ok then
+				warn("[Arena] reset failed for " .. player.Name)
+			end
+			pending -= 1
+		end)
+	end
+	local t0 = os.clock()
+	while pending > 0 and os.clock() - t0 < 8 do
+		task.wait(0.05)
+	end
+end
+
+-- แบนเนอร์กลางจอ (เช่น "ชนะ!") ให้ผู้เล่นคนเดียว หรือทุกคนในสนามถ้า player = nil
+function Arena.Banner(inst: Inst, player: Player?, text: string, color: Color3?, secs: number?)
+	for pl in inst.Members do
+		if not player or pl == player then
+			countdownRemote:FireClient(pl, "Banner", text, color or Color3.fromHex("FFE066"), secs or 2.5)
+		end
+	end
+end
+
+-- พักระหว่างรอบ: แบนเนอร์ผลรอบ (ล็อก/กันดาเมจ) แล้วนับถอยหลังชุดเดียวกับตอนเริ่มแมตช์ (รีเซ็ตนักสู้ในนั้น)
+-- คืน true = พักครบ เริ่มรอบถัดไปได้
+function Arena.RunBreak(inst: Inst, banner: string, secs: number, header: string?, aborted: (() -> boolean)?): boolean
+	local BANNER_SECS = 2.5
+	Arena.Banner(inst, nil, banner, nil, BANNER_SECS)
+	local t0 = os.clock()
+	while os.clock() - t0 < BANNER_SECS do
+		for player, role in inst.Members do
+			local char = player.Character
+			if role == "fighter" and char then
+				char:SetAttribute("ArenaLocked", true) -- กันดาเมจ/ล็อกระหว่างแสดงผล
+			end
+		end
+		if inst.Over or (aborted and aborted()) then
+			break
+		end
+		task.wait(0.1)
+	end
+	return Arena.RunCountdown(inst, secs, aborted, header)
+end
+
 -- นับถอยหลังก่อนเริ่มแมตช์ (เรียกหลังนักสู้ทุกคนเข้าสนามแล้ว): ล็อกการเดิน/โจมตีและกันดาเมจ (Attribute ArenaLocked)
 -- ไคลเอนต์รับเวลาจบแบบเวลาเซิร์ฟเวอร์ (ArenaCountdown "Start", endsAt) จึงซิงก์กัน
 -- คืน true = นับครบ แล้วปลดล็อก; false = ยกเลิก (มีคนออก/ตาย/หลุด หรือ aborted() เป็นจริง) ปลดล็อกทุกคนก่อนคืนค่า
-function Arena.RunCountdown(inst: Inst, secs: number, aborted: (() -> boolean)?): boolean
+function Arena.RunCountdown(inst: Inst, secs: number, aborted: (() -> boolean)?, header: string?): boolean
 	local fighters: { Player } = {}
 	for player, role in inst.Members do
 		if role == "fighter" then
@@ -333,11 +409,17 @@ function Arena.RunCountdown(inst: Inst, secs: number, aborted: (() -> boolean)?)
 	if #fighters == 0 then
 		return false
 	end
-	local endsAt = workspace:GetServerTimeNow() + secs
 	inst.Locked = true
+	for _, player in fighters do
+		if player.Character then
+			player.Character:SetAttribute("ArenaLocked", true) -- ล็อกก่อนรีเซ็ต/วาร์ป
+		end
+	end
+	Arena.ResetFighters(inst) -- เลือด/พลังงาน/คูลดาวน์/สถานะเต็ม + กลับจุดเกิด ก่อนเริ่มนับ
+	local endsAt = workspace:GetServerTimeNow() + secs
 	Arena.SetBoard(inst, { State = "countdown", Ends = endsAt })
 	for player in inst.Members do
-		countdownRemote:FireClient(player, "Start", endsAt)
+		countdownRemote:FireClient(player, "Start", endsAt, header)
 	end
 	local ok = true
 	while ok and workspace:GetServerTimeNow() < endsAt do

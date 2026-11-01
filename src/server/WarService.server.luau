@@ -112,6 +112,17 @@ local function finish(m: Match, winner: string?, note: string?)
 	local text = if winner then `แก๊ง {winner} ชนะสงครามแก๊ง! (+¥{WIN_YEN} +{WIN_FAME} ชื่อเสียงให้ผู้ชนะ)` else (note or "สงครามแก๊งจบแบบเสมอ")
 	toastAll(text)
 	updateBoard(m)
+	if winner then
+		for gang, members in m.Teams do
+			for _, pl in members do
+				if gang == winner then
+					Arena.Banner(m.Inst, pl, "ชนะ!", nil, 3)
+				else
+					Arena.Banner(m.Inst, pl, "แพ้", Color3.fromHex("FF5A4E"), 3)
+				end
+			end
+		end
+	end
 	Arena.SetBoard(m.Inst, { State = "over", Note = if winner then `ผู้ชนะ {winner}` else (note or "เสมอ") })
 	remote:FireAllClients("Result", winner or "")
 	task.delay(RETURN_DELAY, function()

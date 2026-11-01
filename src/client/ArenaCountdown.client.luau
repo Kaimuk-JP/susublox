@@ -83,8 +83,9 @@ local function hideAll()
 	number.Visible = false
 end
 
-local function runCountdown(endsAt: number)
+local function runCountdown(endsAt: number, text: string?)
 	token += 1
+	header.Text = text or "เตรียมตัว! ศึกจะเริ่มใน..."
 	local mine = token
 	fight.Visible = false
 	header.Visible = true
@@ -132,12 +133,50 @@ local function flashFight()
 	end)
 end
 
-remote.OnClientEvent:Connect(function(kind: string, endsAt: number?)
-	if kind == "Start" and endsAt then
-		task.spawn(runCountdown, endsAt)
+local banner = label(90, 0.38)
+local bannerToken = 0
+local function showBanner(text: string, color: Color3, secs: number)
+	bannerToken += 1
+	local mine = bannerToken
+	token += 1
+	hideAll()
+	fight.Visible = false
+	banner.Text = text
+	banner.TextColor3 = color
+	banner.TextTransparency = 0
+	banner.TextStrokeTransparency = 0.2
+	banner.Visible = true
+	local sc = banner:FindFirstChildOfClass("UIScale") :: UIScale
+	sc.Scale = 0.4
+	TweenService:Create(sc, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.1 }):Play()
+	if fightSound.SoundId ~= "" then
+		fightSound.TimePosition = 0
+		fightSound:Play()
+	end
+	task.delay(math.max(secs - 0.4, 0.5), function()
+		if bannerToken == mine then
+			TweenService:Create(banner, TweenInfo.new(0.35), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+			task.delay(0.4, function()
+				if bannerToken == mine then
+					banner.Visible = false
+				end
+			end)
+		end
+	end)
+end
+
+remote.OnClientEvent:Connect(function(kind: string, endsAt: any?, extra: any?, secs: any?)
+	if kind == "Banner" then
+		showBanner(tostring(endsAt), if typeof(extra) == "Color3" then extra else Color3.fromHex("FFE066"), if typeof(secs) == "number" then secs else 2.5)
+	elseif kind == "Start" and typeof(endsAt) == "number" then
+		bannerToken += 1
+		banner.Visible = false
+		task.spawn(runCountdown, endsAt, if typeof(extra) == "string" then extra else nil)
 	elseif kind == "Fight" then
 		flashFight()
 	elseif kind == "Cancel" then
+		bannerToken += 1
+		banner.Visible = false
 		token += 1
 		hideAll()
 		fight.Visible = false

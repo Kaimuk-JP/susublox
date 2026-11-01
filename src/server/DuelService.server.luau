@@ -77,6 +77,10 @@ local function endDuel(d: Duel, winner: Player?, loser: Player?, note: string?)
 		else (note or "ดวลจบแบบเสมอ ไม่เปลี่ยนแต้ม")
 	toast(text)
 	Arena.SetBoard(d.Inst, { State = "over", Note = text })
+	if winner and loser then
+		Arena.Banner(d.Inst, winner, "ชนะ!", nil, 3)
+		Arena.Banner(d.Inst, loser, "แพ้", Color3.fromHex("FF5A4E"), 3)
+	end
 	task.delay(RETURN_DELAY, function()
 		Arena.Destroy(d.Inst)
 	end)

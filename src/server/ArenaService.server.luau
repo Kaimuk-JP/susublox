@@ -22,6 +22,7 @@ local MAX_WAVES = 5
 local BOTS_PER_WAVE = 3
 local WAVE_TIMEOUT = 100
 local COUNTDOWN = 10
+local WAVE_BREAK = 6 -- นับถอยหลังระหว่างรอบ (วินาที) หลังแบนเนอร์ "ชนะ!" 2.5 วิ
 local TRIAL_COOLDOWN = 20
 local KIOSK_REACH = 40 -- ต้องอยู่ในลานหน้าสนามและห่างคีออสก์ไม่เกินนี้ จึงขอเมนู/เริ่มได้
 
@@ -237,10 +238,14 @@ local function runTrial(t: Trial)
 		local botLevel = math.clamp(math.floor(plLevel * 0.1) + wave, 1, 15)
 		Arena.SetBoard(inst, { State = "wait", Mid = `{wave}/{MAX_WAVES}`, Note = "เตรียมตัว..." })
 		toast(player, `รอบ {wave}/{MAX_WAVES} กำลังจะเริ่ม (บอทเลเวล {botLevel})`)
-		for _ = 1, 6 do
-			if t.Done then
-				break
+		if wave > 1 then
+			-- พักระหว่างรอบ: แบนเนอร์ "ชนะ!" -> นับถอยหลังชุดเดียวกับตอนเริ่ม (ล็อก/กันดาเมจ + รีเซ็ตนักสู้ + กลับจุดเกิด) แล้วค่อยเกิดบอทรอบใหม่
+			if not Arena.RunBreak(inst, `ชนะ! ผ่านรอบ {wave - 1}`, WAVE_BREAK, `เตรียมตัว! รอบ {wave}/{MAX_WAVES} จะเริ่มใน...`, function()
+				return t.Done
+			end) then
+				endTrial(t, "ยกเลิกระหว่างพัก")
 			end
+		else
 			task.wait(0.5)
 		end
 		if t.Done then
@@ -290,6 +295,9 @@ local function runTrial(t: Trial)
 			t.Fame += 10
 			changed:Fire(player)
 		end
+	end
+	if t.Reason == "ชนะครบ" then
+		Arena.Banner(inst, nil, "ชนะ! ครบทุกรอบ", nil, 3)
 	end
 	local summary = if t.Reason == "ชนะครบ" then "เคลียร์ศึกฝึกซ้อมครบทุกรอบ!" else `จบศึกฝึกซ้อม ({t.Reason})`
 	Arena.SetBoard(inst, { State = "over", Mid = `{t.Cleared}/{MAX_WAVES}`, Note = summary })
