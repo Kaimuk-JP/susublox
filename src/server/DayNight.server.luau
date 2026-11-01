@@ -41,6 +41,10 @@ local start = os.clock()
 
 RunService.Heartbeat:Connect(function()
 	local hour = (15.4 + (os.clock() - start) / DAY_SECONDS * 24) % 24 -- เริ่มเกมตอนแสงยามเย็น
+	local frozen = workspace:GetAttribute("FreezeHour") -- ทดสอบ/ถ่ายภาพ: ล็อกเวลา
+	if type(frozen) == "number" then
+		hour = frozen
+	end
 	Lighting.ClockTime = hour
 	local phase = phaseAt(hour)
 	if phase.Name ~= lastName then
