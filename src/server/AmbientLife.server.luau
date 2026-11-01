@@ -61,6 +61,16 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	end
 	model.PrimaryPart = primary
 	model:PivotTo(cf)
+	-- โมเดลที่ยาวตามแกน X (หันข้างถนน เช่นสกูตเตอร์) หมุน 90 องศาให้ยาวตามแกน Z (ทิศวิ่ง) ก่อน แล้วค่อยวางพื้น
+	-- ทิศหน้า/หลัง (180 องศา) ตั้งด้วย Attribute FrontYaw บนโมเดลต้นฉบับ (องศา) ถ้าหน้ารถหันกลับด้าน
+	local _, firstSize = model:GetBoundingBox()
+	if firstSize.X > firstSize.Z * 1.15 then
+		model:PivotTo(model:GetPivot() * CFrame.Angles(0, math.rad(90), 0))
+	end
+	local frontYaw = src:GetAttribute("FrontYaw")
+	if type(frontYaw) == "number" then
+		model:PivotTo(model:GetPivot() * CFrame.Angles(0, math.rad(frontYaw), 0))
+	end
 	-- วางให้ท้องรถ/ล้อล่างสุดแตะพื้นพอดี (บางโมเดลจุดหมุนไม่ได้อยู่ใต้ล้อ รถเลยลอย เช่นสกูตเตอร์)
 	local bbCf, bbSize = model:GetBoundingBox()
 	local lift = cf.Position.Y - (bbCf.Position.Y - bbSize.Y / 2)
