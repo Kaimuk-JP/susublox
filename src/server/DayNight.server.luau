@@ -10,11 +10,11 @@ local hex = Color3.fromHex
 -- Brightness / OutdoorAmbient / Ambient = แสงพื้นฐาน; Haze* = Atmosphere; Cc* = ColorCorrection; Bloom = ความแรงเรืองแสง
 local phases = {
 	{ From = 6, Name = "Day", Brightness = 2.6, Outdoor = Color3.fromRGB(135, 135, 138), Ambient = Color3.fromRGB(86, 86, 90),
-		HazeColor = hex("C4CBCF"), Decay = hex("D2B896"), Density = 0.3, Tint = hex("FFF6EA"), Sat = -0.1, Contrast = 0.1, Bloom = 0.18 },
+		HazeColor = hex("C4CBCF"), Decay = hex("D2B896"), Density = 0.2, Tint = hex("FFF6EA"), Sat = -0.1, Contrast = 0.1, Bloom = 0.18 },
 	{ From = 15, Name = "GoldenHour", Brightness = 2.2, Outdoor = Color3.fromRGB(125, 112, 100), Ambient = Color3.fromRGB(78, 70, 66),
-		HazeColor = hex("D3B792"), Decay = hex("DE9A62"), Density = 0.4, Tint = hex("FFE6C8"), Sat = -0.08, Contrast = 0.14, Bloom = 0.24 },
+		HazeColor = hex("D3B792"), Decay = hex("DE9A62"), Density = 0.28, Tint = hex("FFE6C8"), Sat = -0.08, Contrast = 0.14, Bloom = 0.24 },
 	{ From = 17.5, Name = "Evening", Brightness = 1.7, Outdoor = Color3.fromRGB(104, 88, 90), Ambient = Color3.fromRGB(64, 56, 62),
-		HazeColor = hex("B98C78"), Decay = hex("C46A4A"), Density = 0.45, Tint = hex("FFD2B0"), Sat = -0.05, Contrast = 0.16, Bloom = 0.32 },
+		HazeColor = hex("B98C78"), Decay = hex("C46A4A"), Density = 0.32, Tint = hex("FFD2B0"), Sat = -0.05, Contrast = 0.16, Bloom = 0.32 },
 	-- กลางคืนยังต้องมองเห็นพื้นที่ต่อสู้ได้: ไม่มืดสนิท แต่ให้ไฟถนน/ป้ายร้านเป็นจุดเด่น
 	{ From = 20, Name = "Night", Brightness = 1.3, Outdoor = Color3.fromRGB(104, 114, 152), Ambient = Color3.fromRGB(84, 92, 124),
 		HazeColor = hex("3C465E"), Decay = hex("2A3048"), Density = 0.42, Tint = hex("D8E0FF"), Sat = -0.12, Contrast = 0.18, Bloom = 0.5 },
@@ -60,11 +60,11 @@ clouds.Parent = workspace.Terrain
 -- Dark = คูณความสว่าง, Fog = บวกความหนาแน่นหมอก, Haze, Grey = ผสมสีหมอกไปทางเทา, Cover/CloudDensity = เมฆ, Sat = ปรับความอิ่มสี
 local weatherMods: { [string]: { Dark: number, Fog: number, Haze: number, Grey: number, Cover: number, CloudDensity: number, Sat: number } } = {
 	Clear = { Dark = 1, Fog = 0, Haze = 0, Grey = 0, Cover = 0.45, CloudDensity = 0.5, Sat = 0 },
-	Cloudy = { Dark = 0.85, Fog = 0.05, Haze = 0.6, Grey = 0.3, Cover = 0.8, CloudDensity = 0.7, Sat = -0.04 },
-	Rain = { Dark = 0.7, Fog = 0.2, Haze = 1.4, Grey = 0.5, Cover = 0.95, CloudDensity = 0.85, Sat = -0.08 },
-	Storm = { Dark = 0.62, Fog = 0.3, Haze = 2, Grey = 0.65, Cover = 1, CloudDensity = 1, Sat = -0.14 },
-	Fog = { Dark = 0.8, Fog = 0.45, Haze = 3, Grey = 0.6, Cover = 0.7, CloudDensity = 0.6, Sat = -0.1 },
-	Snow = { Dark = 0.9, Fog = 0.25, Haze = 1.8, Grey = 0.55, Cover = 0.9, CloudDensity = 0.8, Sat = -0.12 },
+	Cloudy = { Dark = 0.88, Fog = 0.03, Haze = 0.3, Grey = 0.3, Cover = 0.8, CloudDensity = 0.7, Sat = -0.04 },
+	Rain = { Dark = 0.72, Fog = 0.1, Haze = 0.8, Grey = 0.5, Cover = 0.95, CloudDensity = 0.85, Sat = -0.08 },
+	Storm = { Dark = 0.62, Fog = 0.15, Haze = 1.2, Grey = 0.65, Cover = 1, CloudDensity = 1, Sat = -0.14 },
+	Fog = { Dark = 0.82, Fog = 0.25, Haze = 1.6, Grey = 0.6, Cover = 0.7, CloudDensity = 0.6, Sat = -0.1 },
+	Snow = { Dark = 0.9, Fog = 0.12, Haze = 1.0, Grey = 0.55, Cover = 0.9, CloudDensity = 0.8, Sat = -0.12 },
 }
 local greyFor = { Day = hex("B9BEC4"), GoldenHour = hex("B3A9A0"), Evening = hex("8F8890"), Night = hex("4A5068") }
 
@@ -103,8 +103,8 @@ local function apply(phase, instant: boolean?)
 		TweenService:Create(atmosphere, info, {
 			Color = phase.HazeColor:Lerp(grey, m.Grey),
 			Decay = phase.Decay,
-			Density = math.clamp(phase.Density + m.Fog, 0, 0.65),
-			Haze = 0.4 + m.Haze,
+			Density = math.clamp(phase.Density + m.Fog, 0, 0.5),
+			Haze = 0.2 + m.Haze,
 		}):Play()
 	end
 	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
