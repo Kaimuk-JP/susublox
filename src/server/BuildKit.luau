@@ -851,7 +851,38 @@ function BK.drum(parent: Instance, x: number, z: number, y0: number, color: Colo
 end
 
 -- โฟล์คลิฟต์ง่าย ๆ (ยาว ~8 กว้าง ~3.2 สูง ~6.4 stud) หน้า = +Z ของ origin
+-- โมเดลประกอบฉากที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.<folder>) ข้อตกลง: Pivot = กึ่งกลางที่พื้น ไม่มีสคริปต์
+-- cframe = ตำแหน่ง/ทิศที่ต้องการ (ทิศหน้าตามโมเดลต้นฉบับ), scale = ตัวคูณจากขนาดที่เก็บไว้; คืน nil ถ้าไม่มีโมเดล
+function BK.importedProp(parent: Instance, name: string, cframe: CFrame, scale: number?, folderName: string?): Model?
+	local assets = game:GetService("ServerStorage"):FindFirstChild("ImportedAssets")
+	local folder = assets and assets:FindFirstChild(folderName or "Props")
+	local src = folder and folder:FindFirstChild(name)
+	if not (src and src:IsA("Model")) then
+		return nil
+	end
+	local model = src:Clone()
+	for _, d in model:GetDescendants() do
+		if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") or d:IsA("Sound") then
+			d:Destroy()
+		elseif d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanTouch = false
+		end
+	end
+	if scale and scale ~= 1 then
+		model:ScaleTo(model:GetScale() * scale)
+	end
+	model:PivotTo(cframe)
+	model.Parent = parent
+	return model
+end
+
 function BK.forklift(parent: Instance, origin: CFrame, body: Color3)
+	-- โมเดลจริง (Prop_Forklift) ส้อมชี้ -Z ส่วนแบบประกอบเองชี้ +Z จึงหมุน 180°
+	if BK.importedProp(parent, "Prop_Forklift", origin * CFrame.Angles(0, math.pi, 0)) then
+		return
+	end
 	local m = Instance.new("Folder")
 	m.Name = "Forklift"
 	m.Parent = parent

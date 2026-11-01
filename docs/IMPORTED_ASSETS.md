@@ -65,6 +65,7 @@ Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่
 | Prop_Torii | 131200625309501 | Torii Gate Japanese Cherry Blossom Gates Shrine | Thunfl1500 | 36 (0) |
 | Prop_StreetLantern | 122375247270818 | Low Poly Street Lantern Lamp Light Post | Content Deleted - 158552482 | 8 (8) |
 | Prop_VendingMachine | 10904552162 | Snack Vending Machine Mesh PBR | Ligij | 5 (3) |
+| Prop_Forklift | 12635164828 | Forklift (Prop) | oreoPL2 | 1 (1 MeshPart + SurfaceAppearance) — Pivot ที่พื้น ส้อมชี้ -Z ยาว 10 studs; ใช้แทน BK.forklift ผ่าน `BK.importedProp` |
 
 ไม่ได้นำเข้า: เสาไฟฟ้า (ตัวที่ลองมี 675 ชิ้น, ใหญ่ 64x83 studs), ตู้ไปรษณีย์/ศาลเจ้าเล็ก (ไม่ได้ค้นหา)
 
@@ -92,3 +93,11 @@ Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่
 - ไม่มีรถบัส/รถบรรทุกใหญ่ที่ตรวจแล้ว จึงไม่ได้เพิ่ม
 - ประตูบ้าน/ร้าน/บันได สูง 5.5-5.7 กว้าง 2.6-3.2, เสาไฟถนน BK.lamp สูง ~15.4, จักรยาน (ที่ตั้งพิง/ที่จอด) ยาว ~4.6, ทางเท้าถนนสายหลัก 3.5 -> 5 (LotGen/StreetFurniture/WorldBuilder ต้องตรงกัน)
 - ความสูงชั้นอาคาร ~6.5 studs (มาตรฐาน 8.5) และหน้าร้านแคบ (6-10 studs) **ยังไม่ได้แก้** (ต้องแก้ LotGen/ผังหน้าต่างทั้งเมือง)
+
+## รอบท่าเรือ (Docks) — หาโมเดลฟรีแทนของประกอบเอง
+ลองแล้ว **ไม่ใช้** (หยาบ/เล็กกว่าของที่ประกอบเองอยู่แล้ว ดูจากภาพ Edit):
+- เรือ "Cargo Ship Freighter Boat Vessel Container Harbor" 112864599921554 (174 ชิ้น, 103 studs, มี 8 สคริปต์/4 เสียง) — เป็นเรือบรรทุกทั่วไปทรงกล่อง ไม่มีตู้ ไม่ดีกว่าเรือ 140 studs ของ DockKit
+- เครน "Mini gantry port crane" 576547111 (21 ชิ้น) — โครงเสาแท่งบางสีแดง ดูไม่สมจริงเมื่อขยาย 10 เท่า ไม่ดีกว่าเครนทรัสส์ของ DockKit
+- ยังไม่ได้ลอง/ตรวจ: โกดัง (ผลค้นหาส่วนใหญ่เป็นโมเดลภายใน/ผู้สร้างไม่ระบุ ไม่ได้ดาวน์โหลดมาดู), ตู้คอนเทนเนอร์เดี่ยว, เรือประมง, ไฟท่าเรือ
+- `BK.importedProp(parent, name, cframe, scale?, folder?)` ใน BuildKit โคลนโมเดลจาก ImportedAssets (ลบสคริปต์/เสียง, Anchored, ไม่ชน); `BK.forklift` ใช้ Prop_Forklift ก่อน ถ้าไม่มีค่อยใช้แบบประกอบเอง (ใช้ทั้งท่าเรือและโกดัง รวม 9 คัน)
+- ไม่ได้วัดจำนวนสามเหลี่ยม/เวลา join ใหม่หลังเปลี่ยน
