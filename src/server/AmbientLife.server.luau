@@ -251,7 +251,7 @@ do
 								local push = (forward * 1.0 + side * 0.7).Unit
 								if s then
 									s:Knockdown(1.6)
-									Combat.Impulse(s, push * 55 + Vector3.new(0, 38, 0), 0.35)
+									Combat.Impulse(s, push * 38 + Vector3.new(0, 20, 0), 0.35)
 									Combat.PlayAnim(char, "Knockdown")
 								end
 								hum:TakeDamage(math.max(10, hum.MaxHealth * 0.12))
