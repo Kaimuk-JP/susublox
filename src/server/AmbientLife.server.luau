@@ -38,7 +38,18 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	end
 	local model = src:Clone()
 	model.Name = if moving then "TrafficCar" else "ParkedCar"
+	-- สีตัวถังของโมเดลนำเข้าบางคันเป็นสีดิบ (#00FF00 / #FF0000) ให้เปลี่ยนเป็นสีรถจริงหม่น ๆ (ตัวถัง) หรือดำด้าน (ชิ้นแต่ง)
+	local paints = { "D8D6D0", "2E3036", "8A8D91", "3F566E", "7A2E2A", "B8B2A4" }
+	local paint = Color3.fromHex(paints[rng:NextInteger(1, #paints)])
 	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			local hexColor = d.Color:ToHex():upper()
+			if hexColor == "00FF00" then
+				d.Color = if d.Name:find("trim") or d.Name:find("Weight") or d.Name:find("bumper_glass") then Color3.fromHex("1C1D21") else paint
+			elseif hexColor == "FF0000" then
+				d.Color = Color3.fromHex("1C1D21")
+			end
+		end
 		if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ModuleScript") or d:IsA("Sound") then
 			d:Destroy() -- กันไว้อีกชั้น ไม่เอาสคริปต์/เสียงจากโมเดลภายนอก
 		end

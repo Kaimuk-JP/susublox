@@ -197,9 +197,22 @@ end
 
 ---------------------------------------------------------------- Terrain: หญ้า น้ำ เนินเขา
 -- ผิว Terrain จริงสูงกว่าขอบบนของบล็อก ~2 stud (voxel 4 stud) จึงวางที่ -8 ให้ผิวหญ้าอยู่ที่ y≈0 เสมอกับพื้นชิ้นส่วน
-terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromHex("C9B88F"))
+-- สีวัสดุภูมิประเทศธรรมชาติ (ตั้งตอนเล่นเสมอ ชุดเดียวกับ tools/TerrainBake.luau) ไม่มีสีเขียวสด
+for mat, col in {
+	[Enum.Material.Grass] = Color3.fromRGB(92, 128, 62),
+	[Enum.Material.LeafyGrass] = Color3.fromRGB(74, 108, 52),
+	[Enum.Material.Ground] = Color3.fromRGB(112, 94, 68),
+	[Enum.Material.Mud] = Color3.fromRGB(88, 72, 54),
+	[Enum.Material.Rock] = Color3.fromRGB(116, 113, 106),
+	[Enum.Material.Asphalt] = Color3.fromRGB(64, 65, 68),
+	[Enum.Material.Pavement] = Color3.fromRGB(138, 136, 131),
+	[Enum.Material.Cobblestone] = Color3.fromRGB(140, 132, 120),
+	[Enum.Material.Concrete] = Color3.fromRGB(134, 132, 127),
+	[Enum.Material.Sand] = Color3.fromRGB(201, 184, 143),
+} do
+	terrain:SetMaterialColor(mat, col)
+end
 if not baked then
-	terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("7E9A5C"))
 	terrain:FillBlock(CFrame.new(0, -8, 110), Vector3.new(760, 12, 800), Enum.Material.LeafyGrass)
 
 	-- เนินเขารอบฉากย้ายไปเป็นแนวเขานอกขอบโลกใน WorldBuilder (เนินกลางโลกเคยทับสวน ถนน บ้าน)
@@ -222,7 +235,7 @@ end
 local clouds = Instance.new("Clouds")
 clouds.Cover = 0.55
 clouds.Density = 0.55
-clouds.Color = Color3.fromHex("FFFFFF")
+clouds.Color = Color3.fromHex("E8E4DC")
 clouds.Parent = terrain
 
 ---------------------------------------------------------------- พื้นและทางเดิน

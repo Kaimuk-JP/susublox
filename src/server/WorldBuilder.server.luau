@@ -206,7 +206,7 @@ local function buildPark(d: World.District, f: Folder)
 	BK.cylinder("PlazaDisc", 14, 0.4, Vector3.new(gx, 0.2, gz), hex("B5AA98"), f)
 	for i = 0, 5 do
 		local a = i / 6 * math.pi * 2
-		BK.cylinder("GazeboPost", 0.5, 9, Vector3.new(gx + math.cos(a) * 8, 4.5, gz + math.sin(a) * 8), hex("FFFFFF"), f)
+		BK.cylinder("GazeboPost", 0.5, 9, Vector3.new(gx + math.cos(a) * 8, 4.5, gz + math.sin(a) * 8), hex("E4E0D6"), f)
 	end
 	BK.cylinder("GazeboRoof", 10.5, 0.8, Vector3.new(gx, 9.4, gz), hex("7A5A50"), f)
 	BK.ball("GazeboTop", 3, Vector3.new(gx, 10.8, gz), hex("B8944A"), f, Enum.Material.Neon)
@@ -224,13 +224,13 @@ local function buildPark(d: World.District, f: Folder)
 	for i = 1, 6 do
 		local x, z = randomIn(cx, cz, d.Radius * 0.8)
 		if not onRoadBand(x, z, 8) then
-			BK.box("Picnic", x - 3, x + 3, 0, 0.2, z - 2.5, z + 2.5, if i % 2 == 0 then hex("9E3B33") else hex("FFFFFF"), f)
+			BK.box("Picnic", x - 3, x + 3, 0, 0.2, z - 2.5, z + 2.5, if i % 2 == 0 then hex("9E3B33") else hex("E4E0D6"), f)
 		end
 	end
 	for _ = 1, 10 do
 		local x, z = randomIn(cx, cz, d.Radius * 0.9)
 		if not onRoadBand(x, z, 8) then
-			local color = ({ hex("7A5A50"), hex("B8944A"), hex("FFFFFF"), hex("FF8FAB") })[rng:NextInteger(1, 4)]
+			local color = ({ hex("7A5A50"), hex("B8944A"), hex("E4E0D6"), hex("C98A97") })[rng:NextInteger(1, 4)]
 			for _ = 1, 9 do
 				BK.ball("Flower", 1, Vector3.new(x + rng:NextNumber(-3, 3), 0.7, z + rng:NextNumber(-3, 3)), color, f)
 			end
@@ -411,7 +411,7 @@ local function buildCity(d: World.District, f: Folder)
 	end
 	-- ทางม้าลาย + ไฟจราจร
 	for i = -3, 3 do
-		BK.box("Crosswalk", -90 - 6.5 + (i + 3) * 2, -90 - 5.5 + (i + 3) * 2, 0.3, 0.36, 588, 596, hex("FFFFFF"), f)
+		BK.box("Crosswalk", -90 - 6.5 + (i + 3) * 2, -90 - 5.5 + (i + 3) * 2, 0.3, 0.36, 588, 596, hex("E4E0D6"), f)
 	end
 	for _, o in { { -99, 592 }, { -81, 608 } } do
 		BK.cylinder("TrafficPole", 0.3, 9, Vector3.new(o[1], 4.5, o[2]), hex("2A2C32"), f)

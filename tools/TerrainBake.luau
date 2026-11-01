@@ -133,15 +133,15 @@ end
 terrain:Clear()
 -- สีวัสดุภูมิประเทศให้เป็นธรรมชาติ (ค่าเริ่มต้นออกฟ้า-ซีด)
 for mat, col in {
-	[Enum.Material.Grass] = Color3.fromRGB(96, 140, 62),
-	[Enum.Material.LeafyGrass] = Color3.fromRGB(78, 120, 50),
-	[Enum.Material.Ground] = Color3.fromRGB(118, 96, 66),
-	[Enum.Material.Mud] = Color3.fromRGB(92, 74, 54),
-	[Enum.Material.Rock] = Color3.fromRGB(118, 116, 110),
-	[Enum.Material.Asphalt] = Color3.fromRGB(74, 77, 92),
-	[Enum.Material.Pavement] = Color3.fromRGB(150, 150, 158),
-	[Enum.Material.Cobblestone] = Color3.fromRGB(150, 140, 128),
-	[Enum.Material.Concrete] = Color3.fromRGB(140, 142, 150),
+	[Enum.Material.Grass] = Color3.fromRGB(92, 128, 62),
+	[Enum.Material.LeafyGrass] = Color3.fromRGB(74, 108, 52),
+	[Enum.Material.Ground] = Color3.fromRGB(112, 94, 68),
+	[Enum.Material.Mud] = Color3.fromRGB(88, 72, 54),
+	[Enum.Material.Rock] = Color3.fromRGB(116, 113, 106),
+	[Enum.Material.Asphalt] = Color3.fromRGB(64, 65, 68),
+	[Enum.Material.Pavement] = Color3.fromRGB(138, 136, 131),
+	[Enum.Material.Cobblestone] = Color3.fromRGB(140, 132, 120),
+	[Enum.Material.Concrete] = Color3.fromRGB(134, 132, 127),
 } do
 	terrain:SetMaterialColor(mat, col)
 end

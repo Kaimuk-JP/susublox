@@ -125,7 +125,7 @@ local function busStop(x: number, side: number)
 	glass.Transparency = 0.6
 	BK.box("ShelterBench", x - 2.5, x + 2.5, 1.6, 2, z + side * 1.2 - 0.5, z + side * 1.2 + 0.5, hex("6F5236"), f, Enum.Material.Wood)
 	BK.cylinder("BusSignPole", 0.15, 8, Vector3.new(x + 5.5, 4, z), hex("A5A7A8"), f, Enum.Material.Metal)
-	BK.sign(f, "BUS", Vector3.new(2.4, 2.4, 0.2), Vector3.new(x + 5.5, 8.4, z), if side == 1 then 180 else 0, hex("3F566E"), hex("FFFFFF"))
+	BK.sign(f, "BUS", Vector3.new(2.4, 2.4, 0.2), Vector3.new(x + 5.5, 8.4, z), if side == 1 then 180 else 0, hex("3F566E"), hex("E4E0D6"))
 end
 for _, spec in { { -700, 1 }, { -300, -1 }, { 300, 1 }, { 700, -1 }, { -250, 1 }, { 250, -1 } } do
 	if not skip(spec[1]) then
@@ -140,10 +140,10 @@ for _, r in World.Roads do
 	for _, side in { -1, 1 } do
 		if horizontal then
 			local z = z1 + side * (w / 2 - 1.1)
-			BK.box("EdgeLine", math.min(x1, x2), math.max(x1, x2), 0.3, 0.37, z - 0.15, z + 0.15, hex("FFFFFF"), f)
+			BK.box("EdgeLine", math.min(x1, x2), math.max(x1, x2), 0.3, 0.37, z - 0.15, z + 0.15, hex("E4E0D6"), f)
 		else
 			local x = x1 + side * (w / 2 - 1.1)
-			BK.box("EdgeLine", x - 0.15, x + 0.15, 0.3, 0.37, math.min(z1, z2), math.max(z1, z2), hex("FFFFFF"), f)
+			BK.box("EdgeLine", x - 0.15, x + 0.15, 0.3, 0.37, math.min(z1, z2), math.max(z1, z2), hex("E4E0D6"), f)
 		end
 	end
 end
