@@ -260,8 +260,11 @@ function LotGen.generate(): { Lot }
 								lotKind = SHOP_KINDS[rng:NextInteger(1, #SHOP_KINDS)]
 							end
 						elseif ground == "house" and rng:NextNumber() < 0.1 then
-							ground = "shop"
-							lotKind = HOUSE_SHOP_KINDS[rng:NextInteger(1, #HOUSE_SHOP_KINDS)]
+							local kind = HOUSE_SHOP_KINDS[rng:NextInteger(1, #HOUSE_SHOP_KINDS)]
+							if wl >= 8 then -- หน้าร้านแคบกว่า 8 stud อยู่เป็นบ้าน (draw rng เท่าเดิม ผังไม่เลื่อน)
+								ground = "shop"
+								lotKind = kind
+							end
 						elseif ground == "ind" and rng:NextNumber() < 0.4 then
 							ground = "yard"
 							h = 0
