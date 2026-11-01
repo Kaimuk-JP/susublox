@@ -82,6 +82,167 @@ local function jitter(c: Color3, amt: number): Color3
 end
 BK.jitter = jitter
 
+---------------------------------------------------------------- ป้ายร้านญี่ปุ่น: ป้ายตั้งแนวตั้ง โคมแดง ผ้านอเรน ไฟลายแถบร้านสะดวกซื้อ ป้ายปาจิงโกะกะพริบ
+-- ชนิดร้าน -> ข้อความ (ญี่ปุ่นเป็นหลัก + อังกฤษตัวเล็ก) สีไฟป้ายโทนอุ่น ไม่ใช้โลโก้/เครื่องหมายการค้าจริง
+BK.SHOPS = {
+	ramen = { jp = "ラーメン", en = "RAMEN", fg = "F0B24A" },
+	izakaya = { jp = "居酒屋", en = "IZAKAYA", fg = "E8643C" },
+	pharmacy = { jp = "薬局", en = "PHARMACY", fg = "7FD1A0" },
+	konbini = { jp = "コンビニ", en = "24H", fg = "F2F0E6" },
+	books = { jp = "書店", en = "BOOKS", fg = "E6C27A" },
+	game = { jp = "ゲーム", en = "GAME", fg = "E0707A" },
+	pachinko = { jp = "パチンコ", en = "PACHINKO", fg = "F0D060" },
+	karaoke = { jp = "カラオケ", en = "KARAOKE", fg = "D98AB0" },
+	kissaten = { jp = "喫茶", en = "COFFEE", fg = "D8A36A" },
+}
+
+local function glowGui(p: BasePart, face: Enum.NormalId, text: string, color: Color3, pps: number): TextLabel
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = pps
+	gui.LightInfluence = 0
+	gui.Brightness = 1.6
+	gui.Parent = p
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = color
+	label.Font = Enum.Font.SourceSansBold
+	label.TextScaled = true
+	label.Parent = gui
+	return label
+end
+
+-- ป้ายตั้งแนวตั้งยื่นออกจากผนัง (อ่านจากริมถนนทั้งสองทิศ) ตัวอักษรเรียงบนลงล่าง
+function BK.verticalSign(parent: Instance, jp: string, en: string, pos: Vector3, height: number, fg: Color3)
+	local chars = {}
+	for _, cp in utf8.codes(jp) do
+		table.insert(chars, utf8.char(cp))
+	end
+	local p = BK.part("VerticalSign", Vector3.new(0.5, height, 2.4), pos, Color3.fromHex("1C1D21"), parent, Enum.Material.Metal)
+	BK.noCollide(p)
+	glowGui(p, Enum.NormalId.Right, table.concat(chars, "\n"), fg, 50)
+	glowGui(p, Enum.NormalId.Left, table.concat(chars, "\n"), fg, 50)
+	local rim = BK.part("VerticalSignRim", Vector3.new(0.35, height + 0.3, 2.7), pos, fg:Lerp(Color3.new(0, 0, 0), 0.55), parent, Enum.Material.Neon)
+	BK.noCollide(rim)
+	BK.light(p, fg, 14, 0.5)
+	local enPart = BK.part("VerticalSignEn", Vector3.new(0.5, 0.9, 2.4), pos - Vector3.new(0, height / 2 + 0.55, 0), Color3.fromHex("1C1D21"), parent, Enum.Material.Metal)
+	BK.noCollide(enPart)
+	glowGui(enPart, Enum.NormalId.Right, en, fg, 40)
+	glowGui(enPart, Enum.NormalId.Left, en, fg, 40)
+end
+
+-- โคมแดงห้อยหน้าร้าน (chochin) เรียง n ใบตามแกน x
+function BK.chochin(parent: Instance, x: number, y: number, z: number, n: number, spacing: number)
+	for i = 0, n - 1 do
+		local lx = x + (i - (n - 1) / 2) * spacing
+		BK.noCollide(BK.cylinder("ChochinCord", 0.05, 0.8, Vector3.new(lx, y + 0.5, z), Color3.fromHex("1C1D21"), parent, Enum.Material.Metal))
+		local lamp = BK.cylinder("Chochin", 0.75, 1.7, Vector3.new(lx, y - 0.5, z), Color3.fromHex("B03A2E"), parent, Enum.Material.Neon)
+		lamp.Transparency = 0.1
+		BK.noCollide(lamp)
+		for _, dy in { 0.88, -0.88 } do
+			BK.noCollide(BK.cylinder("ChochinCap", 0.6, 0.18, Vector3.new(lx, y - 0.5 + dy, z), Color3.fromHex("15161A"), parent, Enum.Material.Metal))
+		end
+		if i == math.floor((n - 1) / 2) then
+			BK.light(lamp, Color3.fromHex("FF8A4A"), 14, 0.7)
+		end
+	end
+end
+
+-- ผ้านอเรน (ผ้าแขวนหน้าประตูแบ่งเป็นแถบ)
+function BK.noren(parent: Instance, cx: number, y: number, z: number, width: number, color: Color3)
+	BK.box("NorenBar", cx - width / 2 - 0.2, cx + width / 2 + 0.2, y, y + 0.2, z - 0.15, z + 0.15, Color3.fromHex("3A2A20"), parent, Enum.Material.Wood)
+	local strips = 4
+	local sw = width / strips
+	for i = 0, strips - 1 do
+		local sx = cx - width / 2 + i * sw
+		BK.noCollide(BK.box("Noren", sx + 0.06, sx + sw - 0.06, y - 2.2, y, z - 0.08, z + 0.08, color, parent, Enum.Material.Fabric))
+		BK.noCollide(BK.box("NorenMark", sx + sw * 0.3, sx + sw * 0.7, y - 1.4, y - 0.7, z - 0.1, z + 0.1, Color3.fromHex("E4E0D6"), parent, Enum.Material.Fabric))
+	end
+end
+
+-- แถบไฟขาว/เขียว/น้ำเงินหน้าร้านสะดวกซื้อ (แบบทั่วไป ไม่ลอกโลโก้ร้านจริง)
+function BK.konbiniStripes(parent: Instance, cx: number, y: number, z: number, width: number)
+	local cols = { Color3.fromHex("3E9A5B"), Color3.fromHex("F2F0E6"), Color3.fromHex("2F6FB5") }
+	for i, c in cols do
+		local y1 = y + (i - 1) * 0.55
+		local bar = BK.box("KonbiniStripe", cx - width / 2, cx + width / 2, y1, y1 + 0.4, z - 0.15, z + 0.15, c, parent, Enum.Material.Neon)
+		BK.noCollide(bar)
+		if i == 2 then
+			BK.light(bar, Color3.fromHex("F2F0E6"), 18, 0.8)
+		end
+	end
+end
+
+-- ป้ายปาจิงโกะ: ไฟล้อมกรอบกะพริบ (ลูปเดียวทั้งโลก สลับสีไฟทุก 0.4 วินาที)
+local flashing: { BasePart } = {}
+local flashStarted = false
+local FLASH = { Color3.fromHex("F0D060"), Color3.fromHex("E0707A"), Color3.fromHex("7FD1E0") }
+function BK.flashLights(parent: Instance, cx: number, y: number, z: number, width: number, height: number)
+	local n = math.max(6, math.floor(width / 1.1))
+	for i = 0, n do
+		local t = i / n
+		for _, yy in { y - height / 2, y + height / 2 } do
+			local bx = cx - width / 2 + t * width
+			local b = BK.box("PachinkoBulb", bx - 0.18, bx + 0.18, yy - 0.18, yy + 0.18, z - 0.18, z + 0.18, FLASH[1 + (i % 3)], parent, Enum.Material.Neon)
+			BK.noCollide(b)
+			b:SetAttribute("Phase", i)
+			table.insert(flashing, b)
+		end
+	end
+	if not flashStarted then
+		flashStarted = true
+		task.spawn(function()
+			local tick = 0
+			while true do
+				task.wait(0.4)
+				tick += 1
+				for k = #flashing, 1, -1 do
+					local b = flashing[k]
+					if b.Parent == nil then
+						table.remove(flashing, k)
+					else
+						local ph = (b:GetAttribute("Phase") :: number) + tick
+						b.Color = FLASH[1 + (ph % 3)]
+						b.Material = if ph % 2 == 0 then Enum.Material.Neon else Enum.Material.Metal
+					end
+				end
+			end
+		end)
+	end
+end
+
+-- ติดป้ายตามชนิดร้าน: ป้ายหน้าร้านแนวนอน (ญี่ปุ่น + อังกฤษเล็ก) + ป้ายตั้ง + ของประกอบตามชนิด
+function BK.shopFront(model: Instance, kind: string, cx: number, cz: number, w: number, d: number, y0: number, h: number, facing: number)
+	local info = BK.SHOPS[kind]
+	if not info then
+		return
+	end
+	local fg = Color3.fromHex(info.fg)
+	local dark = Color3.fromHex("1C1D21")
+	local fz = cz + facing * (d / 2)
+	local yaw = if facing == 1 then 180 else 0
+	local sw = math.min(w - 4, 9)
+	BK.sign(model, info.jp, Vector3.new(sw, 2.2, 0.35), Vector3.new(cx - 1, y0 + 9.0, fz + facing * 0.3), yaw, dark, fg).Material = Enum.Material.Metal
+	BK.sign(model, info.en, Vector3.new(sw, 0.9, 0.3), Vector3.new(cx - 1, y0 + 7.7, fz + facing * 0.3), yaw, dark, fg).Material = Enum.Material.Metal
+	local hv = math.min(7, (utf8.len(info.jp) :: number) * 1.4 + 1, h - 6)
+	if hv >= 3 then
+		BK.verticalSign(model, info.jp, info.en, Vector3.new(cx + w / 2 - 0.2, y0 + h - 2.2 - hv / 2, fz + facing * 1.4), hv, fg)
+	end
+	if kind == "izakaya" or kind == "ramen" then
+		BK.chochin(model, cx - 1.5, y0 + 6.2, fz + facing * 1.6, 3, 3)
+		BK.noren(model, cx + w / 2 - 2.7, y0 + 4.9, fz + facing * 0.4, 3, if kind == "izakaya" then Color3.fromHex("1E2A44") else Color3.fromHex("7A2E2A"))
+	elseif kind == "konbini" then
+		BK.konbiniStripes(model, cx, y0 + 5.9, fz + facing * 0.35, w - 2)
+	elseif kind == "pachinko" then
+		BK.flashLights(model, cx - 1, y0 + 9.0, fz + facing * 0.55, sw + 0.8, 2.6)
+	elseif kind == "kissaten" or kind == "karaoke" then
+		BK.chochin(model, cx - 1.5, y0 + 6.2, fz + facing * 1.6, 2, 3.5)
+	end
+end
+
 -- กิ่ง/ลำต้นเป็นทรงกระบอกเอียงจากจุด a ไป b
 function BK.branch(parent: Instance, a: Vector3, b: Vector3, radius: number, color: Color3, material: Enum.Material?): Part
 	local mid = (a + b) / 2
@@ -424,7 +585,7 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 			-- ม้วนชัตเตอร์เหล็กลูกฟูกปิดครึ่งหน้าร้านบางร้าน (ร้านปิดแล้ว)
 			if BK.rng:NextNumber() < 0.4 then
 				local sx1 = cx - w / 2 + 2.5
-				BK.box("ShutterDoor", sx1, sx1 + (w - 5) * 0.55, y0 + 1.2, y0 + 5, fz - 0.05 * facing - 0.2, fz + 0.2, hex("7C8084"), model, Enum.Material.CorrugatedMetal)
+				BK.box("ShutterDoor", sx1, sx1 + (w - 5) * 0.55, y0 + 1.2, y0 + 5, fz - 0.05 * facing - 0.2, fz + 0.2, hex("7C8084"), model, Enum.Material.Metal)
 				BK.box("ShutterBox", sx1 - 0.2, sx1 + (w - 5) * 0.55 + 0.2, y0 + 5, y0 + 5.6, fz - 0.3, fz + 0.3, hex("5A5D62"), model, Enum.Material.Metal)
 			end
 			for i = 0, 2 do
@@ -432,7 +593,9 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 			end
 		end
 	end
-	if o.SignText then
+	if o.Kind then
+		BK.shopFront(model, o.Kind, cx, cz, w, d, y0, h, facing)
+	elseif o.SignText then
 		-- ป้ายหันไปทางถนน (o.Facing = +1 หัน +Z, -1 หัน -Z)
 		BK.sign(model, o.SignText, Vector3.new(math.min(w - 2, 12), 2.6, 0.4), Vector3.new(cx, y0 + 8.8, cz + facing * (d / 2 + 0.3)), if facing == 1 then 180 else 0, o.SignBg or hex("2A2C32"), o.SignFg or hex("FFE066"))
 	end

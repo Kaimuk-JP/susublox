@@ -246,7 +246,7 @@ end
 ---------------------------------------------------------------- ถนนการค้า
 local function buildTown(d: World.District, f: Folder)
 	local cx = d.Center.X
-	local shopNames = { "RAMEN", "ARCADE", "BOOKS", "MART", "CAFE", "TOYS", "SUSHI", "PHARMACY", "GAME", "BAKERY", "KARAOKE", "TEA" }
+	local shopKinds = { "ramen", "izakaya", "konbini", "books", "kissaten", "game", "pachinko", "pharmacy", "karaoke", "izakaya", "ramen", "kissaten" }
 	local palette = { "C9BDB0", "D8CDB4", "B9BEBD", "C4C6B6", "BDB6B4", "D3C2AA" }
 	local awnings = { "9E3B33", "3F566E", "7A5A50", "4F7358", "B8944A", "A8643A" }
 	local idx = 0
@@ -259,11 +259,10 @@ local function buildTown(d: World.District, f: Folder)
 			local h = rng:NextNumber(10, 17)
 			local z = 170 + side * (13 + 9)
 			BK.building(f, x, z, 17, 18, h, hex(palette[(idx % #palette) + 1]), hex("4A525C"), {
-				SignText = shopNames[(idx % #shopNames) + 1],
+				Kind = shopKinds[(idx % #shopKinds) + 1],
 				Facing = -side,
-				Awning = hex(awnings[(idx % #awnings) + 1]),
-				SignBg = hex("2A2C32"),
-				SignFg = hex(awnings[((idx + 2) % #awnings) + 1]),
+				Awning = if shopKinds[(idx % #shopKinds) + 1] == "konbini" then nil else hex(awnings[(idx % #awnings) + 1]),
+				Storefront = true,
 			})
 		end
 	end
@@ -361,16 +360,14 @@ local function buildCity(d: World.District, f: Folder)
 	local cx, cz = d.Center.X, d.Center.Z
 	local palette = { "BDB8AE", "B9BEBD", "D3C2AA", "C4C6B6", "BDB6B4", "A5A7A8" }
 	local roofs = { "4A525C", "2A2C32", "70747A" }
-	local neonNames = { "BAR", "HOTEL", "BANK", "CINEMA", "PIZZA", "SHOP", "SPA", "GYM", "NOODLE", "BOOK" }
+	local towerKinds = { "karaoke", "pachinko", "izakaya", "game", "pharmacy", "kissaten", "books", "ramen", "konbini", "karaoke" }
 	local idx = 0
 	local function tower(x: number, z: number, w: number, dpt: number, facing: number)
 		idx += 1
 		local h = rng:NextNumber(18, 48)
 		BK.building(f, x, z, w, dpt, h, hex(palette[(idx % #palette) + 1]), hex(roofs[(idx % #roofs) + 1]), {
-			SignText = neonNames[(idx % #neonNames) + 1],
+			Kind = towerKinds[(idx % #towerKinds) + 1],
 			Facing = facing,
-			SignBg = hex("1B1C20"),
-			SignFg = ({ hex("C2506F"), hex("6FB5C9"), hex("B8944A"), hex("7A6A9A") })[(idx % 4) + 1],
 			GlassColor = hex("F0D9A0"),
 		})
 	end
