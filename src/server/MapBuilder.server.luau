@@ -670,7 +670,28 @@ for _, x in { -12, 12 } do
 	box("GatePillarCap", x - 2, x + 2, 10, 11, 57.5, 61.5, C.trim, props)
 end
 box("GateBar", -12, 12, 9, 10.5, 58.5, 60.5, C.wall, props)
-sign(props, "SUSUBLOX HIGH", Vector3.new(18, 2.6, 0.4), Vector3.new(0, 12.4, 59.6), 0, C.navy, C.yellow)
+-- ป้ายประตู: ตัวหนังสือทั้งสองด้าน (ด้านถนน +Z และด้านโรงเรียน -Z) ชื่ออังกฤษบน ญี่ปุ่นล่าง
+do
+	local board = part("GateSign", Vector3.new(21, 5, 0.6), Vector3.new(0, 13.1, 59.6), C.navy, props)
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 50
+		gui.Parent = board
+		for _, row in { { "SUSUBLOX HIGH", 0.08, 0.5, C.yellow }, { "私立スースーブロックス高等学校", 0.58, 0.3, Color3.new(1, 1, 1) } } do
+			local label = Instance.new("TextLabel")
+			label.Position = UDim2.fromScale(0.04, row[2])
+			label.Size = UDim2.fromScale(0.92, row[3])
+			label.BackgroundTransparency = 1
+			label.Text = row[1]
+			label.TextColor3 = row[4]
+			label.Font = Enum.Font.GothamBold
+			label.TextScaled = true
+			label.Parent = gui
+		end
+	end
+end
 
 -- ม้านั่ง
 local function bench(x: number, z: number, yaw: number)
