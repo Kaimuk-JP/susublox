@@ -9,6 +9,7 @@ local Lighting = game:GetService("Lighting")
 local RigFactory = require(script.Parent.RigFactory)
 local BK = require(script.Parent.BuildKit)
 local ArenaKit = require(script.Parent.ArenaKit)
+local PitchKit = require(script.Parent.PitchKit)
 
 local C = {
 	paving = Color3.fromHex("B8AE9C"),
@@ -624,7 +625,7 @@ local function hedge(x1: number, x2: number, z1: number, z2: number)
 		ball("Flower", 1.1, Vector3.new(fx, 0.9, fz), color, props, Enum.Material.Grass)
 	end
 end
-hedge(-78, -14, 57, 59) -- ขอบใต้ซ้าย
+hedge(-46, -14, 57, 59) -- ขอบใต้ซ้าย (เปิดช่อง x -78..-46 ให้ทางเข้าสนามกีฬา)
 hedge(14, 78, 57, 59) -- ขอบใต้ขวา
 hedge(-79, -77, 12, 56) -- ขอบตะวันตก
 hedge(-79, -77, -50, -12)
@@ -720,20 +721,7 @@ end
 
 ---------------------------------------------------------------- สนามกีฬา (ฝั่งตะวันตกเฉียงใต้) x -140..-50, z 55..125
 local field = folder("Field")
-box("TrackOuter", -142, -48, -3, 0.26, 52, 128, C.track, field)
-for i = 0, 7 do -- ลายตัดหญ้าสลับสี
-	box("FieldGrass", -137 + i * 10.5, -137 + (i + 1) * 10.5, 0.28, 0.4, 57, 123, if i % 2 == 0 then C.grassField else Color3.fromHex("6E8E50"), field, Enum.Material.Grass)
-end
-for _, def in { { -137, -53, 56.7, 57.3 }, { -137, -53, 122.7, 123.3 }, { -137.3, -136.7, 57, 123 }, { -53.3, -52.7, 57, 123 }, { -95.3, -94.7, 57, 123 } } do
-	box("FieldLine", def[1], def[2], 0.4, 0.45, def[3], def[4], C.white, field)
-end
-cylinder("FieldCircle", 9, 0.1, Vector3.new(-95, 0.42, 90), C.white, field)
-cylinder("FieldCircleInner", 8.6, 0.12, Vector3.new(-95, 0.44, 90), C.grassField, field, Enum.Material.Grass)
-for _, gx in { -138, -52 } do
-	box("GoalPostA", gx - 0.3, gx + 0.3, 0.4, 8, 84, 84.6, C.white, field)
-	box("GoalPostB", gx - 0.3, gx + 0.3, 0.4, 8, 95.4, 96, C.white, field)
-	box("GoalBar", gx - 0.3, gx + 0.3, 7.4, 8, 84, 96, C.white, field)
-end
+PitchKit.Build(field) -- สนามฟุตบอลมาตรฐาน + ลู่วิ่ง + อัฒจันทร์ (ดู PitchKit.luau) ลูกบอล/บอทจาก SoccerPitch.server
 
 ---------------------------------------------------------------- สระน้ำ + สะพานไม้ (ฝั่งตะวันออก)
 local pond = folder("Pond")

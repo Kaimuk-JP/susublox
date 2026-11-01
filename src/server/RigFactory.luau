@@ -367,6 +367,12 @@ local function schoolboy(ctx: Ctx, _accent: Color3)
 	applyHair(ctx, pick({ "short", "side", "spiky" }), pick({ "black", "black", "brown" }))
 end
 
+-- นักฟุตบอลสนามโรงเรียน: เสื้อแขนสั้นสีทีม (accent) ผมสั้น; กางเกง/ถุงเท้า/เบอร์เสื้อปรับต่อโดย SoccerPitch
+local function footballer(ctx: Ctx, accent: Color3)
+	paint(ctx.Rig, ctx.Skin, accent, hex("2A2D33"), hex("1A1A1C"), true)
+	applyHair(ctx, pick({ "short", "side", "spiky" }), pick({ "black", "black", "brown" }))
+end
+
 local function elderly(ctx: Ctx, _accent: Color3)
 	local male = rng:NextNumber() < 0.5
 	paint(ctx.Rig, ctx.Skin, hex(pick({ "7C6B5A", "5F6B5A", "8A7F73", "6B5F7A" })), hex(pick({ "4A4238", "3A3F4A" })), hex(pick({ "2B2420", "4A3F38" })))
@@ -509,6 +515,7 @@ local LOOKS: { [string]: Look } = {
 	officeLady = { Scale = { Height = 0.95, Width = 0.9, Head = 1.0 }, Build = officeLady },
 	schoolgirl = { Scale = { Height = 0.92, Width = 0.9, Head = 1.0 }, Build = schoolgirl },
 	schoolboy = { Scale = { Height = 0.98, Width = 0.96, Head = 1.0 }, Build = schoolboy },
+	footballer = { Scale = { Height = 1.0, Width = 0.98, Head = 1.0 }, Build = footballer },
 	elderly = { Scale = { Height = 0.92, Width = 0.95, Head = 1.0 }, Build = elderly },
 	delivery = { Scale = { Height = 1.0, Width = 0.98, Head = 1.0 }, Build = delivery },
 	ramen = { Scale = { Height = 0.94, Width = 1.08, Head = 1.02 }, Build = ramen },
