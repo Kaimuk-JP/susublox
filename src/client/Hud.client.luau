@@ -8,6 +8,19 @@ local Config = require(ReplicatedStorage.Shared.CombatConfig)
 local StyleData = require(ReplicatedStorage.Shared.Styles)
 local player = Players.LocalPlayer
 
+-- ซ่อนตารางรายชื่อผู้เล่นมุมขวาบน (ค่อยเปิดกลับทีหลังเมื่อมีหน้าที่ใช้จริง) ข้อมูล leaderstats ยังอยู่
+task.spawn(function()
+	local StarterGui = game:GetService("StarterGui")
+	for _ = 1, 10 do
+		if pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+		end) then
+			break
+		end
+		task.wait(1)
+	end
+end)
+
 local COLORS = {
 	Health = Color3.fromHex("EF233C"),
 	Stamina = Color3.fromHex("7EC8E3"),
