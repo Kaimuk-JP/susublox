@@ -117,10 +117,13 @@ local function buildCar(parent: Instance, cf: CFrame, moving: boolean): (Model, 
 	local cabin = piece("Cabin", Vector3.new(3.6, 1.3, 4.6), Vector3.new(0, 3.0, -0.4), hex("1A1A22"), Enum.Material.Glass)
 	cabin.Transparency = 0.25
 	piece("Roof", Vector3.new(3.7, 0.25, 4.7), Vector3.new(0, 3.75, -0.4), color, Enum.Material.Metal)
-	for _, wx in { -2.15, 2.15 } do
+	-- ล้อใหญ่โผล่พ้นข้างตัวถัง + ดุมสีเงิน (เดิมล้อดำเล็กกลืนไปกับถนน มองไม่เห็น)
+	for _, side in { -1, 1 } do
 		for _, wz in { -2.9, 2.9 } do
-			local wheel = piece("Wheel", Vector3.new(0.8, 1.8, 1.8), Vector3.new(wx, 0.9, wz), hex("1A1A22"), nil, Enum.PartType.Cylinder)
+			local wheel = piece("Wheel", Vector3.new(1.0, 2.4, 2.4), Vector3.new(side * 2.3, 1.2, wz), hex("2A2B31"), nil, Enum.PartType.Cylinder)
 			wheel.CanCollide = false
+			local hub = piece("Hubcap", Vector3.new(0.2, 1.3, 1.3), Vector3.new(side * 2.85, 1.2, wz), hex("C9CCD3"), Enum.Material.Metal, Enum.PartType.Cylinder)
+			hub.CanCollide = false
 		end
 	end
 	for _, lx in { -1.4, 1.4 } do

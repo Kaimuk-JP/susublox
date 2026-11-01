@@ -102,21 +102,23 @@ if workspace:GetAttribute("TerrainBaked") ~= true then
 		terrain:FillBall(Vector3.new(x, -r * 0.45, z), r, Enum.Material.LeafyGrass)
 		terrain:FillBall(Vector3.new(x, -r * 0.45 + r * 0.55, z), r * 0.55, Enum.Material.Rock) -- ยอดเขาเป็นหิน
 	end
-	local pad = 150
-	for x = B.MinX - pad, B.MaxX + pad, 150 do
-		mountain(x, B.MinZ - pad, 85 + (x % 3) * 12)
-		mountain(x + 40, B.MaxZ + pad, 80 + (x % 4) * 10)
+	-- แนวเขาล้อม 3 ชั้นนอกขอบโลก (pad 80/150/250) ถี่ทุก 100 studs; ชั้นใน r<=80 -> ผิวเขาไม่ล้ำเข้าขอบโลก
+	local function ring(pad: number, rBase: number, rVar: number, offset: number)
+		local i = 0
+		for x = B.MinX - pad, B.MaxX + pad, 100 do
+			mountain(x + offset, B.MinZ - pad, rBase + (i % 3) * rVar)
+			mountain(x + offset, B.MaxZ + pad, rBase + ((i + 1) % 3) * rVar)
+			i += 1
+		end
+		for z = B.MinZ - pad, B.MaxZ + pad, 100 do
+			mountain(B.MinX - pad, z + offset, rBase + (i % 3) * rVar)
+			mountain(B.MaxX + pad, z + offset, rBase + ((i + 1) % 3) * rVar)
+			i += 1
+		end
 	end
-	for z = B.MinZ - pad, B.MaxZ + pad, 150 do
-		mountain(B.MinX - pad, z + 30, 85 + (z % 3) * 12)
-		mountain(B.MaxX + pad, z + 30, 80 + (z % 4) * 10)
-	end
-	-- แนวนอกอีกชั้น ถี่ขึ้น ปิดช่องว่างระหว่างภูเขาแนวแรก (ด้านเหนือ/ใต้)
-	local pad2 = 250
-	for x = -1050, 1050, 100 do
-		mountain(x, B.MinZ - pad2, 80 + (x % 3) * 10)
-		mountain(x, B.MaxZ + pad2, 80 + (x % 4) * 8)
-	end
+	ring(80, 70, 5, 0)
+	ring(150, 85, 12, 50)
+	ring(250, 90, 10, 0)
 end
 
 ---------------------------------------------------------------- ถนน
