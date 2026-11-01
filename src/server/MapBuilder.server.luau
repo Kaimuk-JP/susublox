@@ -818,41 +818,50 @@ safe.CanQuery = false
 safe.CanTouch = false
 safe:SetAttribute("SafeZone", true)
 
----------------------------------------------------------------- แสง บรรยากาศพาสเทล
+---------------------------------------------------------------- แสง: โตเกียวยามเย็น โทนอุ่น หมองลงเล็กน้อย คอนทราสต์สูง (DayNight ปรับต่อตามช่วงเวลา)
+-- Lighting.Technology = Future ตั้งจากสคริปต์ตอนเล่นไม่ได้ ต้องตั้งใน Edit (tools/RealisticLighting.luau) แล้วเซฟ Place
+-- ค่าอื่นทั้งหมดตั้งจากสคริปต์ตอนเล่นเสมอ จึงไม่ขึ้นกับ Properties ที่บันทึกใน Place
 for _, name in { "Atmosphere", "BloomEffect", "SunRaysEffect", "ColorCorrectionEffect", "DepthOfFieldEffect" } do
-	local e = Lighting:FindFirstChildOfClass(name :: any)
-	if e then
-		e:Destroy()
+	for _, e in Lighting:GetChildren() do
+		if e.ClassName == name then
+			e:Destroy()
+		end
 	end
 end
-Lighting.Brightness = 2.2
-Lighting.EnvironmentDiffuseScale = 0.7
-Lighting.EnvironmentSpecularScale = 0.4
-Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 180)
-Lighting.Ambient = Color3.fromRGB(135, 135, 150)
-Lighting.ColorShift_Top = Color3.fromHex("FFE2BC")
+Lighting.Brightness = 2.3
+Lighting.EnvironmentDiffuseScale = 1
+Lighting.EnvironmentSpecularScale = 1
+Lighting.OutdoorAmbient = Color3.fromRGB(125, 118, 112)
+Lighting.Ambient = Color3.fromRGB(78, 76, 80)
+Lighting.ColorShift_Top = Color3.fromHex("FFD9A8")
+Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+Lighting.ExposureCompensation = 0
+Lighting.GeographicLatitude = 35
 Lighting.GlobalShadows = true
-Lighting.ClockTime = 14
+Lighting.ShadowSoftness = 0.3
+Lighting.ClockTime = 16.2
 
 local atmosphere = Instance.new("Atmosphere")
-atmosphere.Color = Color3.fromHex("C4CFD6")
-atmosphere.Decay = Color3.fromHex("E0B494")
-atmosphere.Density = 0.3
-atmosphere.Haze = 0.4
-atmosphere.Glare = 0
+atmosphere.Color = Color3.fromHex("C9B9A6")
+atmosphere.Decay = Color3.fromHex("D9A070")
+atmosphere.Density = 0.32
+atmosphere.Offset = 0.2
+atmosphere.Haze = 1.6
+atmosphere.Glare = 0.15
 atmosphere.Parent = Lighting
 local bloom = Instance.new("BloomEffect")
-bloom.Intensity = 0.3
+bloom.Intensity = 0.22
 bloom.Size = 22
-bloom.Threshold = 1.6
+bloom.Threshold = 1.2
 bloom.Parent = Lighting
 local sunRays = Instance.new("SunRaysEffect")
-sunRays.Intensity = 0.1
-sunRays.Spread = 0.8
+sunRays.Intensity = 0.04
+sunRays.Spread = 0.6
 sunRays.Parent = Lighting
 local cc = Instance.new("ColorCorrectionEffect")
-cc.Saturation = 0.18
-cc.Contrast = 0.06
+cc.Saturation = -0.12
+cc.Contrast = 0.12
+cc.Brightness = -0.02
 cc.TintColor = Color3.fromHex("FFF0E0")
 cc.Parent = Lighting
 

@@ -1,16 +1,23 @@
 --!strict
--- วงจรกลางวัน/เย็น/กลางคืน (1 วันในเกม = 12 นาทีจริง) เปลี่ยนโทนบรรยากาศแบบพาสเทล
+-- วงจรกลางวัน/เย็น/กลางคืน (1 วันในเกม = 12 นาทีจริง) โทนเมืองญี่ปุ่นสมจริง: เช้าสีเทาอุ่น เย็นสีส้มหม่น กลางคืนสีน้ำเงินเข้ม + ไฟถนน/ป้ายเด่น
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local DAY_SECONDS = 720
+local hex = Color3.fromHex
 
+-- Brightness / OutdoorAmbient / Ambient = แสงพื้นฐาน; Haze* = Atmosphere; Cc* = ColorCorrection; Bloom = ความแรงเรืองแสง
 local phases = {
-	{ From = 6, Name = "Day", Ambient = Color3.fromHex("FFE9F0"), Haze = 0.25 },
-	{ From = 15, Name = "GoldenHour", Ambient = Color3.fromHex("FFD2A0"), Haze = 0.45 }, -- แสงอุ่นยามเย็น หมอกฝุ่นบาง
-	{ From = 17.5, Name = "Evening", Ambient = Color3.fromHex("FFB38A"), Haze = 0.5 },
-	{ From = 20, Name = "Night", Ambient = Color3.fromHex("8C9AD0"), Haze = 0.4 },
+	{ From = 6, Name = "Day", Brightness = 2.6, Outdoor = Color3.fromRGB(135, 135, 138), Ambient = Color3.fromRGB(86, 86, 90),
+		HazeColor = hex("C4CBCF"), Decay = hex("D2B896"), Density = 0.3, Tint = hex("FFF6EA"), Sat = -0.1, Contrast = 0.1, Bloom = 0.18 },
+	{ From = 15, Name = "GoldenHour", Brightness = 2.2, Outdoor = Color3.fromRGB(125, 112, 100), Ambient = Color3.fromRGB(78, 70, 66),
+		HazeColor = hex("D3B792"), Decay = hex("DE9A62"), Density = 0.4, Tint = hex("FFE6C8"), Sat = -0.08, Contrast = 0.14, Bloom = 0.24 },
+	{ From = 17.5, Name = "Evening", Brightness = 1.7, Outdoor = Color3.fromRGB(104, 88, 90), Ambient = Color3.fromRGB(64, 56, 62),
+		HazeColor = hex("B98C78"), Decay = hex("C46A4A"), Density = 0.45, Tint = hex("FFD2B0"), Sat = -0.05, Contrast = 0.16, Bloom = 0.32 },
+	-- กลางคืนยังต้องมองเห็นพื้นที่ต่อสู้ได้: ไม่มืดสนิท แต่ให้ไฟถนน/ป้ายร้านเป็นจุดเด่น
+	{ From = 20, Name = "Night", Brightness = 0.9, Outdoor = Color3.fromRGB(74, 82, 112), Ambient = Color3.fromRGB(52, 58, 80),
+		HazeColor = hex("3C465E"), Decay = hex("2A3048"), Density = 0.42, Tint = hex("D8E0FF"), Sat = -0.12, Contrast = 0.18, Bloom = 0.5 },
 }
 
 local function phaseAt(hour: number)
@@ -23,8 +30,13 @@ local function phaseAt(hour: number)
 	return current
 end
 
+-- รอให้ MapBuilder ตั้งค่าแสงของตัวเองเสร็จก่อน (มันสร้าง Atmosphere/ColorCorrection ใหม่) ไม่งั้นเอฟเฟกต์ที่หาไว้จะถูกลบทิ้ง
+local waited = os.clock()
+while workspace:GetAttribute("SchoolMapReady") ~= true and os.clock() - waited < 120 do
+	task.wait(0.5)
+end
+
 local lastName = ""
-local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 local start = os.clock()
 
 RunService.Heartbeat:Connect(function()
@@ -34,18 +46,19 @@ RunService.Heartbeat:Connect(function()
 	if phase.Name ~= lastName then
 		lastName = phase.Name
 		workspace:SetAttribute("TimeOfDay", phase.Name)
-		atmosphere = atmosphere or Lighting:FindFirstChildOfClass("Atmosphere")
-		-- กลางคืนยังต้องมองเห็นพื้นที่ต่อสู้ได้: ลดความสว่างแต่ไม่มืดสนิท
-		local night = phase.Name == "Night"
-		TweenService:Create(Lighting, TweenInfo.new(5), {
-			Brightness = if night then 1.2 elseif phase.Name == "GoldenHour" or phase.Name == "Evening" then 2.2 else 2.5,
-			OutdoorAmbient = if night
-				then Color3.fromRGB(110, 120, 170)
-				elseif phase.Name == "GoldenHour" or phase.Name == "Evening" then Color3.fromRGB(170, 140, 120)
-				else Color3.fromRGB(150, 150, 170),
-		}):Play()
+		local info = TweenInfo.new(5)
+		TweenService:Create(Lighting, info, { Brightness = phase.Brightness, OutdoorAmbient = phase.Outdoor, Ambient = phase.Ambient }):Play()
+		local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
 		if atmosphere then
-			TweenService:Create(atmosphere, TweenInfo.new(5), { Color = phase.Ambient, Density = phase.Haze }):Play()
+			TweenService:Create(atmosphere, info, { Color = phase.HazeColor, Decay = phase.Decay, Density = phase.Density }):Play()
+		end
+		local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+		if cc then
+			TweenService:Create(cc, info, { TintColor = phase.Tint, Saturation = phase.Sat, Contrast = phase.Contrast }):Play()
+		end
+		local bloom = Lighting:FindFirstChildOfClass("BloomEffect")
+		if bloom then
+			TweenService:Create(bloom, info, { Intensity = phase.Bloom }):Play()
 		end
 	end
 end)
