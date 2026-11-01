@@ -255,6 +255,15 @@ menu.OnServerEvent:Connect(function(player: Player, action: unknown, arg: unknow
 			(p.Stats :: any)[arg] += 1
 			p.StatPoints -= 1
 		end
+	elseif action == "AutoStats" then
+		-- กระจายแต้มที่เหลือเท่าๆ กันทุกสเตตัส (ขี้เกียจกดทีละแต้ม)
+		local names = { "Strength", "Health", "Stamina", "Speed" }
+		local share = math.floor(p.StatPoints / #names)
+		local rest = p.StatPoints - share * #names
+		for i, name in names do
+			(p.Stats :: any)[name] += share + (if i <= rest then 1 else 0)
+		end
+		p.StatPoints = 0
 	elseif action == "EquipStyle" and typeof(arg) == "string" then
 		if table.find(p.UnlockedStyles, arg) and StyleData.Styles[arg] then
 			p.EquippedStyle = arg

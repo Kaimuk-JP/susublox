@@ -137,6 +137,11 @@ views.stats = function()
 		Stamina = function(v: number) return `พลังงานสูงสุด +{v * 5}` end,
 		Speed = function(v: number) return `ความเร็วเดิน +{math.floor(v * 3) / 10}` end,
 	}
+	if ((player:GetAttribute("StatPoints") :: number?) or 0) > 0 then
+		row("ลงแต้มทั้งหมดอัตโนมัติ (แบ่งเท่าๆ กันทุกสเตตัส)", "ลงให้ทั้งหมด", function()
+			menu:FireServer("AutoStats")
+		end)
+	end
 	for _, stat in Progression.Stats do
 		local v = (player:GetAttribute("Stat_" .. stat) :: number?) or 0
 		row(`{names[stat]}  {v} แต้ม  ({effects[stat](v)})`, "+1", function()
