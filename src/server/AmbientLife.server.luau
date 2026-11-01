@@ -178,24 +178,32 @@ end
 local parked = Instance.new("Folder")
 parked.Name = "Parked"
 parked.Parent = life
-for _, r in World.Roads do
+for ri, r in World.Roads do
 	local x1, z1, x2, z2, w = r[1], r[2], r[3], r[4], r[5]
 	local horizontal = math.abs(x2 - x1) >= math.abs(z2 - z1)
 	local length = if horizontal then math.abs(x2 - x1) else math.abs(z2 - z1)
-	if w >= 14 then
-		for t = 40, length - 40, 55 do
-			if rng:NextNumber() < 0.55 then
-				local side = if rng:NextNumber() > 0.5 then 1 else -1
-				local along = (if horizontal then math.min(x1, x2) else math.min(z1, z2)) + t + rng:NextNumber(-10, 10)
-				local lane = side * (w / 2 - 3.2)
-				local x = if horizontal then along else x1 + lane
-				local z = if horizontal then z1 + lane else along
-				if not inSchoolZone(x, z) and math.abs(z - 420) > 36 then
-					local heading = if horizontal then math.rad(90) else 0
-					if rng:NextNumber() > 0.5 then
-						heading += math.pi
+	if w >= 14 and r[6] ~= "T" then
+		for _, side in { -1, 1 } do
+			local lane = side * (w / 2 - 3.2)
+			local intervals = World.FreeIntervals(ri, lane)
+			for t = 40, length - 40, 55 do
+				if rng:NextNumber() < 0.3 then
+					local along = (if horizontal then math.min(x1, x2) else math.min(z1, z2)) + t + rng:NextNumber(-10, 10)
+					local ok = false
+					for _, iv in intervals do
+						if along >= iv[1] + 8 and along <= iv[2] - 8 then
+							ok = true
+						end
 					end
-					buildCar(parked, CFrame.new(x, 0.3, z) * CFrame.Angles(0, heading, 0), false)
+					local x = if horizontal then along else x1 + lane
+					local z = if horizontal then z1 + lane else along
+					if ok and not inSchoolZone(x, z) and math.abs(z - 420) > 36 then
+						local heading = if horizontal then math.rad(90) else 0
+						if rng:NextNumber() > 0.5 then
+							heading += math.pi
+						end
+						buildCar(parked, CFrame.new(x, 0.3, z) * CFrame.Angles(0, heading, 0), false)
+					end
 				end
 			end
 		end

@@ -117,10 +117,24 @@ end
 for _, d in World.Districts do
 	for i = 1, CAMPS_PER_DISTRICT do
 		local found: Vector3? = nil
-		for _ = 1, 60 do
+		-- ย่านแน่น (ตึกเต็มริมถนน): ลองลานโล่งที่กำหนดใน World.Plazas ก่อน (ลานที่ i ของย่านนี้) แล้วค่อยสุ่ม
+		local plaza: { any }? = nil
+		local n = 0
+		for _, pz in World.Plazas do
+			if pz[5] == d.Id then
+				n += 1
+				if n == i then
+					plaza = pz
+				end
+			end
+		end
+		for attempt = 1, 60 do
 			local a = rng:NextNumber(0, math.pi * 2)
 			local r = d.Radius * 0.8 * math.sqrt(rng:NextNumber())
 			local x, z = d.Center.X + math.cos(a) * r, d.Center.Z + math.sin(a) * r
+			if plaza and attempt <= 15 then
+				x, z = (plaza[1] + plaza[2]) / 2 + rng:NextNumber(-3, 3), (plaza[3] + plaza[4]) / 2 + rng:NextNumber(-3, 3)
+			end
 			local p = clearGround(d, x, z, 22)
 			local ok = p ~= nil
 			if p then

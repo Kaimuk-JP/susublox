@@ -18,10 +18,15 @@ end
 local flatBoxes = {
 	{ -200, 200, -150, 340 }, -- โรงเรียน + อารีน่า (x1, x2, z1, z2)
 }
+for _, zn in World.Zones do
+	table.insert(flatBoxes, { zn[1], zn[2], zn[3], zn[4] }) -- โซนตึก/บ้านทุกโซนต้องเรียบ
+end
+-- ถนนที่ใช้คำนวณ (กรองเฉพาะที่ใกล้ chunk ที่กำลังปั้น เพื่อไม่ต้องวนทุกถนนทุกคอลัมน์)
+local activeRoads = World.Roads
 
 local function distanceToRoad(x, z)
 	local best = math.huge
-	for _, r in World.Roads do
+	for _, r in activeRoads do
 		local x1, z1, x2, z2 = math.min(r[1], r[3]), math.min(r[2], r[4]), math.max(r[1], r[3]), math.max(r[2], r[4])
 		local dx = math.max(x1 - x, 0, x - x2)
 		local dz = math.max(z1 - z, 0, z - z2)
@@ -37,7 +42,10 @@ local pavedMats = {
 	Concrete = Enum.Material.Concrete,
 }
 local function urbanMaterial(x, z)
-	for _, r in World.Roads do
+	for _, r in activeRoads do
+		if r[6] == "T" then
+			continue
+		end
 		local x1, z1, x2, z2 = math.min(r[1], r[3]), math.min(r[2], r[4]), math.max(r[1], r[3]), math.max(r[2], r[4])
 		local dx = math.max(x1 - x, 0, x - x2)
 		local dz = math.max(z1 - z, 0, z - z2)
@@ -101,7 +109,10 @@ end
 -- แล้วกระพริบ (z-fighting) เวลาขยับกล้อง โดยเฉพาะขอบขั้นบันไดของ voxel
 local ROAD_DROP = -1.6
 local function insideRoad(x, z)
-	for _, r in World.Roads do
+	for _, r in activeRoads do
+		if r[6] == "T" then
+			continue
+		end
 		local x1, z1, x2, z2 = math.min(r[1], r[3]), math.min(r[2], r[4]), math.max(r[1], r[3]), math.max(r[2], r[4])
 		local hw = r[5] / 2 + 0.4 -- ครอบถึงขอบทาง (Curb กว้าง 0.4)
 		if x >= x1 - hw and x <= x2 + hw and z >= z1 - hw and z <= z2 + hw then
@@ -150,6 +161,13 @@ local nx, nz = math.ceil(CHUNK / RES), math.ceil(CHUNK / RES)
 local ny = math.ceil((MAX_Y - MIN_Y) / RES)
 for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องชิดกริด voxel
 	for cz = math.floor(B.MinZ / RES) * RES, B.MaxZ - 1, CHUNK do
+		activeRoads = {}
+		for _, r in World.Roads do
+			local rx1, rx2, rz1, rz2 = math.min(r[1], r[3]), math.max(r[1], r[3]), math.min(r[2], r[4]), math.max(r[2], r[4])
+			if rx2 + 140 > cx and rx1 - 140 < cx + CHUNK and rz2 + 140 > cz and rz1 - 140 < cz + CHUNK then
+				table.insert(activeRoads, r)
+			end
+		end
 		-- คำนวณความสูง/วัสดุต่อคอลัมน์ครั้งเดียว (เร็วกว่าคำนวณทุก voxel มาก)
 		local colH, colMat, colWater = {}, {}, {}
 		for ix = 1, nx do

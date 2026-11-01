@@ -8,7 +8,7 @@ local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
 
 -- เพิ่มเลขนี้ทุกครั้งที่แก้โลก: ถ้าใน Place มีโลกที่สร้างไว้ล่วงหน้า (รันใน Edit) เวอร์ชันตรงกัน ตอนเล่นจะข้ามการสร้างใหม่
-local VERSION = 4
+local VERSION = 5
 local running = RunService:IsRunning()
 local prebuilt = workspace:FindFirstChild("World")
 if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttribute("Version") == VERSION then
@@ -123,12 +123,68 @@ end
 
 ---------------------------------------------------------------- ถนน
 local roads = sub(worldFolder, "Roads")
-for _, r in World.Roads do
-	BK.road(roads, r[1], r[2], r[3], r[4], r[5])
+local sidewalks = sub(worldFolder, "Sidewalks")
+do
+	local roadRng = Random.new(4242)
+	local ASPHALT = { A = "3A3B3F", L = "3E3F43", B = "48484B", Y = "4C4A48", T = "6B5A47" }
+	local paveColors = { "A9A59B", "B3ADA0", "9C978C", "B9B2A2", "A39C8F", "8F8B83" }
+	local paveMats = { Enum.Material.Concrete, Enum.Material.Concrete, Enum.Material.Pavement, Enum.Material.Brick, Enum.Material.Slate }
+	local function strip(name: string, horizontal: boolean, a: number, b: number, fixed: number, half: number, y1: number, y2: number, color: Color3, parent: Instance, mat: Enum.Material)
+		if horizontal then
+			return BK.box(name, a, b, y1, y2, fixed - half, fixed + half, color, parent, mat)
+		end
+		return BK.box(name, fixed - half, fixed + half, y1, y2, a, b, color, parent, mat)
+	end
+	for i, r in World.Roads do
+		local x1, z1, x2, z2, w, kind = r[1], r[2], r[3], r[4], r[5], r[6]
+		local horizontal = math.abs(x2 - x1) >= math.abs(z2 - z1)
+		local a1, a2 = if horizontal then math.min(x1, x2) else math.min(z1, z2), if horizontal then math.max(x1, x2) else math.max(z1, z2)
+		local fixed = if horizontal then z1 else x1
+		local base = strip("Road", horizontal, a1, a2, fixed, w / 2, 0, 0.3, hex(ASPHALT[kind] or "3A3B3F"), roads, if kind == "T" then Enum.Material.Ground else Enum.Material.Asphalt)
+		-- ผิวถนนเป็นแผ่นปะ (ซ่อมแซม) ไม่เรียบเนียนเสมอกัน
+		if kind ~= "T" and (a2 - a1) > 30 then
+			for _ = 1, math.floor((a2 - a1) / 45) do
+				local pa = roadRng:NextNumber(a1 + 4, a2 - 10)
+				local pw = roadRng:NextNumber(2, 6)
+				local ph = roadRng:NextNumber(1.5, math.min(w - 2, 5))
+				local po = roadRng:NextNumber(-w / 2 + ph / 2 + 0.5, w / 2 - ph / 2 - 0.5)
+				strip("Patch", horizontal, pa, pa + pw, fixed + po, ph / 2, 0.3, 0.33, hex("33343A"), roads, Enum.Material.Asphalt)
+			end
+		end
+		if w >= 14 then
+			for _, iv in World.FreeIntervals(i, 0) do
+				for t = iv[1] + 3, iv[2] - 8, 12 do
+					strip("Dash", horizontal, t, t + 5, fixed, 0.2, 0.3, 0.34, hex("CDB454"), roads, Enum.Material.SmoothPlastic)
+				end
+			end
+		end
+		if w >= 10 and kind ~= "T" then
+			local sw = if w >= 14 then 3.5 else 2
+			for _, side in { -1, 1 } do
+				-- ขอบถนน (Curb) + ทางเท้าปูแผ่นเปลี่ยนวัสดุทุกไม่กี่ studs; เว้นตรงแยก
+				for _, iv in World.FreeIntervals(i, side * (w / 2)) do
+					strip("Curb", horizontal, iv[1], iv[2], fixed + side * (w / 2 + 0.2), 0.2, 0, 0.5, hex("9C9A94"), roads, Enum.Material.Concrete)
+					local t = iv[1]
+					while t < iv[2] - 0.5 do
+						local len = math.min(roadRng:NextNumber(3.5, 9), iv[2] - t)
+						local k = roadRng:NextInteger(1, #paveColors)
+						local tile = strip("Pave", horizontal, t, t + len, fixed + side * (w / 2 + 0.4 + sw / 2), sw / 2, 0, 0.45, hex(paveColors[k]), sidewalks, paveMats[roadRng:NextInteger(1, #paveMats)])
+						tile.Name = "Pave"
+						if roadRng:NextNumber() < 0.16 then -- แผ่นนำทางสีเหลือง
+							strip("Tactile", horizontal, t, t + len, fixed + side * (w / 2 + 0.9), 0.3, 0.45, 0.5, hex("C9A93C"), sidewalks, Enum.Material.Concrete)
+						elseif roadRng:NextNumber() < 0.08 then -- ฝาท่อโลหะ
+							local cx = if horizontal then t + len / 2 else fixed + side * (w / 2 + 0.4 + sw / 2)
+							local cz = if horizontal then fixed + side * (w / 2 + 0.4 + sw / 2) else t + len / 2
+							BK.box("ManholeCover", cx - 1, cx + 1, 0.45, 0.5, cz - 1, cz + 1, hex("55575C"), sidewalks, Enum.Material.Metal)
+						end
+						t += len
+					end
+				end
+			end
+		end
+		base.Name = "Road"
+	end
 end
--- ทางเชื่อมจากโรงเรียนไปถนนสายหลัก: ต่อจากทางหลังโรงเรียน/อารีน่า (x=0) ที่ z=130..210 ถึงถนนที่ z=170 อยู่แล้ว
--- ทางฝั่งตะวันตก/ตะวันออกของถนนสายหลัก ผ่านใต้โรงเรียน
--- (ถนนสายหลักตัดทางเดิน Path_War ที่ z=170 โดยตรง)
 
 ---------------------------------------------------------------- ตัวช่วยร่วม
 local function ramp(parent: Instance, x1: number, y1: number, x2: number, y2: number, zc: number, w: number, color: Color3)
@@ -140,18 +196,7 @@ local function ramp(parent: Instance, x1: number, y1: number, x2: number, y2: nu
 end
 
 local function onRoadBand(x: number, z: number, margin: number): boolean
-	for _, r in World.Roads do
-		local x1, z1, x2, z2, w = r[1], r[2], r[3], r[4], r[5]
-		if x >= math.min(x1, x2) - margin and x <= math.max(x1, x2) + margin and z >= math.min(z1, z2) - margin and z <= math.max(z1, z2) + margin then
-			local horizontal = math.abs(x2 - x1) >= math.abs(z2 - z1)
-			if horizontal and math.abs(z - z1) < w / 2 + margin then
-				return true
-			elseif not horizontal and math.abs(x - x1) < w / 2 + margin then
-				return true
-			end
-		end
-	end
-	return false
+	return World.OnRoad(x, z, margin, true)
 end
 
 local function randomIn(cx: number, cz: number, radius: number): (number, number)
@@ -160,7 +205,8 @@ local function randomIn(cx: number, cz: number, radius: number): (number, number
 	return cx + math.cos(a) * r, cz + math.sin(a) * r
 end
 
-local function stone(d: World.District, folder: Instance, pos: Vector3)
+local function stone(d: World.District, folder: Instance, _pos: Vector3?)
+	local pos = World.Stones[d.Id]
 	local base = BK.cylinder("TravelStone", 2.6, 0.6, pos + Vector3.new(0, 0.5, 0), hex("8F8E88"), folder, Enum.Material.Marble)
 	local crystal = BK.ball("TravelCrystal", 2.2, pos + Vector3.new(0, 3.2, 0), hex("6C8E96"), folder, Enum.Material.Neon)
 	crystal.Transparency = 0.2
@@ -237,54 +283,54 @@ local function buildPark(d: World.District, f: Folder)
 		end
 	end
 	for x = cx - 120, cx + 120, 40 do
-		BK.lamp(f, x, 170 - 11)
-		BK.lamp(f, x + 20, 170 + 11)
+		if not World.OnRoad(x, 170 - 14, 1) then
+			BK.lamp(f, x, 170 - 14)
+		end
+		if not World.OnRoad(x + 20, 170 + 14, 1) then
+			BK.lamp(f, x + 20, 170 + 14)
+		end
 	end
-	stone(d, f, Vector3.new(cx, 0, 170 - 12))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ถนนการค้า
+-- ถนนสายกลาง z=170 (กว้าง 16) มีหลังคาอาเขตเหล็ก+แผงโปร่งแสง เสาตั้งบนทางเท้า ตึกแถวติดกันสองฝั่งสร้างโดย LotGen
 local function buildTown(d: World.District, f: Folder)
 	local cx = d.Center.X
-	local shopKinds = { "ramen", "izakaya", "konbini", "books", "kissaten", "game", "pachinko", "pharmacy", "karaoke", "izakaya", "ramen", "kissaten" }
-	local palette = { "C9BDB0", "D8CDB4", "B9BEBD", "C4C6B6", "BDB6B4", "D3C2AA" }
-	local awnings = { "9E3B33", "3F566E", "7A5A50", "4F7358", "B8944A", "A8643A" }
-	local idx = 0
-	for _, side in { -1, 1 } do
-		-- ทางเท้า
-		BK.box("Sidewalk", cx - 130, cx + 130, 0, 0.45, 170 + side * 8 - (if side == 1 then 0 else 5), 170 + side * 8 + (if side == 1 then 5 else 0), hex("BDB8AE"), f)
-		for i = -6, 6 do
-			idx += 1
-			local x = cx + i * 20
-			local h = rng:NextNumber(10, 17)
-			local z = 170 + side * (13 + 9)
-			BK.building(f, x, z, 17, 18, h, hex(palette[(idx % #palette) + 1]), hex("4A525C"), {
-				Kind = shopKinds[(idx % #shopKinds) + 1],
-				Facing = -side,
-				Awning = if shopKinds[(idx % #shopKinds) + 1] == "konbini" then nil else hex(awnings[(idx % #awnings) + 1]),
-				Storefront = true,
-			})
+	local x1, x2 = cx - 126, cx + 126
+	local steel, panelColor = hex("3F4349"), hex("B9C9C4")
+	for x = x1, x2, 12 do
+		for _, side in { -1, 1 } do
+			BK.cylinder("ArcadePost", 0.3, 11, Vector3.new(x, 5.7, 170 + side * 11.7), steel, f, Enum.Material.Metal)
+		end
+		BK.box("ArcadeRib", x - 0.3, x + 0.3, 11, 12.1, 170 - 12.6, 170 + 12.6, steel, f, Enum.Material.Metal)
+		if rng:NextNumber() < 0.5 then
+			local lantern = BK.ball("Lantern", 1.6, Vector3.new(x + 6, 9.4, 170 + (if rng:NextNumber() < 0.5 then -5.5 else 5.5)), hex("A8643A"), f, Enum.Material.Neon)
+			BK.light(lantern, hex("FFB36B"), 18, 0.9)
+			BK.cylinder("LanternCord", 0.06, 1.8, Vector3.new(lantern.Position.X, 10.8, lantern.Position.Z), hex("2A2C32"), f)
 		end
 	end
-	-- โคมไฟกระดาษ + เสาไฟ
-	for i = -6, 6 do
-		local x = cx + i * 20 + 10
-		for _, side in { -1, 1 } do
-			BK.cylinder("Pole", 0.35, 10, Vector3.new(x, 5, 170 + side * 8.5), hex("2A2C32"), f)
-			local lantern = BK.ball("Lantern", 1.8, Vector3.new(x, 10.4, 170 + side * 8.5), hex("A8643A"), f, Enum.Material.Neon)
-			BK.light(lantern, hex("FFB36B"), 24, 1)
+	for x = x1, x2 - 12, 12 do
+		if rng:NextNumber() < 0.82 then -- บางช่องเปิดโล่ง เห็นฟ้า
+			for _, side in { -1, 1 } do
+				local p = BK.box("ArcadePanel", x + 0.4, x + 11.6, 11.1, 11.35, 170 + (if side == 1 then 0.2 else -12.4), 170 + (if side == 1 then 12.4 else -0.2), panelColor, f, Enum.Material.Glass)
+				p.Transparency = 0.45
+				p.CanCollide, p.CanQuery = false, false
+			end
 		end
+	end
+	for _, x in { x1 + 6, x2 - 30, cx + 6 } do
+		BK.sign(f, "SHOTENGAI", Vector3.new(14, 2.2, 0.4), Vector3.new(x, 9, 170 + (if x > cx then 11.2 else -11.2)), if x > cx then 180 else 0, hex("2A2C32"), hex("B8944A"))
 	end
 	-- ซุ้มประตูหัวท้ายถนน
-	for _, x in { cx - 125, cx + 125 } do
-		for _, z in { 170 - 10, 170 + 10 } do
+	for _, x in { x1 - 8, x2 + 8 } do
+		for _, z in { 170 - 12, 170 + 12 } do
 			BK.box("ArchPillar", x - 1, x + 1, 0, 12, z - 1, z + 1, hex("9E3B33"), f)
 		end
-		BK.box("ArchBeam", x - 1.4, x + 1.4, 11, 13, 170 - 11.4, 170 + 11.4, hex("9E3B33"), f)
+		BK.box("ArchBeam", x - 1.4, x + 1.4, 11, 13, 170 - 13.4, 170 + 13.4, hex("9E3B33"), f)
 		BK.sign(f, "SHOTENGAI", Vector3.new(16, 2.2, 0.4), Vector3.new(x, 14.2, 170), if x < cx then -90 else 90, hex("2A2C32"), hex("B8944A"))
 	end
-	-- ตู้กดน้ำ ถังรีไซเคิล ที่จอดจักรยาน: วางโดย StreetFurniture.server.luau
-	stone(d, f, Vector3.new(cx + 10, 0, 170 - 10.5))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ค่ายในป่า
@@ -349,45 +395,17 @@ local function buildForest(d: World.District, f: Folder)
 		local a = i / 12 * math.pi * 2
 		BK.cylinder("FencePost", 0.6, 5, Vector3.new(cx + math.cos(a) * 55, 2.5, cz + math.sin(a) * 55), hex("5C4637"), f, Enum.Material.Wood)
 	end
-	stone(d, f, Vector3.new(cx - 20, 0, cz - 20))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ย่านสถานีรถไฟ
+-- ตึกทั้งย่านสร้างโดย LotGen; ที่นี่เหลือสถานี ชานชาลา ราง และขบวนรถ (ในพื้นที่ KeepOut "station")
 local function buildCity(d: World.District, f: Folder)
-	local cx, cz = d.Center.X, d.Center.Z
-	local palette = { "BDB8AE", "B9BEBD", "D3C2AA", "C4C6B6", "BDB6B4", "A5A7A8" }
-	local roofs = { "4A525C", "2A2C32", "70747A" }
-	local towerKinds = { "karaoke", "pachinko", "izakaya", "game", "pharmacy", "kissaten", "books", "ramen", "konbini", "karaoke" }
-	local idx = 0
-	local function tower(x: number, z: number, w: number, dpt: number, facing: number)
-		idx += 1
-		local h = rng:NextNumber(18, 48)
-		BK.building(f, x, z, w, dpt, h, hex(palette[(idx % #palette) + 1]), hex(roofs[(idx % #roofs) + 1]), {
-			Kind = towerKinds[(idx % #towerKinds) + 1],
-			Facing = facing,
-			GlassColor = hex("F0D9A0"),
-		})
-	end
-	-- ตึกริมถนนสายตะวันออก-ตะวันตก (z=600)
-	for x = cx - 280, cx + 280, 38 do
-		if math.abs(x - (-90)) > 24 then
-			tower(x, 600 - (12 + 14), rng:NextNumber(28, 33), 26, 1)
-			if not (x > cx + 100 and x < cx + 240) then -- เว้นที่สถานีฝั่งใต้
-				tower(x, 600 + (12 + 14), rng:NextNumber(28, 33), 26, -1)
-			end
-		end
-	end
-	-- ตึกริมถนนสายเหนือ-ใต้ (x=-90)
-	for z = 250, 560, 40 do
-		if math.abs(z - 600) > 40 then
-			tower(-90 - (12 + 14), z, 26, rng:NextNumber(28, 34), -1)
-			tower(-90 + (12 + 14), z, 26, rng:NextNumber(28, 34), -1)
-		end
-	end
-	-- สถานีรถไฟ
+	local cx = d.Center.X
 	local sx, sz = cx + 170, 600 + 52
 	BK.building(f, sx, sz, 110, 50, 18, hex("D9D0BE"), hex("2A2C32"), { SignText = "STATION", Facing = -1, SignBg = hex("2A2C32"), SignFg = hex("B8944A"), Awning = hex("3F566E") })
-	-- ชานชาลา + ราง + ขบวนรถ
+	-- ลานหน้าสถานี (ปูกระเบื้อง) + ที่จอดแท็กซี่
+	BK.box("StationPlaza", sx - 70, sx + 70, 0, 0.35, 610, sz - 25, hex("A39C8F"), f, Enum.Material.Pavement)
 	BK.box("Platform", sx - 55, sx + 55, 0, 1.2, sz + 25, sz + 45, hex("A5A7A8"), f)
 	BK.box("PlatformEdge", sx - 55, sx + 55, 1.2, 1.35, sz + 44, sz + 45, hex("B8944A"), f)
 	for k = 0, 40 do
@@ -409,20 +427,7 @@ local function buildCity(d: World.District, f: Folder)
 	for x = sx - 50, sx + 50, 25 do
 		BK.cylinder("CanopyPost", 0.4, 10, Vector3.new(x, 5.6, sz + 40), hex("2A2C32"), f)
 	end
-	-- ทางม้าลาย + ไฟจราจร
-	for i = -3, 3 do
-		BK.box("Crosswalk", -90 - 6.5 + (i + 3) * 2, -90 - 5.5 + (i + 3) * 2, 0.3, 0.36, 588, 596, hex("E4E0D6"), f)
-	end
-	for _, o in { { -99, 592 }, { -81, 608 } } do
-		BK.cylinder("TrafficPole", 0.3, 9, Vector3.new(o[1], 4.5, o[2]), hex("2A2C32"), f)
-		for k, c in { hex("9E3B33"), hex("B8944A"), hex("4F7358") } do
-			BK.ball("TrafficLight", 1, Vector3.new(o[1], 9.5 + k * 1.1, o[2]), c, f, Enum.Material.Neon)
-		end
-	end
-	for x = cx - 180, cx + 180, 45 do
-		BK.lamp(f, x, 600 - 8)
-	end
-	stone(d, f, Vector3.new(cx + 40, 0, 600 - 9))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ศาลเจ้าบนเนิน
@@ -471,65 +476,66 @@ local function buildTemple(d: World.District, f: Folder)
 			BK.sakura(f, x, z, 1.2)
 		end
 	end
-	stone(d, f, Vector3.new(cx + 12, 0, cz + 66))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- โรงเรียนคุโรกาเนะ
+-- รั้วเหล็กดำล้อมลานกระเบื้อง อยู่ใต้ถนน z=600 (ประตูหันเข้าถนน); พื้นที่นี้อยู่ใน KeepOut "kurogane"
 local function buildRivalSchool(d: World.District, f: Folder)
 	local cx, cz = d.Center.X, d.Center.Z
 	local dark, darker = hex("4A4D68"), hex("1A1A28")
-	BK.building(f, cx, cz - 48, 112, 36, 34, dark, darker, { SignText = "KUROGANE HIGH", Facing = 1, SignBg = hex("14141E"), SignFg = hex("7A6A9A") })
+	local z0, z1 = cz + 12, cz + 145 -- ลาน: z 612..745
+	BK.building(f, cx, z1 - 20, 112, 36, 34, dark, darker, { SignText = "KUROGANE HIGH", Facing = -1, SignBg = hex("14141E"), SignFg = hex("7A6A9A") })
 	for _, x in { cx - 70, cx + 70 } do
-		BK.building(f, x, cz - 38, 22, 24, 22, dark, darker, { Windows = true })
+		BK.building(f, x, z1 - 46, 22, 24, 22, dark, darker, { Windows = true, Facing = -1 })
 	end
-	-- ลานโรงเรียนกระเบื้องเข้ม + รั้ว
-	BK.box("Courtyard", cx - 95, cx + 95, 0, 0.32, cz - 28, cz + 100, hex("3A3D5C"), f)
+	BK.box("Courtyard", cx - 95, cx + 95, 0, 0.32, z0, z1, hex("3A3D5C"), f)
 	for ix = -9, 9 do
 		for iz = 0, 11 do
 			if (ix + iz) % 2 == 0 then
-				BK.box("CourtyardTile", cx + ix * 10 - 5, cx + ix * 10 + 5, 0.32, 0.38, cz - 28 + iz * 10, cz - 18 + iz * 10, hex("4A4D68"), f)
+				BK.box("CourtyardTile", cx + ix * 10 - 5, cx + ix * 10 + 5, 0.32, 0.38, z0 + iz * 10, z0 + 10 + iz * 10, hex("4A4D68"), f)
 			end
 		end
 	end
 	for _, sidex in { -95, 95 } do
-		BK.box("FenceSide", cx + sidex - 0.5, cx + sidex + 0.5, 0, 7, cz - 28, cz - 7, darker, f)
-		BK.box("FenceSide", cx + sidex - 0.5, cx + sidex + 0.5, 0, 7, cz + 7, cz + 100, darker, f) -- เว้นช่องถนนที่ z=600
+		BK.box("FenceSide", cx + sidex - 0.5, cx + sidex + 0.5, 0, 7, z0, z1, darker, f)
 	end
-	BK.box("FenceBackL", cx - 95, cx - 8, 0, 7, cz + 100 - 0.5, cz + 100.5, darker, f)
-	BK.box("FenceBackR", cx + 8, cx + 95, 0, 7, cz + 100 - 0.5, cz + 100.5, darker, f)
-	for _, x in { cx - 10, cx + 10 } do
-		BK.box("GatePillar", x - 1.5, x + 1.5, 0, 11, cz + 98.5, cz + 101.5, hex("14141E"), f)
+	BK.box("FenceBack", cx - 95, cx + 95, 0, 7, z1 - 0.5, z1 + 0.5, darker, f)
+	BK.box("FenceFrontL", cx - 95, cx - 12, 0, 7, z0 - 0.5, z0 + 0.5, darker, f)
+	BK.box("FenceFrontR", cx + 12, cx + 95, 0, 7, z0 - 0.5, z0 + 0.5, darker, f)
+	for _, x in { cx - 11, cx + 11 } do
+		BK.box("GatePillar", x - 1.5, x + 1.5, 0, 11, z0 - 1.5, z0 + 1.5, hex("14141E"), f)
 	end
-	BK.box("GateBar", cx - 10, cx + 10, 10, 11.4, cz + 99, cz + 101, hex("14141E"), f)
-	BK.sign(f, "KUROGANE", Vector3.new(14, 2.2, 0.4), Vector3.new(cx, 12.8, cz + 100.4), 180, hex("14141E"), hex("7A6A9A"))
-	-- ธงม่วง + เสาไฟ
+	BK.box("GateBar", cx - 11, cx + 11, 10, 11.4, z0 - 1, z0 + 1, hex("14141E"), f)
+	BK.sign(f, "KUROGANE", Vector3.new(14, 2.2, 0.4), Vector3.new(cx, 12.8, z0 - 1.4), 0, hex("14141E"), hex("7A6A9A"))
 	for _, x in { cx - 40, cx + 40 } do
-		BK.cylinder("FlagPole", 0.3, 18, Vector3.new(x, 9, cz + 20), hex("A5A7A8"), f)
-		BK.box("Flag", x + 0.3, x + 6.5, 12, 17, cz + 19.8, cz + 20.2, hex("7B5BDF"), f)
+		BK.cylinder("FlagPole", 0.3, 18, Vector3.new(x, 9, z0 + 30), hex("A5A7A8"), f)
+		BK.box("Flag", x + 0.3, x + 6.5, 12, 17, z0 + 29.8, z0 + 30.2, hex("7B5BDF"), f)
 	end
 	for _, x in { cx - 60, cx, cx + 60 } do
-		BK.lamp(f, x, cz + 55, hex("7A6A9A"))
+		BK.lamp(f, x, z0 + 50, hex("7A6A9A"))
 	end
 	for i = 0, 5 do
-		BK.box("BikeRack", cx + 60 + i * 2, cx + 60.3 + i * 2, 0.3, 2.5, cz + 80, cz + 84, hex("2A2C32"), f)
+		BK.box("BikeRack", cx + 60 + i * 2, cx + 60.3 + i * 2, 0.3, 2.5, z0 + 70, z0 + 74, hex("2A2C32"), f)
 	end
-	stone(d, f, Vector3.new(cx - 10, 0, cz + 88))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ท่าเรืออุตสาหกรรม
+-- อ่าว+ท่าเทียบ+เรือ+เครนอยู่ในพื้นที่ x>=628 (KeepOut "bay"); โกดังและลานตู้คอนเทนเนอร์สร้างโดย LotGen
 local function buildDocks(d: World.District, f: Folder)
 	local cx, cz = d.Center.X, d.Center.Z
-	-- อ่าวน้ำด้านตะวันออก
 	terrain:FillBlock(CFrame.new(cx + 180, -2, cz + 20), Vector3.new(110, 20, 420), Enum.Material.Air) -- ขุดอ่าว
 	terrain:FillBlock(CFrame.new(cx + 180, -10.5, cz + 20), Vector3.new(110, 3, 420), Enum.Material.Sand)
 	terrain:FillBlock(CFrame.new(cx + 180, -5, cz + 20), Vector3.new(110, 8, 420), Enum.Material.Water)
-	BK.box("Pier", cx + 70, cx + 135, 0, 1.2, cz + 15, cz + 25, hex("6F5236"), f, Enum.Material.WoodPlanks)
+	BK.box("Quay", 628, 686, 0, 0.35, 440, 840, hex("8F8B83"), f, Enum.Material.Concrete)
+	local pz = 705
+	BK.box("Pier", cx + 70, cx + 135, 0, 1.2, pz - 5, pz + 5, hex("6F5236"), f, Enum.Material.WoodPlanks)
 	for x = cx + 75, cx + 135, 10 do
-		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, cz + 14.6), hex("6B5A47"), f, Enum.Material.Wood)
-		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, cz + 25.4), hex("6B5A47"), f, Enum.Material.Wood)
+		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, pz - 5.4), hex("6B5A47"), f, Enum.Material.Wood)
+		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, pz + 5.4), hex("6B5A47"), f, Enum.Material.Wood)
 	end
-	-- เรือบรรทุกสินค้า
-	local sx, sz = cx + 165, cz + 20
+	local sx, sz = cx + 165, pz
 	BK.box("ShipHull", sx - 14, sx + 14, -1, 9, sz - 45, sz + 45, hex("8E2B2B"), f)
 	BK.box("ShipDeck", sx - 14, sx + 14, 9, 9.6, sz - 45, sz + 45, hex("4A525C"), f)
 	BK.box("ShipCabin", sx - 10, sx + 10, 9.6, 20, sz + 18, sz + 38, hex("D9D0BE"), f)
@@ -538,32 +544,17 @@ local function buildDocks(d: World.District, f: Folder)
 		win.CanCollide = false
 	end
 	BK.cylinder("ShipFunnel", 2, 6, Vector3.new(sx, 23, sz + 28), hex("9E3B33"), f)
-	-- ตู้คอนเทนเนอร์เป็นแถว
-	local colors = { "9E3B33", "3F566E", "B8944A", "4F7358", "A8643A", "7A6A9A" }
-	for row = 0, 3 do
-		for col = 0, 7 do
-			local x = cx - 60 + col * 13
-			local z = cz + 40 + row * 18
-			local stack = rng:NextInteger(1, 3)
-			for s = 0, stack - 1 do
-				BK.box("Container", x - 5.5, x + 5.5, 0.3 + s * 5.2, 5.5 + s * 5.2, z - 2.5, z + 2.5, hex(colors[rng:NextInteger(1, #colors)]), f, Enum.Material.Metal)
-			end
-		end
-	end
-	-- คลังสินค้า
-	BK.building(f, cx - 90, cz - 70, 60, 36, 18, hex("A5A7A8"), hex("4A525C"), { SignText = "WAREHOUSE", Facing = 1, SignBg = hex("2A2C32"), SignFg = hex("A8643A") })
-	BK.building(f, cx + 10, cz - 80, 40, 30, 14, hex("B9BEBD"), hex("4A525C"), { Windows = true })
-	-- เครนยักษ์
-	for _, x in { cx + 40, cx + 70 } do
-		for _, z in { cz - 30, cz - 14 } do
+	-- เครนยักษ์ริมท่า (คร่อมทางขนส่ง)
+	for _, x in { 648, 672 } do
+		for _, z in { 622, 638 } do
 			BK.cylinder("CraneLeg", 0.8, 28, Vector3.new(x, 14, z), hex("A8643A"), f)
 		end
-		BK.box("CraneBeam", x - 1, x + 1, 27, 29, cz - 38, cz + 28, hex("A8643A"), f)
+		BK.box("CraneBeam", x - 1, x + 1, 27, 29, 614, 650, hex("A8643A"), f)
 	end
-	for x = cx - 120, cx + 120, 45 do
-		BK.lamp(f, x, 600 + 10, hex("FFB36B"))
+	for z = 450, 830, 55 do
+		BK.lamp(f, 640, z, hex("FFB36B"))
 	end
-	stone(d, f, Vector3.new(cx - 100, 0, 600 + 10))
+	stone(d, f)
 end
 
 ---------------------------------------------------------------- ลงมือสร้างทุกย่าน
@@ -590,6 +581,28 @@ for _, d in World.Districts do
 		end
 	end
 	task.wait()
+end
+
+---------------------------------------------------------------- ตึกทั้งเมือง: ล็อตแคบริมถนนทุกสาย (LotGen) ไม่ทับถนน
+do
+	local LotGen = require(script.Parent.LotGen)
+	local buildings = sub(worldFolder, "Buildings")
+	local lots = LotGen.generate()
+	local lotRng = Random.new(777)
+	for i, lot in lots do
+		local ok, err = pcall(BK.tokyo, buildings, lot, lotRng)
+		if not ok then
+			warn(`[WorldBuilder] ตึกล็อต {i} สร้างไม่สำเร็จ: {err}`)
+		end
+		if i % 20 == 0 then
+			task.wait()
+		end
+	end
+	local st = LotGen.Stats()
+	worldFolder:SetAttribute("BuildingCount", st.Placed)
+	worldFolder:SetAttribute("BuildingRoadOverlaps", st.Overlaps)
+	worldFolder:SetAttribute("LotsShiftedByRoad", st.RoadHits)
+	print(`[WorldBuilder] ตึก {st.Placed} หลัง (ลานตู้ {st.Yards}), ล็อตที่ชนถนนแล้วถูกย่อ/เลื่อน {st.RoadHits}, ตึกทับถนนหลังตรวจ {st.Overlaps}`)
 end
 
 worldFolder:SetAttribute("Version", VERSION)

@@ -672,4 +672,247 @@ function BK.groundPos(x: number, z: number): Vector3
 	return Vector3.new(x, 0, z)
 end
 
+---------------------------------------------------------------- ตึกแบบโตเกียว (ใช้กับล็อตจาก LotGen)
+-- หลายยุคในบล็อกเดียว: wood (บ้านไม้เตี้ย) / postwar (คอนกรีตหลังสงคราม) / showa (กระเบื้อง-อิฐยุค 80 + ระเบียงแอร์) / modern (ผนังกระจก)
+-- สร้างในแบบ "หน้าตึกหัน +Z" แล้วหมุนทั้งชุดรอบจุดกลางล็อตตาม lot.Yaw; ของที่ยื่นออกนอกผนัง (ระเบียง บันได แอร์) ไม่ชน
+local ERA_WALL = {
+	postwar = { "A9A59B", "B3AB9B", "9C9488", "A8A296", "98958C" },
+	showa = { "A58A74", "B09A84", "9A7F6E", "BFA98F", "A89078" },
+	modern = { "D2D4D4", "C5C9CC", "BCC3C8", "CFCBC2" },
+	wood = { "C9BDA6", "B7A488", "BFB095", "AD9F86" },
+}
+local ROOF_COLORS = { "4A525C", "2A2C32", "70747A", "5B5D6B" }
+local AWNING_COLORS = { "9E3B33", "3F566E", "7A5A50", "4F7358", "B8944A", "A8643A" }
+local CLOTH = { "E4E0D6", "C98A97", "7FA0B8", "D8C27A", "9AB88A", "B0605A" }
+local CONTAINER_COLORS = { "9E3B33", "3F566E", "B8944A", "4F7358", "A8643A", "7A6A9A", "8C8F93" }
+
+local function noc(p: BasePart): BasePart
+	p.CanCollide, p.CanTouch = false, false
+	return p
+end
+
+-- หมุนทุกชิ้นใน model รอบแกน Y ผ่าน (cx, cz)
+local function rotateModel(model: Instance, cx: number, cz: number, yaw: number)
+	if yaw == 0 then
+		return
+	end
+	local pivot = CFrame.new(cx, 0, cz)
+	local rot = pivot * CFrame.Angles(0, math.rad(yaw), 0) * pivot:Inverse()
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CFrame = rot * d.CFrame
+		end
+	end
+end
+
+local function exteriorStairs(model: Instance, cx: number, cz: number, w: number, d: number, h: number, rng: Random)
+	local steel = hex("5E6168")
+	local bz = cz - d / 2 - 1.3
+	local x0 = cx + rng:NextNumber(-w / 2 + 3.5, w / 2 - 3.5)
+	local floors = math.floor((h - 2) / 6.5)
+	for f = 0, floors - 1 do
+		local y = f * 6.5
+		local dir = if f % 2 == 0 then 1 else -1
+		local xa, xb = x0 - dir * 2.6, x0 + dir * 2.6
+		local mid = Vector3.new((xa + xb) / 2, y + 3.25, bz)
+		local run = math.abs(xb - xa)
+		local flight = noc(BK.part("StairFlight", Vector3.new(math.sqrt(run * run + 6.5 * 6.5), 0.3, 2), mid, steel, model, Enum.Material.Metal))
+		flight.CFrame = CFrame.new(mid) * CFrame.Angles(0, 0, math.atan2(6.5, run) * dir)
+		noc(BK.box("StairLanding", xb - 1.5, xb + 1.5, y + 6.5, y + 6.8, bz - 1.2, bz + 1.2, steel, model, Enum.Material.Metal))
+		noc(BK.box("StairRail", math.min(xa, xb), math.max(xa, xb), y + 7, y + 7.2, bz - 1.1, bz - 0.9, steel, model, Enum.Material.Metal))
+	end
+	noc(BK.box("StairDoor", x0 - 1, x0 + 1, 0.3, 3.5, cz - d / 2 - 0.2, cz - d / 2 + 0.1, hex("3A3D44"), model, Enum.Material.Metal))
+end
+
+local function balconies(model: Instance, cx: number, cz: number, w: number, d: number, h: number, rng: Random, modern: boolean)
+	local fz = cz + d / 2
+	local rows = math.floor((h - 3) / 6.5)
+	for r = 1, rows - 1 do
+		local y = 4.5 + r * 6.5 - 2.2
+		if y + 3 < h then
+			noc(BK.box("Balcony", cx - w / 2 + 1, cx + w / 2 - 1, y, y + 0.35, fz, fz + 1.7, hex("A5A7A8"), model, Enum.Material.Concrete))
+			local rail = noc(BK.box("BalconyRail", cx - w / 2 + 1, cx + w / 2 - 1, y + 0.35, y + 1.5, fz + 1.55, fz + 1.7, if modern then hex("8FA3AB") else hex("D2CFC6"), model, if modern then Enum.Material.Glass else Enum.Material.Concrete))
+			if modern then
+				rail.Transparency = 0.5
+			end
+			local n = math.max(1, math.floor(w / 6))
+			for k = 1, n do
+				if rng:NextNumber() < 0.6 then
+					local ax = cx - w / 2 + 1.5 + (k - 0.5) * ((w - 3) / n)
+					noc(BK.box("BalconyAC", ax - 1.2, ax + 1.2, y + 0.35, y + 1.7, fz + 0.2, fz + 1.2, hex("B8BABA"), model, Enum.Material.Metal))
+				elseif rng:NextNumber() < 0.5 then
+					local ax = cx - w / 2 + 2 + rng:NextNumber(0, math.max(0.1, w - 5))
+					noc(BK.box("Laundry", ax - 0.8, ax + 0.8, y + 0.9, y + 2.5, fz + 1.35, fz + 1.5, hex(CLOTH[rng:NextInteger(1, #CLOTH)]), model, Enum.Material.Fabric))
+				end
+			end
+		end
+	end
+end
+
+local function roofClutter(model: Instance, cx: number, cz: number, w: number, d: number, h: number, rng: Random)
+	local py = h + 1.2 -- ยอดราวกันตก/แผ่นหลังคา
+	if rng:NextNumber() < 0.6 then
+		local px, pz = cx + rng:NextNumber(-w / 3, w / 3), cz + rng:NextNumber(-d / 3, d / 3)
+		BK.box("StairHead", px - 1.6, px + 1.6, py - 0.6, py + 3, pz - 1.6, pz + 1.6, hex("A8A598"), model, Enum.Material.Concrete)
+	end
+	for _ = 1, rng:NextInteger(1, 3) do
+		local px, pz = cx + rng:NextNumber(-w / 2 + 2.5, w / 2 - 2.5), cz + rng:NextNumber(-d / 2 + 2, d / 2 - 2)
+		BK.box("RoofAC", px - 1.2, px + 1.2, py - 0.6, py + 1, pz - 1, pz + 1, hex("B8BABA"), model, Enum.Material.Metal)
+	end
+	if h < 30 and rng:NextNumber() < 0.35 then -- ราวตากผ้า
+		local lz = cz + rng:NextNumber(-d / 4, d / 4)
+		local x1, x2 = cx - math.min(w / 2 - 1.5, 4), cx + math.min(w / 2 - 1.5, 4)
+		for _, x in { x1, x2 } do
+			BK.cylinder("LaundryPole", 0.1, 3.4, Vector3.new(x, py + 1.1, lz), hex("8A8D91"), model, Enum.Material.Metal)
+		end
+		BK.box("LaundryLine", x1, x2, py + 2.7, py + 2.78, lz - 0.04, lz + 0.04, hex("2A2C32"), model)
+		for k = 0, 3 do
+			local x = x1 + 0.8 + k * ((x2 - x1 - 1.6) / 3)
+			noc(BK.box("Cloth", x - 0.5, x + 0.5, py + 1.2, py + 2.7, lz - 0.05, lz + 0.05, hex(CLOTH[rng:NextInteger(1, #CLOTH)]), model, Enum.Material.Fabric))
+		end
+	end
+	if rng:NextNumber() < 0.06 then -- ศาลเล็กบนดาดฟ้า
+		local sx, sz = cx + rng:NextNumber(-w / 4, w / 4), cz + rng:NextNumber(-d / 4, d / 4)
+		BK.box("RoofShrineBase", sx - 1, sx + 1, py - 0.6, py + 0.3, sz - 0.9, sz + 0.9, hex("8F8E88"), model, Enum.Material.Slate)
+		BK.box("RoofShrine", sx - 0.8, sx + 0.8, py + 0.3, py + 2, sz - 0.7, sz + 0.7, hex("6F5236"), model, Enum.Material.Wood)
+		BK.box("RoofShrineRoof", sx - 1.2, sx + 1.2, py + 2, py + 2.4, sz - 1, sz + 1, hex("9E3B33"), model)
+	end
+end
+
+local function gableRoof(model: Instance, cx: number, cz: number, w: number, d: number, h: number, color: Color3)
+	local rise = math.clamp(w * 0.22, 1.8, 3.2)
+	for _, side in { -1, 1 } do
+		local wedge = Instance.new("WedgePart")
+		wedge.Name = "GableRoof"
+		wedge.Anchored = true
+		wedge.Size = Vector3.new(w / 2 + 0.9, rise, d + 1.8)
+		wedge.Color = color
+		wedge.Material = Enum.Material.Slate
+		wedge.CFrame = CFrame.new(cx + side * (w / 4 + 0.45), h + 0.6 + rise / 2, cz) * (if side == -1 then CFrame.Angles(0, math.rad(180), 0) else CFrame.identity)
+		wedge.Parent = model
+	end
+end
+
+local function houseGround(model: Instance, cx: number, cz: number, w: number, d: number, rng: Random)
+	local fz = cz + d / 2
+	local dx = cx + rng:NextNumber(-w / 2 + 2, w / 2 - 2)
+	noc(BK.box("Door", dx - 0.9, dx + 0.9, 0.3, 3.8, fz, fz + 0.25, hex("4A3A2E"), model, Enum.Material.Wood))
+	noc(BK.box("DoorStep", dx - 1.4, dx + 1.4, 0, 0.35, fz, fz + 0.9, hex("8F8B83"), model, Enum.Material.Concrete))
+	noc(BK.box("Mailbox", dx + 1.3, dx + 1.9, 3.2, 3.7, fz, fz + 0.4, hex("7A2E2A"), model, Enum.Material.Metal))
+	for k = 1, rng:NextInteger(1, 3) do
+		local px = cx - w / 2 + 1 + rng:NextNumber(0, math.max(0.1, w - 2))
+		if math.abs(px - dx) > 1.8 then
+			noc(BK.cylinder("BonsaiPot", 0.5, 0.9, Vector3.new(px, 0.45, fz + 0.7 + k * 0.1), hex("7A5A4A"), model, Enum.Material.Concrete))
+			noc(BK.ball("Bonsai", 1.3, Vector3.new(px, 1.5, fz + 0.7 + k * 0.1), hex("55784B"), model, Enum.Material.Grass))
+		end
+	end
+	if rng:NextNumber() < 0.35 then -- จักรยานพิงกำแพง
+		local bx = cx + rng:NextNumber(-w / 2 + 1.5, w / 2 - 1.5)
+		for _, o in { -0.9, 0.9 } do
+			local wheel = BK.cylinder("BikeWheel", 0.55, 0.12, Vector3.new(bx + o, 0.55, fz + 0.5), hex("2A2C32"), model, Enum.Material.Metal)
+			wheel.CFrame = CFrame.new(bx + o, 0.55, fz + 0.5) * CFrame.Angles(0, math.rad(90), math.rad(90))
+			noc(wheel)
+		end
+		noc(BK.box("BikeFrame", bx - 0.9, bx + 0.9, 0.9, 1.0, fz + 0.45, fz + 0.55, hex("4F7358"), model, Enum.Material.Metal))
+	end
+end
+
+-- ลานตู้คอนเทนเนอร์ (ล็อตท่าเรือ): กองตู้ซ้อนไม่เท่ากัน
+local function containerYard(parent: Instance, lot: any, rng: Random)
+	local model = Instance.new("Folder")
+	model.Name = "Yard"
+	model.Parent = parent
+	local alongX = lot.Yaw == 0 or lot.Yaw == 180
+	local sx, sz = if alongX then 11 else 5, if alongX then 5 else 11
+	local cols = math.max(1, math.floor((lot.Fx2 - lot.Fx1) / (sx + 1.5)))
+	local rows = math.max(1, math.floor((lot.Fz2 - lot.Fz1) / (sz + 1.5)))
+	for c = 0, cols - 1 do
+		for r = 0, rows - 1 do
+			if rng:NextNumber() < 0.8 then
+				local px = lot.Fx1 + (c + 0.5) * ((lot.Fx2 - lot.Fx1) / cols)
+				local pz = lot.Fz1 + (r + 0.5) * ((lot.Fz2 - lot.Fz1) / rows)
+				for s = 0, rng:NextInteger(0, 2) do
+					BK.box("Container", px - sx / 2, px + sx / 2, 0.3 + s * 5.2, 5.5 + s * 5.2, pz - sz / 2, pz + sz / 2, hex(CONTAINER_COLORS[rng:NextInteger(1, #CONTAINER_COLORS)]), model, Enum.Material.Metal)
+				end
+			end
+		end
+	end
+	return model
+end
+
+local function scaffold(model: Instance, cx: number, cz: number, w: number, d: number, h: number)
+	local fz = cz + d / 2 + 1.4
+	local top = math.min(h - 1, 24)
+	local step = math.max(3, (w - 1) / math.ceil((w - 1) / 3.5))
+	local x = cx - w / 2 + 0.5
+	while x < cx + w / 2 - 0.4 do
+		noc(BK.box("ScaffoldPost", x - 0.12, x + 0.12, 0, top, fz - 0.12, fz + 0.12, hex("A5A7A8"), model, Enum.Material.Metal))
+		x += step
+	end
+	for y = 4, top, 4 do
+		noc(BK.box("ScaffoldBar", cx - w / 2 + 0.4, cx + w / 2 - 0.4, y, y + 0.2, fz - 0.15, fz + 0.15, hex("A5A7A8"), model, Enum.Material.Metal))
+	end
+	local net = noc(BK.box("GreenNet", cx - w / 2 + 0.4, cx + w / 2 - 0.4, 0.5, top, fz + 0.15, fz + 0.2, hex("4F6E55"), model, Enum.Material.Fabric))
+	net.Transparency = 0.25
+end
+
+function BK.tokyo(parent: Instance, lot: any, rng: Random): Instance
+	if lot.Ground == "yard" then
+		return containerYard(parent, lot, rng)
+	end
+	local pal = ERA_WALL[lot.Era] or ERA_WALL.postwar
+	local wall = jitter(hex(pal[rng:NextInteger(1, #pal)]), 0.03)
+	local roof = hex(ROOF_COLORS[rng:NextInteger(1, #ROOF_COLORS)])
+	local h: number, w: number, d: number = lot.H, lot.W, lot.D
+	local cx, cz = lot.X, lot.Z
+	local o: { [string]: any } = { Facing = 1 }
+	if lot.Era == "postwar" then
+		o.Material = Enum.Material.Concrete
+	elseif lot.Era == "showa" then
+		o.Material = if h <= 22 then Enum.Material.Brick else Enum.Material.Concrete
+	elseif lot.Era == "modern" then
+		o.Material = Enum.Material.Concrete
+		o.GlassColor = hex("5E7F98")
+	else
+		o.Material = Enum.Material.Plaster
+	end
+	if lot.Ground == "shop" then
+		o.Kind = lot.Kind
+		o.Storefront = true
+		if lot.Kind ~= "konbini" and (lot.Zone == "shop" or lot.Era == "wood" or rng:NextNumber() < 0.3) then
+			o.Awning = hex(AWNING_COLORS[rng:NextInteger(1, #AWNING_COLORS)])
+		end
+	elseif lot.Ground == "ind" then
+		o.Material = Enum.Material.Metal
+		wall = hex(({ "A5A7A8", "9AA09E", "8E9498" })[rng:NextInteger(1, 3)])
+		o.SignText = ({ "WAREHOUSE", "LOGISTICS", "SUSU MARINE", "CARGO" })[rng:NextInteger(1, 4)]
+		o.SignBg = hex("2A2C32")
+		o.SignFg = hex("A8643A")
+	end
+	if lot.Ground == "house" and h < 12 then
+		o.Detail = false
+	end
+	local model = BK.building(parent, cx, cz, w, d, h, wall, roof, o)
+	if lot.Ground == "ind" or lot.Era == "wood" then
+		gableRoof(model, cx, cz, w, d, h, hex(({ "4A525C", "5B5D6B", "6B4F44" })[rng:NextInteger(1, 3)]))
+	end
+	if lot.Ground == "house" then
+		houseGround(model, cx, cz, w, d, rng)
+	end
+	if h >= 11 and lot.Ground ~= "ind" and rng:NextNumber() < 0.5 then
+		exteriorStairs(model, cx, cz, w, d, h, rng)
+	end
+	if h >= 16 and (lot.Era == "showa" or lot.Era == "modern") and rng:NextNumber() < 0.75 then
+		balconies(model, cx, cz, w, d, h, rng, lot.Era == "modern")
+	end
+	if h > 8 and lot.Ground ~= "ind" and lot.Era ~= "wood" then
+		roofClutter(model, cx, cz, w, d, h, rng)
+	end
+	if rng:NextNumber() < 0.05 and h >= 10 then
+		scaffold(model, cx, cz, w, d, h)
+	end
+	rotateModel(model, cx, cz, lot.Yaw)
+	return model
+end
+
 return BK

@@ -50,86 +50,70 @@ local function cluster(kind: number, x: number, z: number, yaw: number, alongX: 
 	end
 end
 
-local main = 170
-local B = World.Bounds
-local function skipMain(x: number): boolean
-	if math.abs(x) < 235 then
-		return true
-	end
-	if math.abs(x - -560) < 18 or math.abs(x - -370) < 18 or math.abs(x - 570) < 18 then
-		return true
-	end
-	for _, d in World.Districts do
-		if math.abs(main - d.Center.Z) < d.Radius + 10 and math.abs(x - d.Center.X) < d.Radius + 10 then
-			return true
-		end
-	end
-	return false
+local LotGen = require(script.Parent.LotGen)
+
+local function inSchool(x: number, z: number): boolean
+	return x > -228 and x < 228 and z > -188 and z < 348
 end
 
----------------------------------------------------------------- ถนนสายหลัก (z=170): ทางเท้าระหว่างขอบถนน z±8 กับกำแพง z±15
-local k = 0
-for x = B.MinX + 100, B.MaxX - 100, 85 do
-	if not skipMain(x) and not skipMain(x + 15) and not skipMain(x - 15) then
-		local side = if k % 2 == 0 then 1 else -1
-		cluster(k % 3, x, main + side * 10.2, if side == 1 then 0 else 180, true)
-		k += 1
+-- ทางเท้าทุกถนนกว้าง >= 10: สุ่มวางชุดตู้กดน้ำ/ถังรีไซเคิล/ที่จอดจักรยาน/ตู้ไปรษณีย์ กลางช่วง (ไม่ใกล้แยก ไม่ทับตึก)
+local zebras = 0
+for i, r in World.Roads do
+	local w, kind = r[5], r[6]
+	if kind == "T" or w < 10 then
+		continue
 	end
-end
--- ทางม้าลาย + เสาสัญญาณ + ราวกันตกข้างทาง
-for _, zx in { -500, -300, 300, 700 } do
-	if not skipMain(zx) and not skipMain(zx + 14) and not skipMain(zx - 14) then
-		SP.zebra(f, zx, main, true, 16)
-		for _, side in { -1, 1 } do
-			SP.crossingSignal(f, zx - 7.5, main + side * 9.4, if side == 1 then 0 else 180)
-			SP.guardRail(f, zx + 6, main + side * 8.8, zx + 20, main + side * 8.8)
-			SP.guardRail(f, zx - 20, main + side * 8.8, zx - 9, main + side * 8.8)
+	local horizontal = math.abs(r[3] - r[1]) >= math.abs(r[4] - r[2])
+	local fixed = if horizontal then r[2] else r[1]
+	local sw = if w >= 14 then 3.9 else 2.4
+	local step = if w >= 14 then 70 else 90
+	for _, side in { -1, 1 } do
+		if rng:NextNumber() < (if w >= 14 then 0.9 else 0.55) then
+			local off = side * (w / 2 + 0.4 + sw / 2)
+			local intervals = World.FreeIntervals(i, off)
+			for _, iv in intervals do
+				local t = iv[1] + rng:NextNumber(10, step)
+				while t < iv[2] - 12 do
+					local x = if horizontal then t else fixed + off
+					local z = if horizontal then fixed + off else t
+					if not inSchool(x, z) and not LotGen.Hit(x, z, 1.2) and not LotGen.Hit(if horizontal then x + 6 else x, if horizontal then z else z + 6, 1) and not LotGen.Hit(if horizontal then x - 4 else x, if horizontal then z else z - 4, 1) then
+						local yaw = if horizontal then (if side == 1 then 0 else 180) else (if side == 1 then 90 else -90)
+						cluster(rng:NextInteger(0, 2), x, z, yaw, horizontal)
+					end
+					t += step + rng:NextNumber(0, step)
+				end
+			end
 		end
-		tally(3)
 	end
 end
 
----------------------------------------------------------------- ถนนการค้า (ศูนย์กลาง x=420): ทางเท้า z≈157-162 (หันหน้า +Z) และ 178-183 (หันหน้า -Z)
-do
-	local d = World.ById("Shotengai") :: World.District
-	local cx = d.Center.X
-	local kinds = { 0, 1, 2, 0, 1, 0, 2 }
-	for i, off in { -110, -70, -30, 10, 50, 90, 120 } do
-		local side = if i % 2 == 0 then 1 else -1
-		if side == 1 then
-			cluster(kinds[i], cx + off + 20 * 0, main + 10.4, 0, true)
-		else
-			cluster(kinds[i], cx + off, main - 10.4, 180, true)
+-- ทางม้าลาย + เสาสัญญาณที่ปากทางแยกของถนนกว้าง >= 14
+for i, r in World.Roads do
+	local w = r[5]
+	if w >= 14 and r[6] ~= "T" then
+		local horizontal = math.abs(r[3] - r[1]) >= math.abs(r[4] - r[2])
+		local fixed = if horizontal then r[2] else r[1]
+		local ivs = World.FreeIntervals(i, 0)
+		for k = 1, #ivs - 1 do
+			local gapStart, gapEnd = ivs[k][2], ivs[k + 1][1]
+			if gapEnd - gapStart >= 8 and zebras < 70 and rng:NextNumber() < 0.7 then
+				local t = if rng:NextNumber() < 0.5 then gapStart - 2.5 else gapEnd + 2.5
+				local x = if horizontal then t else fixed
+				local z = if horizontal then fixed else t
+				if not inSchool(x, z) and math.abs(z - 420) > 40 then
+					SP.zebra(f, x, z, horizontal, w)
+					for _, side in { -1, 1 } do
+						local px = if horizontal then x - 5 else fixed + side * (w / 2 + 1.2)
+						local pz = if horizontal then fixed + side * (w / 2 + 1.2) else z - 5
+						if not LotGen.Hit(px, pz, 0.8) then
+							SP.crossingSignal(f, px, pz, if horizontal then (if side == 1 then 0 else 180) else (if side == 1 then 90 else -90))
+						end
+					end
+					zebras += 1
+					tally(3)
+				end
+			end
 		end
-	end
-	for _, zx in { cx - 80, cx + 62 } do
-		SP.zebra(f, zx, main, true, 16)
-		for _, side in { -1, 1 } do
-			SP.crossingSignal(f, zx - 7.5, main + side * 9.4, if side == 1 then 0 else 180)
-		end
-		tally(3)
-	end
-end
-
----------------------------------------------------------------- ย่านสถานี: ทางเท้าแถบ z=600 (ใต้ตึก z 587-593 / 607-613) และแถบ x=-90
-do
-	for i, x in { -260, -215, -170, -50, -10, 30, 70, 110, 150, 195, 240 } do
-		local side = if i % 2 == 0 then 1 else -1
-		if not (side == 1 and x > 100) then
-			cluster(i % 3, x, 600 + side * 10, if side == 1 then 0 else 180, true)
-		end
-	end
-	for _, zx in { -20, -180 } do
-		SP.zebra(f, zx, 600, true, 14)
-		for _, side in { -1, 1 } do
-			SP.crossingSignal(f, zx - 7, 600 + side * 8.8, if side == 1 then 0 else 180)
-			SP.guardRail(f, zx + 6, 600 + side * 8.2, zx + 18, 600 + side * 8.2)
-		end
-		tally(3)
-	end
-	for i, z in { 270, 320, 370, 470, 520 } do
-		local west = i % 2 == 0
-		cluster(i % 3, if west then -100 else -80, z, if west then -90 else 90, false)
 	end
 end
 
