@@ -574,24 +574,66 @@ petals.Rate = 30
 petals.LightEmission = 0.3
 petals.Parent = petalSky
 
--- น้ำพุกลางลาน (ด้านหน้าอาคาร)
-cylinder("FountainBasin", 7.5, 1.4, Vector3.new(0, 1, -30), C.stone, props, Enum.Material.SmoothPlastic)
-local water = cylinder("FountainWater", 6.6, 0.3, Vector3.new(0, 1.55, -30), C.water, props, Enum.Material.Neon)
-water.Transparency = 0.35
-water.CanCollide = false
-cylinder("FountainPillar", 0.9, 4, Vector3.new(0, 3.2, -30), C.stone, props, Enum.Material.SmoothPlastic)
-local fountainTop = ball("FountainTop", 2.2, Vector3.new(0, 5.4, -30), C.white, props, Enum.Material.SmoothPlastic)
+-- น้ำพุกลางลาน (ด้านหน้าอาคาร): สระวงกลมมีขอบหิน + ชามน้ำพุ 3 ชั้น + น้ำไหลลงทีละชั้น
+local FOUNTAIN = Vector3.new(0, 0, -30)
+local stoneDark = Color3.fromHex("B9B3A8")
+local waterColor = Color3.fromHex("7FD3F0")
+local function fountainPart(p: Part, material: Enum.Material?)
+	p.Material = material or Enum.Material.Marble
+	return p
+end
+-- สระฐาน: ขอบหิน 2 ชั้น (นอก/ใน) + ผิวน้ำ
+fountainPart(cylinder("FountainRimOuter", 8.6, 1.6, FOUNTAIN + Vector3.new(0, 1.1, 0), C.stone, props))
+fountainPart(cylinder("FountainRimStep", 9.6, 0.5, FOUNTAIN + Vector3.new(0, 0.55, 0), stoneDark, props))
+local pool = cylinder("FountainWater", 7.6, 0.2, FOUNTAIN + Vector3.new(0, 1.75, 0), waterColor, props, Enum.Material.Glass)
+pool.Transparency = 0.45
+pool.CanCollide = false
+-- ชามชั้นล่าง/กลาง/บน
+local tiers = {
+	{ r = 4.6, y = 3.0, h = 0.7 },
+	{ r = 3.0, y = 5.2, h = 0.6 },
+	{ r = 1.6, y = 7.0, h = 0.5 },
+}
+fountainPart(cylinder("FountainColumnLow", 1.1, 2.4, FOUNTAIN + Vector3.new(0, 2.6, 0), C.stone, props))
+fountainPart(cylinder("FountainColumnMid", 0.8, 2.2, FOUNTAIN + Vector3.new(0, 4.7, 0), C.stone, props))
+fountainPart(cylinder("FountainColumnTop", 0.5, 2.0, FOUNTAIN + Vector3.new(0, 6.6, 0), C.stone, props))
+for _, t in tiers do
+	fountainPart(cylinder("FountainBowl", t.r, t.h, FOUNTAIN + Vector3.new(0, t.y, 0), C.stone, props))
+	fountainPart(cylinder("FountainBowlLip", t.r + 0.25, 0.25, FOUNTAIN + Vector3.new(0, t.y + t.h / 2, 0), stoneDark, props))
+	local w = cylinder("FountainBowlWater", t.r - 0.35, 0.12, FOUNTAIN + Vector3.new(0, t.y + t.h / 2 + 0.1, 0), waterColor, props, Enum.Material.Glass)
+	w.Transparency = 0.4
+	w.CanCollide = false
+	-- น้ำล้นขอบชามไหลลงชั้นล่าง: ตัวปล่อยอนุภาคเรียงรอบขอบ
+	local spill = Instance.new("Attachment")
+	spill.Parent = w
+	local ring = Instance.new("ParticleEmitter")
+	ring.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	ring.Color = ColorSequence.new(Color3.fromHex("DDF4FF"), waterColor)
+	ring.Size = NumberSequence.new(0.28)
+	ring.Lifetime = NumberRange.new(0.7, 1.0)
+	ring.Speed = NumberRange.new(t.r * 0.9, t.r * 1.2)
+	ring.Acceleration = Vector3.new(0, -30, 0)
+	ring.SpreadAngle = Vector2.new(180, 8) -- กระจายรอบแนวนอน
+	ring.EmissionDirection = Enum.NormalId.Top
+	ring.Rate = 36
+	ring.LightEmission = 0.5
+	ring.Parent = spill
+end
+fountainPart(ball("FountainFinial", 1.5, FOUNTAIN + Vector3.new(0, 8.3, 0), C.white, props))
+local fountainTop = ball("FountainJetSource", 0.4, FOUNTAIN + Vector3.new(0, 8.8, 0), waterColor, props, Enum.Material.Glass)
+fountainTop.Transparency = 1
+fountainTop.CanCollide = false
 local jet = Instance.new("ParticleEmitter")
 jet.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-jet.Color = ColorSequence.new(Color3.fromHex("BFE9FF"), C.white)
+jet.Color = ColorSequence.new(Color3.fromHex("DDF4FF"), waterColor)
 jet.Size = NumberSequence.new(0.35)
-jet.Lifetime = NumberRange.new(1.1, 1.6)
+jet.Lifetime = NumberRange.new(1.0, 1.5)
 jet.Speed = NumberRange.new(10, 14)
 jet.Acceleration = Vector3.new(0, -26, 0)
-jet.SpreadAngle = Vector2.new(25, 25)
+jet.SpreadAngle = Vector2.new(14, 14)
 jet.EmissionDirection = Enum.NormalId.Top
-jet.Rate = 55
-jet.LightEmission = 0.6
+jet.Rate = 60
+jet.LightEmission = 0.5
 jet.Parent = fountainTop
 
 -- แถวพุ่มไม้ + ดอกไม้

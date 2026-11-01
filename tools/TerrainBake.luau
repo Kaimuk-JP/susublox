@@ -97,7 +97,24 @@ local function naturalMask(x, z)
 	return m
 end
 
+-- ใต้แผ่นถนน (Part สูง 0.3) ต้องกดผิว Terrain ให้ต่ำกว่าแผ่นถนนจริง ไม่งั้นผิวสองชั้นอยู่ระดับเดียวกัน
+-- แล้วกระพริบ (z-fighting) เวลาขยับกล้อง โดยเฉพาะขอบขั้นบันไดของ voxel
+local ROAD_DROP = -1.6
+local function insideRoad(x, z)
+	for _, r in World.Roads do
+		local x1, z1, x2, z2 = math.min(r[1], r[3]), math.min(r[2], r[4]), math.max(r[1], r[3]), math.max(r[2], r[4])
+		local hw = r[5] / 2 + 0.4 -- ครอบถึงขอบทาง (Curb กว้าง 0.4)
+		if x >= x1 - hw and x <= x2 + hw and z >= z1 - hw and z <= z2 + hw then
+			return true
+		end
+	end
+	return false
+end
+
 local function height(x, z)
+	if insideRoad(x, z) then
+		return ROAD_DROP
+	end
 	local m = naturalMask(x, z)
 	local h = 0
 	if m > 0 then
