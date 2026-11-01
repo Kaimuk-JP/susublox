@@ -16,7 +16,7 @@ local phases = {
 	{ From = 17.5, Name = "Evening", Brightness = 1.7, Outdoor = Color3.fromRGB(104, 88, 90), Ambient = Color3.fromRGB(64, 56, 62),
 		HazeColor = hex("B98C78"), Decay = hex("C46A4A"), Density = 0.32, Tint = hex("FFD2B0"), Sat = -0.05, Contrast = 0.16, Bloom = 0.32 },
 	-- กลางคืนยังต้องมองเห็นพื้นที่ต่อสู้ได้: ไม่มืดสนิท แต่ให้ไฟถนน/ป้ายร้านเป็นจุดเด่น
-	{ From = 20, Name = "Night", Brightness = 1.3, Outdoor = Color3.fromRGB(104, 114, 152), Ambient = Color3.fromRGB(84, 92, 124),
+	{ From = 20, Name = "Night", Brightness = 1.7, Outdoor = Color3.fromRGB(130, 142, 186), Ambient = Color3.fromRGB(106, 116, 156),
 		HazeColor = hex("3C465E"), Decay = hex("2A3048"), Density = 0.42, Tint = hex("D8E0FF"), Sat = -0.12, Contrast = 0.18, Bloom = 0.5 },
 }
 

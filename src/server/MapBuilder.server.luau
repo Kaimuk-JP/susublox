@@ -803,6 +803,7 @@ spawn.Position = Vector3.new(0, 0.55, 0)
 spawn.Color = C.trim
 spawn.Material = Enum.Material.Concrete
 spawn.Neutral = true
+spawn.Transparency = 1 -- แผ่นสีน้ำตาลใหญ่กลางลานดูเหมือนพรมแปลก ซ่อนไว้ (ยังใช้เป็นจุดเกิด/พื้นได้)
 spawn.Parent = map
 for _, d in spawn:GetChildren() do
 	if d:IsA("Decal") then
