@@ -64,6 +64,47 @@ local function addTaxiLamp(model: Model, primary: BasePart, moving: boolean)
 	end
 end
 
+-- ไฟหน้าขาว/ไฟท้ายแดงของรถวิ่ง (ชิ้นนีออนเล็ก + PointLight ที่ฝั่งผู้เล่นเปิดเฉพาะกลางคืน) เชื่อมติดตัวรถ หน้ารถ = -Z
+local function addCarLights(model: Model, primary: BasePart, isBike: boolean)
+	local cf, size = model:GetBoundingBox()
+	local xs = if isBike then { 0 } else { -size.X * 0.32, size.X * 0.32 }
+	local y = -size.Y / 2 + size.Y * 0.32
+	local function lamp(name: string, color: Color3, off: CFrame, ww: number)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = Vector3.new(ww, 0.5, 0.25)
+		p.Color = color
+		p.Material = Enum.Material.Neon
+		p.CFrame = cf * off
+		p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
+		p.Massless = true
+		p.Anchored = false
+		p.Parent = model
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = primary, p
+		w.Parent = p
+		return p
+	end
+	for i, x in xs do
+		local head = lamp("Headlight", Color3.fromHex("FFF6D8"), CFrame.new(x, y, -size.Z / 2), if isBike then 0.7 else 1.0)
+		local tail = lamp("Taillight", Color3.fromHex("FF2A2A"), CFrame.new(x, y, size.Z / 2), if isBike then 0.5 else 0.9)
+		if i == 1 then
+			local hl = Instance.new("PointLight")
+			hl.Name = "CarLight"
+			hl.Color, hl.Range, hl.Brightness = Color3.fromHex("FFF1CC"), 16, 1.2
+			hl.Shadows = false
+			hl.Enabled = false
+			hl.Parent = head
+			local tl = Instance.new("PointLight")
+			tl.Name = "CarLight"
+			tl.Color, tl.Range, tl.Brightness = Color3.fromHex("FF3030"), 8, 0.8
+			tl.Shadows = false
+			tl.Enabled = false
+			tl.Parent = tail
+		end
+	end
+end
+
 -- ความยาวเป้าหมาย (studs; 1 stud ~ 0.35 m) ต่อชนิด: kei 3.4 m ~10, เก๋ง 4.5 m ~13, รถตู้/กระบะ kei (Hijet/Sambar) ~10.5, แท็กซี่ Crown ~13, มอเตอร์ไซค์ 1.9 m ~5.5
 local TARGET_LENGTH: { [string]: number } = { kei = 10, sedan = 13, van = 10.5, taxi = 13, bike = 5.5 }
 
@@ -230,6 +271,7 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	if kind == "bike" then
 		addRider(model, primary, src, scaleF)
 	end
+	addCarLights(model, primary, kind == "bike")
 	-- ให้ pivot ของโมเดลตามตัวขยับ (ถ้าไม่มี PrimaryPart GetPivot จะค้างที่ตำแหน่งเกิด ทำให้ตรวจรถชนผู้เล่นพลาด)
 	local _, moveSize = model:GetBoundingBox()
 	model:SetAttribute("HalfX", moveSize.X / 2)

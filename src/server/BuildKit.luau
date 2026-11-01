@@ -136,7 +136,7 @@ function BK.verticalSign(parent: Instance, jp: string, en: string, pos: Vector3,
 	BK.noCollide(p)
 	glowGui(p, Enum.NormalId.Right, table.concat(chars, "\n"), fg, 50)
 	glowGui(p, Enum.NormalId.Left, table.concat(chars, "\n"), fg, 50)
-	local rim = BK.part("VerticalSignRim", Vector3.new(0.35, height + 0.3, 2.7), pos, fg:Lerp(Color3.new(0, 0, 0), 0.55), parent, Enum.Material.Neon)
+	local rim = BK.part("VerticalSignRim", Vector3.new(0.35, height + 0.3, 2.7), pos, fg:Lerp(Color3.new(0, 0, 0), 0.2), parent, Enum.Material.Neon)
 	BK.noCollide(rim)
 	BK.light(p, fg, 14, 0.5)
 	local enPart = BK.part("VerticalSignEn", Vector3.new(0.5, 0.9, 2.4), pos - Vector3.new(0, height / 2 + 0.55, 0), Color3.fromHex("1C1D21"), parent, Enum.Material.Metal)
@@ -236,7 +236,19 @@ function BK.shopFront(model: Instance, kind: string, cx: number, cz: number, w: 
 	local fz = cz + facing * (d / 2)
 	local yaw = if facing == 1 then 180 else 0
 	local sw = math.min(w - 4, 9)
-	BK.sign(model, info.jp, Vector3.new(sw, 2.2, 0.35), Vector3.new(cx - 1, y0 + math.min(10, h - 1.8), fz + facing * 0.3), yaw, dark, fg).Material = Enum.Material.Metal
+	local jpSign = BK.sign(model, info.jp, Vector3.new(sw, 2.2, 0.35), Vector3.new(cx - 1, y0 + math.min(10, h - 1.8), fz + facing * 0.3), yaw, dark, fg)
+	jpSign.Material = Enum.Material.Metal
+	-- ขอบนีออนใต้ป้าย + แสงส่องหน้าร้านเฉพาะร้านสว่าง (SurfaceLight ร้านละดวง ไม่ใช่ทุกร้าน)
+	local trim = BK.part("SignTrim", Vector3.new(sw + 0.5, 0.18, 0.2), jpSign.Position, fg:Lerp(Color3.new(0, 0, 0), 0.15), model, Enum.Material.Neon)
+	trim.CFrame = jpSign.CFrame * CFrame.new(0, -1.25, -0.2)
+	BK.noCollide(trim)
+	if kind == "konbini" or kind == "pachinko" or kind == "game" or kind == "karaoke" or kind == "pharmacy" then
+		local sl = Instance.new("SurfaceLight")
+		sl.Face = Enum.NormalId.Front
+		sl.Color, sl.Range, sl.Brightness, sl.Angle = fg, 16, 2, 150
+		sl.Shadows = false
+		sl.Parent = jpSign
+	end
 	BK.sign(model, info.en, Vector3.new(sw, 0.9, 0.3), Vector3.new(cx - 1, y0 + math.min(8.6, h - 3.2), fz + facing * 0.3), yaw, dark, fg).Material = Enum.Material.Metal
 	local hv = math.min(7, (utf8.len(info.jp) :: number) * 1.4 + 1, h - 6)
 	if hv >= 3 then
@@ -521,7 +533,12 @@ function BK.lamp(parent: Instance, x: number, z: number, color: Color3?)
 	BK.box("LampArm", x - 0.15, x + 0.15, 15.6, 15.9, z - 1.4, z + 0.2, hex("2A2C32"), parent, Enum.Material.Metal)
 	BK.box("LampHousing", x - 0.7, x + 0.7, 15.3, 15.7, z - 2.1, z - 0.7, hex("34363C"), parent, Enum.Material.Metal)
 	local bulb = BK.box("Bulb", x - 0.5, x + 0.5, 15.15, 15.3, z - 1.9, z - 0.9, glow, parent, Enum.Material.Neon)
-	BK.light(bulb, glow, 30, 1.1)
+	BK.light(bulb, glow, 34, 1.5)
+	local l = bulb:FindFirstChildOfClass("PointLight")
+	if l then
+		l.Name = "LampLight"
+		l.Shadows = false
+	end
 end
 
 -- อาคารทึบ (เข้าไปข้างในไม่ได้): ผนัง วัสดุจริง (Concrete/Brick/Plaster) เสามุม เส้นคาดชั้น หน้าต่างมีกรอบ บางบานเปิดไฟ

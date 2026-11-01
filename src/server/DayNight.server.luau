@@ -13,11 +13,12 @@ local phases = {
 		HazeColor = hex("BCCADA"), Decay = hex("C2CCD8"), Density = 0.13, Tint = hex("FFFDF8"), Sat = -0.03, Contrast = 0.14, Bloom = 0.16 },
 	{ From = 15, Name = "GoldenHour", Brightness = 2.2, Outdoor = Color3.fromRGB(125, 112, 100), Ambient = Color3.fromRGB(78, 70, 66),
 		HazeColor = hex("D3B792"), Decay = hex("DE9A62"), Density = 0.28, Tint = hex("FFE6C8"), Sat = -0.08, Contrast = 0.14, Bloom = 0.24 },
-	{ From = 17.5, Name = "Evening", Brightness = 1.7, Outdoor = Color3.fromRGB(104, 88, 90), Ambient = Color3.fromRGB(64, 56, 62),
+	{ From = 17.5, Name = "Evening", Brightness = 1.9, Outdoor = Color3.fromRGB(118, 100, 104), Ambient = Color3.fromRGB(78, 68, 76),
 		HazeColor = hex("B98C78"), Decay = hex("C46A4A"), Density = 0.32, Tint = hex("FFD2B0"), Sat = -0.05, Contrast = 0.16, Bloom = 0.32 },
 	-- กลางคืนยังต้องมองเห็นพื้นที่ต่อสู้ได้: ไม่มืดสนิท แต่ให้ไฟถนน/ป้ายร้านเป็นจุดเด่น
-	{ From = 20, Name = "Night", Brightness = 1.7, Outdoor = Color3.fromRGB(130, 142, 186), Ambient = Color3.fromRGB(106, 116, 156),
-		HazeColor = hex("3C465E"), Decay = hex("2A3048"), Density = 0.42, Tint = hex("D8E0FF"), Sat = -0.12, Contrast = 0.18, Bloom = 0.5 },
+	-- มหานครยามค่ำ: แสงฟ้าม่วงนุ่ม + แสงเรืองของเมือง (หมอกขอบฟ้าม่วงอมส้ม) ยังไม่ใช่กลางวัน
+	{ From = 20, Name = "Night", Brightness = 1.6, Outdoor = Color3.fromRGB(138, 136, 178), Ambient = Color3.fromRGB(108, 108, 148),
+		HazeColor = hex("5A4C76"), Decay = hex("8A5C6A"), Density = 0.4, Tint = hex("E2E4FF"), Sat = -0.06, Contrast = 0.2, Bloom = 0.62 },
 }
 
 local function phaseAt(hour: number)
@@ -94,6 +95,7 @@ local function apply(phase, instant: boolean?)
 	local isNight = phase.Name == "Night"
 	TweenService:Create(Lighting, info, {
 		ColorShift_Top = if isNight then hex("8FA6E8") else Color3.new(0, 0, 0),
+		ColorShift_Bottom = if isNight or phase.Name == "Evening" then hex("4A3226") else Color3.new(0, 0, 0), -- แสงเมืองสะท้อนจากพื้น
 		Brightness = phase.Brightness * m.Dark,
 		OutdoorAmbient = phase.Outdoor:Lerp(grey, m.Grey * 0.35),
 		Ambient = phase.Ambient:Lerp(grey, m.Grey * 0.25),
@@ -106,6 +108,7 @@ local function apply(phase, instant: boolean?)
 			Density = math.clamp(phase.Density + m.Fog, 0, 0.5),
 			Haze = 0.1 + m.Haze,
 			Offset = if isNight then 0.2 else 0.08,
+			Glare = if isNight then 0.25 else 0,
 		}):Play()
 	end
 	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
