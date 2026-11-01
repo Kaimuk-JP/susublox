@@ -62,7 +62,7 @@ local weatherMods: { [string]: { Dark: number, Fog: number, Haze: number, Grey: 
 	Clear = { Dark = 1, Fog = 0, Haze = 0, Grey = 0, Cover = 0.45, CloudDensity = 0.5, Sat = 0 },
 	Cloudy = { Dark = 0.85, Fog = 0.05, Haze = 0.6, Grey = 0.3, Cover = 0.8, CloudDensity = 0.7, Sat = -0.04 },
 	Rain = { Dark = 0.7, Fog = 0.2, Haze = 1.4, Grey = 0.5, Cover = 0.95, CloudDensity = 0.85, Sat = -0.08 },
-	Storm = { Dark = 0.5, Fog = 0.3, Haze = 2, Grey = 0.65, Cover = 1, CloudDensity = 1, Sat = -0.14 },
+	Storm = { Dark = 0.62, Fog = 0.3, Haze = 2, Grey = 0.65, Cover = 1, CloudDensity = 1, Sat = -0.14 },
 	Fog = { Dark = 0.8, Fog = 0.45, Haze = 3, Grey = 0.6, Cover = 0.7, CloudDensity = 0.6, Sat = -0.1 },
 	Snow = { Dark = 0.9, Fog = 0.25, Haze = 1.8, Grey = 0.55, Cover = 0.9, CloudDensity = 0.8, Sat = -0.12 },
 }
@@ -87,7 +87,7 @@ local function apply(phase, instant: boolean?)
 		TweenService:Create(atmosphere, info, {
 			Color = phase.HazeColor:Lerp(grey, m.Grey),
 			Decay = phase.Decay,
-			Density = math.clamp(phase.Density + m.Fog, 0, 0.9),
+			Density = math.clamp(phase.Density + m.Fog, 0, 0.65),
 			Haze = 0.4 + m.Haze,
 		}):Play()
 	end

@@ -12,18 +12,35 @@
 - เกณฑ์รับ: MeshPart ≤ 60 (ใช้จำนวนชิ้น; ไม่มี API อ่านจำนวนสามเหลี่ยมได้ จึงไม่ได้วัด triangle จริง)
 - Decal/Texture: โมเดลที่คัดเข้าเหลือ Decal เพียง 1 ชิ้น (Tree_Sakura2) — **ไม่ได้ตรวจเนื้อหารูปด้วยตา** ทุกโมเดลดูจาก preview เฉพาะรถ
 
-## Cars
-| ชื่อใน ImportedAssets | Asset ID | ชื่อต้นฉบับ | ผู้สร้าง | ชิ้น (MeshPart) หลังล้าง |
-|---|---|---|---|---|
-| Car_SovietSedan | 107406088762513 | Ussr Car Russian Soviet Vehicle Sedan Cars Mesh | Content Deleted - 158552482 | 11 (11) |
-| Car_PolyVan | 136255353573633 | Poly Van Low Vehicle Car Model Truck Delivery City | Content Deleted - 158552482 | 23 (23) |
-| Car_MeshSedan | 9470295166 | Moving Sedan mesh car | PEPPAROMPE | 1 (1) |
-| Car_GreenSedan | 14825994544 | Green Sedan Car | jams20202013 | 71 (45) |
-| Car_HijetKeiVan | 88771625973855 | 1981 Daihatsu Hijet Tianjin TJ 110 Van | FerreroMexx2 | 15 (15) |
-| Car_Moped | 1322080939 | Moped | WiliFIN | 39 (0) |
+## Cars / Bikes (ServerStorage.ImportedAssets.Cars) — ชุดยุค ~1985-2005 (อัปเดต step 8-10)
+ทุกโมเดล normalize แล้ว: ยาวตามแกน Z, **หน้ารถ = -Z**, Pivot = กึ่งกลางใต้ล้อ (WorldPivot, ไม่มี PrimaryPart), ไม่มี Script/Sound/Decal/Weld, ตัด Decal ทั้งหมด (กันโลโก้)
+Attribute `Kind` = kei | sedan | van | bike ใช้สุ่มสัดส่วน (kei 40 / เก๋ง 20 / ตู้-กระบะ 15 / มอเตอร์ไซค์ 15 / แท็กซี่ 10)
+บิ๊กไบค์/สกูตเตอร์มี `RiderY` `RiderZ` `RiderPose` (ตำแหน่งสะโพกคนขี่ใน pivot space, ท่า bike/scooter)
+| ชื่อ | Kind | Asset ID | ชื่อต้นฉบับ | ผู้สร้าง | ชิ้นส่วน (BasePart) | ความยาว (studs) |
+|---|---|---|---|---|---|---|
+| Car_MeshSedan | sedan | 9470295166 | Moving Sedan mesh car | PEPPAROMPE | 1 | 9.0 |
+| Car_HijetKeiVan | van | 88771625973855 | 1981 Daihatsu Hijet Tianjin TJ 110 Van | FerreroMexx2 | 15 | 8.9 |
+| Car_AE86 | sedan | 1777924328 | Toyota Corolla Ae86 Trueno | Hoonic0rn | 47 | 9.0 |
+| Car_RX7 | sedan | 2535365320 | 1988 Mazda RX7 FC3S | trafficracer | 62 | 9.0 |
+| Car_CivicEG | kei (compact) | 8320827818 | Honda Civic EG Hatch | Tyyjz_91 | 57 | 9.0 |
+| Car_WagonR | kei | 3121285452 | 1998 Suzuki Wagon R CV51S 4WD | 0toko | 83 | 9.0 |
+| Car_SambarTruck | van | 5353980325 | Subaru Sambar | J03EY | 88 | 7.8 |
+| Car_HijetTruck | van | 1086524580 | 2015 Daihatsu Hijet Truck SG | DaliuagTeam | 51 | 7.8 |
+| Bike_Moped (เดิม Car_Moped) | bike | 1322080939 | Moped (ทรง Vespa) | WiliFIN | 39 | 6.7 |
+| Bike_Dream305 | bike | 1935238850 | 1969 Honda Dream 305 | Ujiyasu | 95 | 7.8 |
+| Bike_CafeRacer | bike | 121605474431308 | Old Motorcycle (Cafe Racer) | HeroELStreamg171238 | 23 | 7.8 |
+| Bike_Peugeot103 | bike | 13791700343 | 1980 Peugeot 103 | "No. 05070336 BEIJING ICP" | 40 | 6.4 |
+| Bike_Underbone | bike | 88489555740035 | Moto (ทรง underbone/Honda Wave) | bvrchaff_flare | 56 | 7.1 |
 
-ได้ 6 คัน (เป้า 6-10) — ไม่มีรถบรรทุกเล็กและสกูตเตอร์ตัวที่ 2 ที่ผ่านเกณฑ์ (รุ่นอื่นที่ลองมี 75-984 ชิ้น + สคริปต์ 14-140 ตัว จึงตัดทิ้ง)
-ทิศหน้าของ Car_Moped ดูจากภาพ preview ไม่ชัดเท่ารถอื่น
+ถอดออกจากพูลเพราะไม่เข้ายุค/ไม่ใช่รถญี่ปุ่น: Car_SovietSedan (Volga), Car_PolyVan (Ford Transit), Car_GreenSedan (เก๋งเขียวยุคใหม่)
+แท็กซี่: ไม่มีโมเดลแท็กซี่ที่จำนวนชิ้นผ่านเกณฑ์ (Crown Comfort ที่เจอมี 371 ชิ้น) จึงใช้ **ป้ายไฟหลังคา (TaxiLamp) บนรถเก๋ง** 10% ของรถที่สุ่ม — ยังไม่ได้ทาสีแท็กซี่
+ที่ลองแล้วตัดทิ้ง (ชิ้นเกิน/สคริปต์เยอะ/ไม่เข้ายุค): Kei Truck 17248998748 (241 ชิ้น), Honda Acty 12374570495 (113), Nissan R32 1970532634 (113, mesh 109), Ninja 650 477270814 (192), Fireblade 11126200354 (162), Crown taxi 678438548 (371), Yellow cab 8627987379 (ทรง Camry ยุคใหม่)
+**ไม่ได้ตรวจ**: ความถูกต้องของรุ่น/ปีตามจริง (ดูจากภาพ preview เท่านั้น), ไม่ได้วัดจำนวนสามเหลี่ยม, ปี/ยี่ห้อมาจากชื่อผู้สร้าง; Bike_CafeRacer ทรงคล้าย Ural/Dnepr (ไม่ใช่ญี่ปุ่น), Peugeot 103 เป็นมอเตอร์ไซค์เล็กฝรั่งเศสยุค 80
+ทิศหน้า: ตรวจด้วยภาพจากด้าน -Z ทุกคัน (AE86/RX7/Hijet Truck/CafeRacer/Peugeot ถูกกลับ 180° ตอน import) และวัดใน Play: รถวิ่งหันหน้าตามทิศวิ่ง (dot = 1.00), รถจอดขนานแกนถนน, ล้อล่างสุดห่างพื้น ≤ 0.08 studs
+
+### คนขี่มอเตอร์ไซค์
+`RigFactory.CreateRider(parent, pose)` — R15 จาก HumanoidDescription แปลง AnimationConstraint เป็น Motor6D แล้วตั้งท่า (เอนตัวไปหน้า มือจับแฮนด์ เข่างอ) วางชิ้นส่วนเองด้วย forward kinematics, ไม่มี Humanoid/ไม่ชน/Massless, weld เข้ากับตัวรถ, ถูกลบพร้อมรถ
+เสื้อยืดหลายสี ผมปกติ (spiky/short/side/pompadour) หมวกกันน็อก 40% — มอเตอร์ไซค์รถวิ่ง 100% มีคนขี่, จอดข้างทาง 50%
 
 ## Trees (สูง 12 studs)
 | ชื่อ | Asset ID | ชื่อต้นฉบับ | ผู้สร้าง | ชิ้น (MeshPart) |
