@@ -19,6 +19,7 @@ local DUEL_TIMEOUT = 180
 local CHALLENGE_TIMEOUT = 15
 local CHALLENGE_COOLDOWN = 3
 local RETURN_DELAY = 5
+local COUNTDOWN = 10
 
 type Duel = { A: Player, B: Player, Inst: Arena.Inst, Over: boolean, StartAt: number }
 
@@ -75,7 +76,7 @@ local function endDuel(d: Duel, winner: Player?, loser: Player?, note: string?)
 		then `{winner.DisplayName} ชนะดวล {loser.DisplayName}! +{WIN_POINTS} แต้มแรงก์`
 		else (note or "ดวลจบแบบเสมอ ไม่เปลี่ยนแต้ม")
 	toast(text)
-	Arena.SetScore(d.Inst, `<b>{text}</b>`)
+	Arena.SetBoard(d.Inst, { State = "over", Note = text })
 	task.delay(RETURN_DELAY, function()
 		Arena.Destroy(d.Inst)
 	end)
@@ -85,7 +86,7 @@ local function start(a: Player, b: Player)
 	if not inLobby(a) or not inLobby(b) then
 		return
 	end
-	local inst = Arena.Create("Duel", `ดวล {a.DisplayName} vs {b.DisplayName}`)
+	local inst = Arena.Create("Duel", `ดวล {a.DisplayName} vs {b.DisplayName}`, nil, 2)
 	if not inst then
 		worldRemote:FireClient(a, "Toast", "สนามเต็มแล้ว ลองใหม่ภายหลัง")
 		worldRemote:FireClient(b, "Toast", "สนามเต็มแล้ว ลองใหม่ภายหลัง")
@@ -95,19 +96,24 @@ local function start(a: Player, b: Player)
 	duelOf[a], duelOf[b] = d, d
 	a:SetAttribute("InDuel", true)
 	b:SetAttribute("InDuel", true)
+	Arena.SetBoard(inst, { State = "wait", Title = "ดวล 1v1", NameA = a.DisplayName, NameB = b.DisplayName, Mid = "VS", Note = "" })
 	inst.OnLeave = function(pl: Player)
 		local other = if pl == a then b else a
+		if inst.Locked then -- ออกระหว่างนับถอยหลัง = ยกเลิก ไม่ให้แต้ม
+			endDuel(d, nil, nil, `ยกเลิกดวล: {pl.DisplayName} ออกระหว่างนับถอยหลัง`)
+			return
+		end
 		endDuel(d, other, pl, `{pl.DisplayName} ยอมแพ้ {other.DisplayName} ชนะดวล`)
 	end
 	task.spawn(function()
 		local okA, okB = false, false
 		local pending = 2
 		task.spawn(function()
-			okA = Arena.Enter(inst, a, "SpawnA2", "fighter")
+			okA = Arena.Enter(inst, a, "SpawnA4", "fighter")
 			pending -= 1
 		end)
 		task.spawn(function()
-			okB = Arena.Enter(inst, b, "SpawnB2", "fighter")
+			okB = Arena.Enter(inst, b, "SpawnB4", "fighter")
 			pending -= 1
 		end)
 		local t0 = os.clock()
@@ -130,14 +136,26 @@ local function start(a: Player, b: Player)
 				end)
 			end
 		end
+		-- นับถอยหลัง 10 วิ (ล็อกทั้งคู่) ถ้ามีใครออก/ตายระหว่างนับ = ยกเลิกคืนทั้งคู่กลับลาน
+		if not Arena.RunCountdown(inst, COUNTDOWN, function()
+			return d.Over
+		end) then
+			if not d.Over then
+				endDuel(d, nil, nil, "ยกเลิกดวลระหว่างนับถอยหลัง")
+			end
+			return
+		end
+		if d.Over then
+			return
+		end
+		d.StartAt = os.clock()
+		Arena.SetBoard(inst, { State = "live", Ends = workspace:GetServerTimeNow() + DUEL_TIMEOUT })
 		while not d.Over do
-			local left = DUEL_TIMEOUT - (os.clock() - d.StartAt)
-			if left <= 0 then
+			if os.clock() - d.StartAt >= DUEL_TIMEOUT then
 				endDuel(d, nil, nil)
 				break
 			end
-			Arena.SetScore(inst, `<b>ดวล 1v1</b>\n{a.DisplayName}  VS  {b.DisplayName}\nเหลือเวลา {math.floor(left / 60)}:{string.format("%02d", math.floor(left) % 60)}`)
-			task.wait(1)
+			task.wait(0.5)
 		end
 	end)
 end
@@ -197,7 +215,11 @@ Players.PlayerRemoving:Connect(function(player)
 	local d = duelOf[player]
 	if d then
 		local other = if player == d.A then d.B else d.A
-		endDuel(d, other, player, `{player.DisplayName} หลุดจากเกม {other.DisplayName} ชนะดวล`)
+		if d.Inst.Locked then
+			endDuel(d, nil, nil, `ยกเลิกดวล: {player.DisplayName} หลุดจากเกมระหว่างนับถอยหลัง`)
+		else
+			endDuel(d, other, player, `{player.DisplayName} หลุดจากเกม {other.DisplayName} ชนะดวล`)
+		end
 	end
 	duelOf[player] = nil
 end)

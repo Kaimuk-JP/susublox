@@ -1,5 +1,5 @@
 --!strict
--- สงครามแก๊ง 4v4: ล้มหัวหน้าฝ่ายตรงข้ามให้ได้ หมดเวลาตัดสินด้วยจำนวนการล้ม
+-- สงครามแก๊ง NvN (4/5/10/15 ต่อฝั่ง): ล้มหัวหน้าฝ่ายตรงข้ามให้ได้ หมดเวลาตัดสินด้วยจำนวนการล้ม
 -- แมตช์ใช้สนาม instance แยก (ArenaManager) ธีมสุ่ม จบแล้วทุกคนถูกส่งกลับลานหน้าสนามประลอง
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,7 +14,8 @@ remote.Name = "WarRemote"
 remote.Parent = ReplicatedStorage
 local worldRemote = ReplicatedStorage:WaitForChild("WorldRemote") :: RemoteEvent
 
-local TEAM_SIZE = 4
+local SIZES = { 4, 5, 10, 15 } -- ขนาดทีมที่เลือกได้ (0 = อัตโนมัติ: เริ่มเมื่อสองแก๊งมีคนรอครบขนาดใดขนาดหนึ่ง เลือกใหญ่สุด)
+local COUNTDOWN = 10
 local MATCH_TIME = 300
 local RETURN_DELAY = 6
 local WIN_YEN, WIN_FAME, WIN_FUNDS, WIN_GANG_WINS = 100, 30, 200, 5
@@ -24,12 +25,14 @@ type Match = {
 	Leaders: { [string]: Player },
 	Kills: { [string]: number },
 	Names: { string },
+	Size: number,
 	Inst: Arena.Inst,
 	StartAt: number,
 	Over: boolean,
 }
 
 local queue: { [string]: { Player } } = {}
+local sizeOf: { [Player]: number } = {} -- ขนาดที่ผู้เล่นเลือกตอนเข้าคิว
 local matchOf: { [Player]: Match } = {}
 local forming = false
 
@@ -65,13 +68,24 @@ local function toastAll(text: string)
 	worldRemote:FireAllClients("Toast", text)
 end
 
-local function scoreText(m: Match): string
-	local a, b = m.Names[1], m.Names[2]
-	local left = math.max(0, MATCH_TIME - (os.clock() - m.StartAt))
-	return `<b>สงครามแก๊ง 4v4</b>\n<font color="#FF8A80">{a}</font> {m.Kills[a]} : {m.Kills[b]} <font color="#82B1FF">{b}</font>\nเหลือเวลา {math.floor(left / 60)}:{string.format("%02d", math.floor(left) % 60)}`
+local function leaderName(m: Match, gang: string): string
+	local l = m.Leaders[gang]
+	return if l then l.DisplayName else ""
 end
 
-local function finish(m: Match, winner: string?)
+local function updateBoard(m: Match)
+	local a, b = m.Names[1], m.Names[2]
+	Arena.SetBoard(m.Inst, {
+		Title = `สงครามแก๊ง {m.Size}v{m.Size}`,
+		NameA = a,
+		NameB = b,
+		Mid = `{m.Kills[a]} : {m.Kills[b]}`,
+		LeadA = `หัวหน้า {leaderName(m, a)}`,
+		LeadB = `หัวหน้า {leaderName(m, b)}`,
+	})
+end
+
+local function finish(m: Match, winner: string?, note: string?)
 	if m.Over then
 		return
 	end
@@ -95,9 +109,10 @@ local function finish(m: Match, winner: string?)
 	if winner then
 		task.spawn(GangStore.AddWins, winner, WIN_GANG_WINS, WIN_FUNDS)
 	end
-	local text = if winner then `แก๊ง {winner} ชนะสงครามแก๊ง! (+¥{WIN_YEN} +{WIN_FAME} ชื่อเสียงให้ผู้ชนะ)` else "สงครามแก๊งจบแบบเสมอ"
+	local text = if winner then `แก๊ง {winner} ชนะสงครามแก๊ง! (+¥{WIN_YEN} +{WIN_FAME} ชื่อเสียงให้ผู้ชนะ)` else (note or "สงครามแก๊งจบแบบเสมอ")
 	toastAll(text)
-	Arena.SetScore(m.Inst, `<b>{text}</b>`)
+	updateBoard(m)
+	Arena.SetBoard(m.Inst, { State = "over", Note = if winner then `ผู้ชนะ {winner}` else (note or "เสมอ") })
 	remote:FireAllClients("Result", winner or "")
 	task.delay(RETURN_DELAY, function()
 		Arena.Destroy(m.Inst)
@@ -120,7 +135,11 @@ local function memberGone(m: Match, pl: Player)
 	end
 	for gang, leader in m.Leaders do
 		if leader == pl then
-			leaderDown(m, gang)
+			if m.Inst.Locked then
+				finish(m, nil, "ยกเลิกสงครามแก๊ง: หัวหน้าทีมออกระหว่างนับถอยหลัง")
+			else
+				leaderDown(m, gang)
+			end
 			return
 		end
 	end
@@ -134,7 +153,11 @@ local function memberGone(m: Match, pl: Player)
 				end
 			end
 			if not anyLeft then
-				leaderDown(m, gang)
+				if m.Inst.Locked then
+					finish(m, nil, "ยกเลิกสงครามแก๊ง: ทีมไม่เหลือผู้เล่นระหว่างนับถอยหลัง")
+				else
+					leaderDown(m, gang)
+				end
 			end
 		end
 	end
@@ -145,22 +168,23 @@ local function valid(pl: Player): boolean
 	return pl.Parent == Players and hum ~= nil and hum.Health > 0 and Arena.Of(pl) == nil and matchOf[pl] == nil
 end
 
-local function start(a: string, b: string)
+local function start(a: string, b: string, size: number)
 	-- ตรวจสมาชิกที่เข้าคิวไว้ว่ายังพร้อม (ไม่ตาย ไม่ติดสนามอื่น) ก่อนดึงเข้าแมตช์
 	local picked: { [string]: { Player } } = {}
 	for _, gang in { a, b } do
 		local good: { Player } = {}
 		for _, pl in queue[gang] do
-			if valid(pl) and gangOf(pl) == gang and #good < TEAM_SIZE then
+			local want = sizeOf[pl] or 0
+			if valid(pl) and gangOf(pl) == gang and #good < size and (want == size or want == 0) then
 				table.insert(good, pl)
 			end
 		end
-		if #good < TEAM_SIZE then
+		if #good < size then
 			return
 		end
 		picked[gang] = good
 	end
-	local inst = Arena.Create("War", `สงครามแก๊ง {a} vs {b}`)
+	local inst = Arena.Create("War", `สงครามแก๊ง {size}v{size} · {a} vs {b}`, nil, size * 2)
 	if not inst then
 		return
 	end
@@ -174,6 +198,7 @@ local function start(a: string, b: string)
 		Leaders = {},
 		Kills = { [a] = 0, [b] = 0 },
 		Names = { a, b },
+		Size = size,
 		Inst = inst,
 		StartAt = os.clock(),
 		Over = false,
@@ -188,6 +213,7 @@ local function start(a: string, b: string)
 			pl:SetAttribute("InWar", true)
 		end
 	end
+	Arena.SetBoard(inst, { State = "wait", Title = `สงครามแก๊ง {size}v{size}`, NameA = a, NameB = b, Mid = "0 : 0", LeadA = "", LeadB = "", Note = "" })
 	task.spawn(function()
 		local pending = 0
 		for side, gang in { a, b } do
@@ -217,7 +243,7 @@ local function start(a: string, b: string)
 		end
 		for gang, members in m.Teams do
 			if #members == 0 then
-				finish(m, nil)
+				finish(m, nil, "สงครามแก๊งถูกยกเลิก (ผู้เล่นเข้าสนามไม่ครบ)")
 				return
 			end
 			local leader = members[1]
@@ -232,40 +258,69 @@ local function start(a: string, b: string)
 				end)
 			end
 		end
+		updateBoard(m)
+		toastAll(`สงครามแก๊ง {size}v{size}: {a} VS {b} — เริ่มใน {COUNTDOWN} วินาที`)
+		-- นับถอยหลัง 10 วิ (ล็อกการเดิน/โจมตี); คนออกระหว่างนับ = ตัดออกจากทีม ยกเลิกเมื่อหัวหน้าออกหรือทีมว่าง
+		local counted = Arena.RunCountdown(inst, COUNTDOWN, function()
+			return m.Over
+		end, true)
+		if not counted then
+			if not m.Over then
+				finish(m, nil, "สงครามแก๊งถูกยกเลิกระหว่างนับถอยหลัง")
+			end
+			return
+		end
+		if m.Over then
+			return
+		end
 		m.StartAt = os.clock()
+		Arena.SetBoard(inst, { State = "live", Ends = workspace:GetServerTimeNow() + MATCH_TIME, Note = "" })
 		remote:FireAllClients("Start", a, b)
 		toastAll(`สงครามแก๊งเริ่ม! {a} VS {b}`)
 		while not m.Over do
-			local left = MATCH_TIME - (os.clock() - m.StartAt)
-			if left <= 0 then
+			if os.clock() - m.StartAt >= MATCH_TIME then
 				local ka, kb = m.Kills[a], m.Kills[b]
 				finish(m, if ka > kb then a elseif kb > ka then b else nil)
 				break
 			end
-			Arena.SetScore(inst, scoreText(m))
-			task.wait(1)
+			task.wait(0.5)
 		end
 	end)
 end
 
+-- เลือกคู่แก๊งและขนาดทีม: ใหญ่สุดที่สองแก๊งมีคนรอครบ (ผู้เล่นที่เลือกขนาดตายตัวนับเฉพาะขนาดนั้น)
 local function tryMatch()
 	if forming then
 		return
 	end
-	local ready: { string } = {}
-	for gang, list in queue do
-		if #list >= TEAM_SIZE then
-			table.insert(ready, gang)
+	local function count(gang: string, size: number): number
+		local n = 0
+		for _, pl in queue[gang] or {} do
+			local want = sizeOf[pl] or 0
+			if want == size or want == 0 then
+				n += 1
+			end
 		end
+		return n
 	end
-	if #ready >= 2 then
-		forming = true
-		pcall(start, ready[1], ready[2])
-		forming = false
+	for k = #SIZES, 1, -1 do
+		local size = SIZES[k]
+		local ready: { string } = {}
+		for gang in queue do
+			if count(gang, size) >= size then
+				table.insert(ready, gang)
+			end
+		end
+		if #ready >= 2 then
+			forming = true
+			pcall(start, ready[1], ready[2], size)
+			forming = false
+			return
+		end
 	end
 end
 
-remote.OnServerEvent:Connect(function(player: Player, action: unknown)
+remote.OnServerEvent:Connect(function(player: Player, action: unknown, size: unknown)
 	local gang = gangOf(player)
 	if not gang or matchOf[player] or Arena.Of(player) then
 		return
@@ -273,6 +328,8 @@ remote.OnServerEvent:Connect(function(player: Player, action: unknown)
 	if action == "Queue" then
 		removeFromQueue(player)
 		queue[gang] = queue[gang] or {}
+		local want = if typeof(size) == "number" and table.find(SIZES, size) then size else 0
+		sizeOf[player] = want
 		table.insert(queue[gang], player)
 		player:SetAttribute("WarQueued", true)
 		publishQueue()
@@ -291,6 +348,7 @@ Combat.OnKill(function(killer, victim)
 	local kg = killer.Character:GetAttribute("Team") :: string?
 	if kg and m.Kills[kg] then
 		m.Kills[kg] += 1
+		updateBoard(m)
 	end
 	for gang, leader in m.Leaders do
 		if leader == vp then
@@ -302,6 +360,7 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	removeFromQueue(player)
+	sizeOf[player] = nil
 	local m = matchOf[player]
 	matchOf[player] = nil
 	if m then

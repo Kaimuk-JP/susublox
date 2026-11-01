@@ -151,6 +151,10 @@ function Combat.Hit(attacker: CombatState.CombatState, victim: CombatState.Comba
 	if Combat.InSafeZone(vroot.Position) or Combat.InSafeZone(aroot.Position) then
 		return
 	end
+	-- ช่วงนับถอยหลังก่อนแมตช์: ไม่มีดาเมจเข้า/ออก
+	if attacker.Character:GetAttribute("ArenaLocked") or victim.Character:GetAttribute("ArenaLocked") then
+		return
+	end
 	-- ผู้ชมในสนามประลองตีใครไม่ได้/ถูกตีไม่ได้ และผู้เล่นตีกันได้เฉพาะในสนามประลองเดียวกันที่แมตช์กำลังดำเนิน
 	if attacker.Character:GetAttribute("ArenaSpec") or victim.Character:GetAttribute("ArenaSpec") then
 		return

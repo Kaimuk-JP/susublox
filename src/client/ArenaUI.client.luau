@@ -139,6 +139,8 @@ local function refresh()
 end
 
 local views: { [string]: () -> () } = {}
+local WAR_SIZES = { 0, 4, 5, 10, 15 } -- 0 = อัตโนมัติ
+local warSize = 0
 
 views.home = function()
 	title.Text = "สนามประลอง · ผู้ตัดสิน"
@@ -149,7 +151,7 @@ views.home = function()
 	row("⚔ ท้าดวล 1v1\nท้าผู้เล่นในลาน ชนะได้แต้มแรงก์", "เลือก", function()
 		go("duel")
 	end, true)
-	row("🏴 สงครามแก๊ง 4v4\nเข้าคิวกับเพื่อนในแก๊ง ล้มหัวหน้าอีกฝั่ง", "เลือก", function()
+	row("🏴 สงครามแก๊ง 4v4 – 15v15\nเข้าคิวกับเพื่อนในแก๊ง ล้มหัวหน้าอีกฝั่ง", "เลือก", function()
 		go("war")
 	end, true)
 	row("🥋 ศึกฝึกซ้อมกับบอท (เล่นคนเดียว)\n5 รอบ รอบละ 3 คน ยากขึ้นเรื่อยๆ ได้ EXP/เงิน/ชื่อเสียง", "เริ่ม", function()
@@ -179,7 +181,7 @@ views.duel = function()
 end
 
 views.war = function()
-	title.Text = "สงครามแก๊ง 4v4"
+	title.Text = "สงครามแก๊ง"
 	back.Visible = true
 	local gang = (player:GetAttribute("Gang") :: string?) or ""
 	if gang == "" then
@@ -187,12 +189,19 @@ views.war = function()
 		return
 	end
 	local queued = player:GetAttribute("WarQueued") == true
-	row(`แก๊งของคุณ: {gang}\nคิวตอนนี้: {if state then state.QueueGangs else 0} แก๊ง / {if state then state.QueuePlayers else 0} คน (ต้อง 4 คนต่อแก๊ง และ 2 แก๊ง)`, nil, nil, true)
+	row(`แก๊งของคุณ: {gang}\nคิวตอนนี้: {if state then state.QueueGangs else 0} แก๊ง / {if state then state.QueuePlayers else 0} คน  (ต้องมีคนรอครบขนาดทีมในแต่ละแก๊ง และ 2 แก๊ง)`, nil, nil, true)
 	if player:GetAttribute("InWar") then
 		row("คุณกำลังอยู่ในสงคราม!")
 	else
+		if not queued then
+			row(`ขนาดทีม: {if warSize == 0 then "อัตโนมัติ (ใหญ่สุดที่คนรอครบ)" else `{warSize}v{warSize}`}`, "เปลี่ยน", function()
+				local at = table.find(WAR_SIZES, warSize) or 1
+				warSize = WAR_SIZES[at % #WAR_SIZES + 1]
+				render()
+			end, true)
+		end
 		row(if queued then "คุณอยู่ในคิวแล้ว รอแมตช์..." else "เข้าคิวเพื่อลงสนาม", if queued then "ออกคิว" else "เข้าคิว", function()
-			warRemote:FireServer(if queued then "Unqueue" else "Queue")
+			warRemote:FireServer(if queued then "Unqueue" else "Queue", warSize)
 			task.delay(0.5, refresh)
 			task.delay(0.7, render)
 		end)

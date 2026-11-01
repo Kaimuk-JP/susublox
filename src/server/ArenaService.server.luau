@@ -21,6 +21,7 @@ local changed = ServerStorage:WaitForChild("ProfileChanged") :: BindableEvent
 local MAX_WAVES = 5
 local BOTS_PER_WAVE = 3
 local WAVE_TIMEOUT = 100
+local COUNTDOWN = 10
 local TRIAL_COOLDOWN = 20
 local KIOSK_REACH = 40 -- ต้องอยู่ในลานหน้าสนามและห่างคีออสก์ไม่เกินนี้ จึงขอเมนู/เริ่มได้
 
@@ -144,16 +145,46 @@ local function botSpec(wave: number, i: number): (string, number)
 	return if i == 2 then "Brute" else "Grunt", if i == 2 then 1.6 else 1.2
 end
 
+-- จุดเกิดบอทกระจายทั่วพื้น (จาก Bot1..40) ห่างจุดเกิดผู้เล่นอย่างน้อยครึ่งรัศมี
+local function botSpots(inst: Arena.Inst, count: number): { Vector3 }
+	local from = Arena.MarkerPos(inst, "SpawnA4") or inst.Origin.Position
+	local far: { Vector3 } = {}
+	local near: { Vector3 } = {}
+	for _, mk in inst.Markers:GetChildren() do
+		if mk.Name:sub(1, 3) == "Bot" then
+			local pos = (mk :: BasePart).Position
+			table.insert(if (pos - from).Magnitude >= inst.Radius * 0.5 then far else near, pos)
+		end
+	end
+	for _, list in { far, near } do
+		for i = #list, 2, -1 do
+			local j = math.random(i)
+			list[i], list[j] = list[j], list[i]
+		end
+	end
+	local out: { Vector3 } = {}
+	for _, list in { far, near } do
+		for _, pos in list do
+			if #out < count then
+				table.insert(out, pos)
+			end
+		end
+	end
+	return out
+end
+
 local function spawnBots(t: Trial, wave: number, botLevel: number): { Model }
 	local npcs = workspace:FindFirstChild("Npcs")
 	local bots: { Model } = {}
 	if not npcs then
 		return bots
 	end
-	for i = 1, BOTS_PER_WAVE do
-		local pos = Arena.MarkerPos(t.Inst, "SpawnB" .. (i + 0))
+	local perWave = BOTS_PER_WAVE * math.max(1, Arena.FighterCount(t.Inst))
+	local spots = botSpots(t.Inst, perWave)
+	for i = 1, #spots do
+		local pos = spots[i]
 		if pos then
-			local kind, hp = botSpec(wave, i)
+			local kind, hp = botSpec(wave, (i - 1) % BOTS_PER_WAVE + 1)
 			local rig = RigFactory.Create("นักสู้ฝึกซ้อม", pos + Vector3.new(0, 4, 0), npcs, {
 				NpcLevel = botLevel,
 				NpcType = kind,
@@ -192,12 +223,19 @@ local function runTrial(t: Trial)
 			endTrial(t, "แพ้")
 		end)
 	end
+	Arena.SetBoard(inst, { State = "wait", Title = "ศึกฝึกซ้อมกับบอท", NameA = player.DisplayName, NameB = "บอทนักสู้", Mid = `0/{MAX_WAVES}`, LeadA = "", LeadB = "", Note = "" })
+	-- นับถอยหลัง 10 วิก่อนบอทตัวแรก (ล็อกผู้เล่น); ออก/ตายระหว่างนับ = ยกเลิก ส่งกลับลาน
+	if not Arena.RunCountdown(inst, COUNTDOWN, function()
+		return t.Done
+	end) then
+		endTrial(t, "ยกเลิกก่อนเริ่ม")
+	end
 	for wave = 1, MAX_WAVES do
 		if t.Done then
 			break
 		end
 		local botLevel = math.clamp(math.floor(plLevel * 0.1) + wave, 1, 15)
-		Arena.SetScore(inst, `<b>ศึกฝึกซ้อม</b>\nรอบ {wave}/{MAX_WAVES}  ·  เตรียมตัว...`)
+		Arena.SetBoard(inst, { State = "wait", Mid = `{wave}/{MAX_WAVES}`, Note = "เตรียมตัว..." })
 		toast(player, `รอบ {wave}/{MAX_WAVES} กำลังจะเริ่ม (บอทเลเวล {botLevel})`)
 		for _ = 1, 6 do
 			if t.Done then
@@ -210,6 +248,7 @@ local function runTrial(t: Trial)
 		end
 		local bots = spawnBots(t, wave, botLevel)
 		local t0 = os.clock()
+		Arena.SetBoard(inst, { State = "live", Ends = workspace:GetServerTimeNow() + WAVE_TIMEOUT })
 		while not t.Done do
 			local alive = 0
 			for _, b in bots do
@@ -218,7 +257,7 @@ local function runTrial(t: Trial)
 					alive += 1
 				end
 			end
-			Arena.SetScore(inst, `<b>ศึกฝึกซ้อม</b>\nรอบ {wave}/{MAX_WAVES}  ·  เหลือ {alive} ตัว  ·  {math.max(0, WAVE_TIMEOUT - math.floor(os.clock() - t0))} วิ`)
+			Arena.SetBoard(inst, { Note = `เหลือบอท {alive} ตัว` })
 			if alive == 0 then
 				break
 			end
@@ -253,7 +292,7 @@ local function runTrial(t: Trial)
 		end
 	end
 	local summary = if t.Reason == "ชนะครบ" then "เคลียร์ศึกฝึกซ้อมครบทุกรอบ!" else `จบศึกฝึกซ้อม ({t.Reason})`
-	Arena.SetScore(inst, `<b>{summary}</b>\nผ่าน {t.Cleared}/{MAX_WAVES} รอบ`)
+	Arena.SetBoard(inst, { State = "over", Mid = `{t.Cleared}/{MAX_WAVES}`, Note = summary })
 	toast(player, `{summary} ผ่าน {t.Cleared}/{MAX_WAVES} รอบ รวม +{t.Exp} EXP +¥{t.Yen} +{t.Fame} ชื่อเสียง`)
 	Arena.EndFight(inst)
 	task.wait(3.5)
@@ -273,7 +312,7 @@ local function startTrial(player: Player)
 		toast(player, "พักสักครู่ก่อนเริ่มศึกฝึกซ้อมอีกครั้ง")
 		return
 	end
-	local inst = Arena.Create("Trial", `ศึกฝึกซ้อม · {player.DisplayName}`)
+	local inst = Arena.Create("Trial", `ศึกฝึกซ้อม · {player.DisplayName}`, nil, 1)
 	if not inst then
 		toast(player, "สนามเต็มแล้ว ลองใหม่ภายหลัง")
 		return
@@ -284,7 +323,7 @@ local function startTrial(player: Player)
 		endTrial(t, "ออกจากสนาม")
 	end
 	task.spawn(function()
-		if not Arena.Enter(inst, player, "SpawnA2", "fighter") then
+		if not Arena.Enter(inst, player, "SpawnA4", "fighter") then
 			trials[player] = nil
 			Arena.Destroy(inst)
 			return

@@ -140,7 +140,7 @@ local function column(parent: Instance, cf: CFrame, h: number, r: number, color:
 	mk(parent, "ColAbacus", Vector3.new(r * 2.9, 0.6, r * 2.9), cf * CFrame.new(0, h - 0.45, 0), c, M.Marble)
 end
 
-local function brazier(parent: Instance, pos: Vector3, scale: number, withLight: boolean)
+local function brazier(parent: Instance, pos: Vector3, scale: number, withLight: boolean): BasePart
 	cyl(parent, "BrazierFoot", 0.9 * scale, 0.5 * scale, CFrame.new(pos + Vector3.new(0, 0.25 * scale, 0)), BRONZE, M.Metal)
 	cyl(parent, "BrazierStem", 0.35 * scale, 3 * scale, CFrame.new(pos + Vector3.new(0, 2 * scale, 0)), BRONZE, M.Metal)
 	local bowl = cyl(parent, "BrazierBowl", 1.7 * scale, 0.9 * scale, CFrame.new(pos + Vector3.new(0, 3.7 * scale, 0)), BRONZE, M.Metal)
@@ -159,6 +159,7 @@ local function brazier(parent: Instance, pos: Vector3, scale: number, withLight:
 		s.Parent = flame
 		light(flame, hex("FFA24E"), 42, 2.2)
 	end
+	return flame
 end
 
 local function statue(parent: Instance, cf: CFrame, nike: boolean)
@@ -434,11 +435,27 @@ function Kit.BuildExterior(parent: Instance): Model
 	return m
 end
 
----------------------------------------------------------------- ภายใน: แม่แบบธีม
-local function newTemplate(theme: string): (Model, Folder)
+---------------------------------------------------------------- ภายใน: แม่แบบธีมแบบปรับขนาด
+-- ทุกธีมสร้างจากรัศมีพื้นสนาม R (สตั๊ด): จำนวนชั้นอัฒจันทร์/เสา/ไฟ/ธง/รูปปั้นเพิ่มตาม R
+-- ใช้ส่วนวงแหวนเรียงต่อเนื่อง (ไม่ใช่ที่นั่งทีละตัว) เพื่อคุมจำนวน part ให้ <= ~4,000 ที่ R=130
+Kit.MIN_R, Kit.MAX_R = 40, 130
+
+-- รัศมีพื้นสนามจากจำนวนผู้เข้าแข่ง (ปัดเป็นช่วงละ 10 เพื่อ cache แม่แบบ)
+function Kit.RadiusFor(players: number): number
+	local r = math.clamp(28 + 3.2 * players, Kit.MIN_R, Kit.MAX_R)
+	return math.clamp(math.round(r / 10) * 10, Kit.MIN_R, Kit.MAX_R)
+end
+
+local function nseg(r: number, spacing: number, minN: number): number
+	return math.max(minN, math.ceil(TAU * r / spacing))
+end
+
+local function newTemplate(theme: string, R: number): (Model, Folder)
 	local m = Instance.new("Model")
-	m.Name = "ArenaTemplate_" .. theme
+	m.Name = `ArenaTemplate_{theme}_{R}`
 	m:SetAttribute("Theme", theme)
+	m:SetAttribute("FloorRadius", R)
+	m:SetAttribute("Radius", R + 2) -- ขอบเขตนักสู้
 	local origin = mk(m, "Origin", Vector3.new(1, 1, 1), CFrame.new(0, -0.5, 0), DARK, M.SmoothPlastic, false)
 	origin.Transparency = 1
 	m.PrimaryPart = origin
@@ -454,46 +471,82 @@ local function marker(markers: Folder, name: string, pos: Vector3)
 	p.CastShadow = false
 end
 
-local function markSpawns(markers: Folder, spawnZ: number, seats: { Vector3 })
-	for i = 1, 4 do
-		marker(markers, "SpawnA" .. i, Vector3.new((i - 2.5) * 6, 0, -spawnZ))
-		marker(markers, "SpawnB" .. i, Vector3.new((i - 2.5) * 6, 0, spawnZ))
+-- จุดเกิด: ทีม A ฝั่ง -Z ทีม B ฝั่ง +Z เรียงแถว 8 คอลัมน์ x 2 แถว (สูงสุด 16 ต่อทีม), Bot1..40 กระจายทั่วพื้น, Spec = ที่นั่งชม
+local function markSpawns(markers: Folder, R: number, seats: { Vector3 }, outer: number)
+	local z0 = R * 0.5
+	for i = 1, 16 do
+		local col, row = (i - 1) % 8, (i - 1) // 8
+		local x = (col - 3.5) * 5
+		marker(markers, "SpawnA" .. i, Vector3.new(x, 0, -(z0 + row * 5)))
+		marker(markers, "SpawnB" .. i, Vector3.new(-x, 0, z0 + row * 5))
+	end
+	for i = 1, 40 do
+		local rr = math.sqrt((i - 0.5) / 40) * R * 0.78
+		marker(markers, "Bot" .. i, Vector3.new(math.cos(i * 2.39996) * rr, 0, math.sin(i * 2.39996) * rr))
 	end
 	for i, s in seats do
 		marker(markers, "Spec" .. i, s)
 	end
+	local model = markers.Parent :: Model
+	model:SetAttribute("OuterRadius", outer)
 end
 
-local function scoreBoard(m: Model, a: number, R: number, y: number, w: number, h: number, bg: Color3, accent: Color3)
-	local pos = Vector3.new(math.cos(a) * R, y, math.sin(a) * R)
-	local p = mk(m, "Score", Vector3.new(w, h, 0.5), CFrame.lookAt(pos, Vector3.new(0, y, 0)), bg, M.SmoothPlastic, false)
+-- ป้ายคะแนน: ลอยเหนือที่นั่ง หันหน้าเข้าสนาม ตัวหนังสือแยกเป็นช่อง (ไคลเอนต์อัปเดตตาม Attribute ของโมเดล)
+-- y0..y1 = ช่วงความสูงของเสาที่ค้ำ (ขึ้นหรือห้อยก็ได้)
+local function scoreBoard(m: Model, a: number, Rb: number, yBottom: number, w: number, h: number, accent: Color3, y0: number, y1: number)
+	local y = yBottom + h / 2
+	local pos = Vector3.new(math.cos(a) * Rb, y, math.sin(a) * Rb)
+	local p = mk(m, "Score", Vector3.new(w, h, 0.6), CFrame.lookAt(pos, Vector3.new(0, y, 0)), hex("0B0C0F"), M.SmoothPlastic, false)
 	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Board"
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 30
+	gui.PixelsPerStud = math.min(30, 1400 / w)
 	gui.LightInfluence = 0
 	gui.Parent = p
-	local l = Instance.new("TextLabel")
-	l.Name = "Text"
-	l.Size = UDim2.fromScale(1, 1)
-	l.BackgroundTransparency = 1
-	l.RichText = true
-	l.Text = "..."
-	l.TextColor3 = hex("F2EEE0")
-	l.Font = Enum.Font.SourceSansBold
-	l.TextScaled = true
-	l.Parent = gui
-	-- กรอบนีออนบางๆ (ไม่ใช้แผ่นทึบ เพราะกล้องผู้เล่นอาจอยู่ด้านหลังป้าย)
-	for _, s in { -1, 1 } do
-		mk(m, "ScoreRim", Vector3.new(w + 0.8, 0.35, 0.5), p.CFrame * CFrame.new(0, s * (h / 2 + 0.2), 0), accent, M.Neon, false)
-		mk(m, "ScoreRim", Vector3.new(0.35, h + 0.8, 0.5), p.CFrame * CFrame.new(s * (w / 2 + 0.2), 0, 0), accent, M.Neon, false)
+	local function lab(name: string, x: number, yy: number, sx: number, sy: number, color: Color3, align: Enum.TextXAlignment?)
+		local l = Instance.new("TextLabel")
+		l.Name = name
+		l.Position = UDim2.fromScale(x, yy)
+		l.Size = UDim2.fromScale(sx, sy)
+		l.BackgroundTransparency = 1
+		l.Text = ""
+		l.TextColor3 = color
+		l.Font = Enum.Font.SourceSansBold
+		l.TextScaled = true
+		l.TextXAlignment = align or Enum.TextXAlignment.Center
+		l.TextStrokeTransparency = 0.6
+		l.Parent = gui
 	end
+	local WHITE = hex("F2EEE0")
+	lab("Title", 0.02, 0.02, 0.96, 0.2, accent)
+	lab("NameA", 0.02, 0.24, 0.36, 0.28, hex("FF8A80"))
+	lab("NameB", 0.62, 0.24, 0.36, 0.28, hex("82B1FF"))
+	lab("Mid", 0.38, 0.2, 0.24, 0.42, WHITE)
+	lab("LeadA", 0.02, 0.53, 0.36, 0.12, hex("E8B0AA"))
+	lab("LeadB", 0.62, 0.53, 0.36, 0.12, hex("A9C2EE"))
+	lab("Timer", 0.02, 0.68, 0.52, 0.3, hex("FFE066"))
+	lab("Note", 0.55, 0.68, 0.43, 0.3, WHITE)
+	-- กรอบนีออน + เสาค้ำสองต้น
+	for _, s in { -1, 1 } do
+		mk(m, "ScoreRim", Vector3.new(w + 0.8, 0.4, 0.7), p.CFrame * CFrame.new(0, s * (h / 2 + 0.2), 0), accent, M.Neon, false)
+		mk(m, "ScoreRim", Vector3.new(0.4, h + 0.8, 0.7), p.CFrame * CFrame.new(s * (w / 2 + 0.2), 0, 0), accent, M.Neon, false)
+		local lo, hi = math.min(y0, y1), math.max(y0, y1)
+		local pp = (CFrame.lookAt(pos, Vector3.new(0, y, 0)) * CFrame.new(s * w * 0.36, 0, 1.0)).Position
+		mk(m, "ScorePost", Vector3.new(1.4, hi - lo, 1.4), CFrame.new(pp.X, (lo + hi) / 2, pp.Z), hex("2B2E34"), M.Metal)
+	end
+end
+
+local function boardSize(R: number): (number, number)
+	local w = math.clamp(24 + (R - 30) * 0.3, 24, 54)
+	return w, w * 0.3
 end
 
 -- กำแพงกั้นล่องหนรอบสนามกันออก/กันกระโดดข้าม (ทั้งผู้เล่นและผู้ชม)
 local function barrier(m: Model, R: number)
-	ring(24, R, function(_, cf)
-		local p = mk(m, "Barrier", Vector3.new(chord(24, R), 70, 1), cf * CFrame.new(0, 35, 0), DARK, M.SmoothPlastic)
+	local n = nseg(R, 30, 24)
+	ring(n, R, function(_, cf)
+		local p = mk(m, "Barrier", Vector3.new(chord(n, R), 70, 1), cf * CFrame.new(0, 35, 0), DARK, M.SmoothPlastic)
 		p.Transparency = 1
 		p.CanQuery = false
 	end)
@@ -505,128 +558,178 @@ local function floorBand(m: Model, r1: number, r2: number, y: number, color: Col
 end
 
 -- แถบสีทีมเป็นครึ่งวงกลม (เรียงแผ่นบางตามระยะ z)
-local function halfDisc(m: Model, r: number, sign: number, color: Color3, mat: Enum.Material, y: number)
-	local z = 7.8 -- เริ่มนอกเหรียญกลาง
+local function halfDisc(m: Model, r: number, sign: number, color: Color3, mat: Enum.Material, y: number, sc: number)
+	local z = 7.8 * sc -- เริ่มนอกเหรียญกลาง
+	local step = 2.1 * sc
 	while z < r - 1 do
 		local len = 2 * math.sqrt(r * r - z * z)
-		mk(m, "TeamStrip", Vector3.new(len, 0.05, 1.5), CFrame.new(0, y + 0.07, sign * z), color, mat, false)
-		z += 2.1
+		mk(m, "TeamStrip", Vector3.new(len, 0.05, step * 0.72), CFrame.new(0, y + 0.07, sign * z), color, mat, false)
+		z += step
 	end
 end
 
+-- เสาไฟรอบขอบพื้น (ไฟกระจายทั่วสนามใหญ่)
+local function mast(m: Model, R: number, color: Color3, h: number)
+	local n = math.max(4, math.round(TAU * R / 45))
+	for i = 0, n - 1 do
+		local a = (i + 0.5) / n * TAU
+		local pos = Vector3.new(math.cos(a) * (R - 1.2), 0, math.sin(a) * (R - 1.2))
+		cyl(m, "MastPole", 0.3, h, CFrame.new(pos + Vector3.new(0, h / 2, 0)), DARK, M.Metal, false)
+		local lamp = ball(m, "MastLamp", Vector3.one * 1.6, CFrame.new(pos + Vector3.new(0, h + 0.4, 0)), color, M.Neon, false)
+		light(lamp, color, math.clamp(R * 0.6, 36, 60), 1.4)
+	end
+end
+
+local function finish(m: Model)
+	local n = 0
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") then
+			n += 1
+		end
+	end
+	m:SetAttribute("Parts", n)
+end
+
 ---------------- ธีม Greek Sand Colosseum
-local function buildGreek(): Model
-	local m, markers = newTemplate("GreekSand")
-	local R = 30
+local function buildGreek(R: number): Model
+	local m, markers = newTemplate("GreekSand", R)
+	local s = 1 + (R - 30) / 60
+	local sc = math.max(1, R / 60)
 	local SAND = hex("D6BC8C")
-	cyl(m, "Ground", 62, 4, CFrame.new(0, -3, 0), hex("8D7A58"), M.Sandstone)
+	local T = 5 + math.floor((R - 30) / 20)
+	local hTop = 5.6 + (T - 1) * 1.5
+	local platR = R + 4 + T * 3.4 + 3.5
+	local colR, wallR = platR - 2.5, platR + 3.5
+	local H = hTop + 18.5
+	cyl(m, "Ground", wallR + 5, 4, CFrame.new(0, -2.05, 0), hex("8D7A58"), M.Sandstone)
 	cyl(m, "Floor", R + 1.8, 2, CFrame.new(0, -1, 0), SAND, M.Sand)
-	-- ลวดลายพื้น: แถบหินอ่อน, บรอนซ์, ครึ่งสีทีม, เหรียญกลาง, พวงใบลอเรล, เมแอนเดอร์
-	floorBand(m, 29.6, 28.2, 0.03, MARBLE, SAND, M.Marble)
-	floorBand(m, 27.6, 27.3, 0.04, BRONZE, SAND, M.Metal)
-	halfDisc(m, 22, -1, hex("B0594B"), M.Concrete, 0.05)
-	halfDisc(m, 22, 1, hex("46709A"), M.Concrete, 0.05)
-	cyl(m, "Medallion", 6, 0.1, CFrame.new(0, 0.06, 0), MARBLE, M.Marble, false)
-	cyl(m, "MedallionRing", 5.2, 0.12, CFrame.new(0, 0.07, 0), BRONZE, M.Metal, false)
-	cyl(m, "MedallionIn", 4.8, 0.14, CFrame.new(0, 0.08, 0), hex("2C3340"), M.Slate, false)
-	cyl(m, "MedallionSun", 2.3, 0.16, CFrame.new(0, 0.09, 0), hex("D9B658"), M.Metal, false)
+	-- ลวดลายพื้น
+	floorBand(m, R - 0.4, R - 1.8, 0.03, MARBLE, SAND, M.Marble)
+	floorBand(m, R - 2.4, R - 2.7, 0.04, BRONZE, SAND, M.Metal)
+	halfDisc(m, R - 8 * s, -1, hex("B0594B"), M.Concrete, 0.05, sc)
+	halfDisc(m, R - 8 * s, 1, hex("46709A"), M.Concrete, 0.05, sc)
+	cyl(m, "Medallion", 6 * s, 0.1, CFrame.new(0, 0.06, 0), MARBLE, M.Marble, false)
+	cyl(m, "MedallionRing", 5.2 * s, 0.12, CFrame.new(0, 0.07, 0), BRONZE, M.Metal, false)
+	cyl(m, "MedallionIn", 4.8 * s, 0.14, CFrame.new(0, 0.08, 0), hex("2C3340"), M.Slate, false)
+	cyl(m, "MedallionSun", 2.3 * s, 0.16, CFrame.new(0, 0.09, 0), hex("D9B658"), M.Metal, false)
 	for i = 0, 3 do
-		mk(m, "MedallionRay", Vector3.new(0.45, 0.17, 9.6), CFrame.new(0, 0.1, 0) * CFrame.Angles(0, i * math.pi / 4, 0), hex("D9B658"), M.Metal, false)
+		mk(m, "MedallionRay", Vector3.new(0.45 * s, 0.17, 9.6 * s), CFrame.new(0, 0.1, 0) * CFrame.Angles(0, i * math.pi / 4, 0), hex("D9B658"), M.Metal, false)
 	end
-	ring(28, 6.9, function(_, cf)
-		ball(m, "Laurel", Vector3.new(1.3, 0.14, 0.55), cf * CFrame.new(0, 0.1, 0) * CFrame.Angles(0, math.rad(35), 0), hex("66813C"), M.Fabric, false)
+	ring(28, 6.9 * s, function(_, cf)
+		ball(m, "Laurel", Vector3.new(1.3 * s, 0.14, 0.55 * s), cf * CFrame.new(0, 0.1, 0) * CFrame.Angles(0, math.rad(35), 0), hex("66813C"), M.Fabric, false)
 	end)
-	for _, sgn in { -1, 1 } do -- ตราประจำทีม (วงแหวน + พระอาทิตย์)
-		cyl(m, "Sigil", 3.4, 0.1, CFrame.new(0, 0.07, sgn * 14), if sgn < 0 then RED else BLUE, M.Metal, false)
-		cyl(m, "SigilIn", 2.8, 0.12, CFrame.new(0, 0.08, sgn * 14), SAND, M.Sand, false)
-		cyl(m, "SigilCore", 1.2, 0.14, CFrame.new(0, 0.09, sgn * 14), hex("D9B658"), M.Metal, false)
+	for _, sgn in { -1, 1 } do -- ตราประจำทีม
+		local z, r = sgn * R * 0.47, 3.4 * s
+		cyl(m, "Sigil", r, 0.1, CFrame.new(0, 0.07, z), if sgn < 0 then RED else BLUE, M.Metal, false)
+		cyl(m, "SigilIn", r * 0.82, 0.12, CFrame.new(0, 0.08, z), SAND, M.Sand, false)
+		cyl(m, "SigilCore", r * 0.35, 0.14, CFrame.new(0, 0.09, z), hex("D9B658"), M.Metal, false)
 	end
-	ring(52, 28.9, function(i, cf)
-		mk(m, "Meander", Vector3.new(1.6, 0.1, 0.4), cf * CFrame.new(0, 0.07, 0.3), BRONZE, M.Metal, false)
-		mk(m, "Meander", Vector3.new(0.4, 0.1, 0.9), cf * CFrame.new(if i % 2 == 0 then 0.6 else -0.6, 0.07, 0), BRONZE, M.Metal, false)
+	local nMe = nseg(R - 1.1, 3.5 * sc, 52)
+	ring(nMe, R - 1.1, function(i, cf)
+		mk(m, "Meander", Vector3.new(1.6 * sc, 0.1, 0.4 * sc), cf * CFrame.new(0, 0.07, 0.3), BRONZE, M.Metal, false)
+		mk(m, "Meander", Vector3.new(0.4 * sc, 0.1, 0.9 * sc), cf * CFrame.new(if i % 2 == 0 then 0.6 * sc else -0.6 * sc, 0.07, 0), BRONZE, M.Metal, false)
 	end)
+	mast(m, R, hex("FFD9A8"), 15)
 	-- แนวกั้นฐาน + กำแพงล่องหน
-	ring(36, 32.2, function(_, cf)
-		mk(m, "Podium", Vector3.new(chord(36, 32.2), 5, 1.8), cf * CFrame.new(0, 2.5, 0), MARBLE, M.Marble)
-		mk(m, "PodiumCap", Vector3.new(chord(36, 32.2), 0.5, 2.4), cf * CFrame.new(0, 5.2, 0), LIME, M.Marble)
-		mk(m, "PodiumBase", Vector3.new(chord(36, 32.2), 0.9, 2.3), cf * CFrame.new(0, 0.45, -0.1), SAND_STONE, M.Marble)
+	local nPod = nseg(R + 2.2, 7, 36)
+	ring(nPod, R + 2.2, function(_, cf)
+		local c = chord(nPod, R + 2.2)
+		mk(m, "Podium", Vector3.new(c, 5, 1.8), cf * CFrame.new(0, 2.5, 0), MARBLE, M.Marble)
+		mk(m, "PodiumCap", Vector3.new(c, 0.5, 2.4), cf * CFrame.new(0, 5.2, 0), LIME, M.Marble)
+		mk(m, "PodiumBase", Vector3.new(c, 0.9, 2.3), cf * CFrame.new(0, 0.45, -0.1), SAND_STONE, M.Marble)
 	end)
-	barrier(m, 33.2)
-	-- อัฒจันทร์หินอ่อน 5 ชั้น
+	barrier(m, R + 3.2)
+	-- อัฒจันทร์หินอ่อน T ชั้น (ชั้นเพิ่มตามรัศมี)
 	local seats: { Vector3 } = {}
-	for t = 1, 5 do
-		local r = 34 + (t - 1) * 3.4
+	for t = 1, T do
+		local r = R + 4 + (t - 1) * 3.4
 		local h = 5.6 + (t - 1) * 1.5
-		ring(40, r + 1.7, function(i, cf)
-			mk(m, "Tier", Vector3.new(chord(40, r + 1.7), h, 3.4), cf * CFrame.new(0, h / 2, 0), if t % 2 == 0 then LIME else MARBLE, M.Marble)
-			if t == 2 and i % 5 == 0 then
+		local n = nseg(r + 1.7, 7, 40)
+		local step = math.max(5, math.ceil(n / 40))
+		ring(n, r + 1.7, function(i, cf)
+			mk(m, "Tier", Vector3.new(chord(n, r + 1.7), h, 3.4), cf * CFrame.new(0, h / 2, 0), if t % 2 == 0 then LIME else MARBLE, M.Marble)
+			if t == 2 and i % step == 0 then
 				table.insert(seats, (cf * CFrame.new(0, h + 3, 0)).Position)
 			end
 		end)
 	end
 	-- ชานชั้นบน + เสาดอริก + สถาปัตย์เทรฟ + กำแพงนอก
-	ring(32, 54.5, function(_, cf)
-		mk(m, "Platform", Vector3.new(chord(32, 54.5), 11.6, 8.6), cf * CFrame.new(0, 5.8, 0), SAND_STONE, M.Limestone)
+	local nPl = nseg(platR, 10, 32)
+	ring(nPl, platR, function(_, cf)
+		mk(m, "Platform", Vector3.new(chord(nPl, platR), hTop, 8.6), cf * CFrame.new(0, hTop / 2, 0), SAND_STONE, M.Limestone)
 	end)
-	ring(32, 52, function(i, cf)
-		column(m, cf * CFrame.new(0, 11.6, 0), 14, 1.1)
-		mk(m, "Entablature", Vector3.new(chord(32, 52), 2.0, 3.2), cf * CFrame.new(0, 11.6 + 15, 0), MARBLE, M.Marble)
-		mk(m, "Frieze", Vector3.new(chord(32, 52), 1.5, 3.4), cf * CFrame.new(0, 11.6 + 16.7, 0), hex("5C3B33"), M.Slate)
-		mk(m, "Cornice", Vector3.new(chord(32, 52), 0.7, 3.8), cf * CFrame.new(0, 11.6 + 17.8, 0), MARBLE, M.Marble)
+	local nCol = nseg(colR, 11, 32)
+	ring(nCol, colR, function(i, cf)
+		local c = chord(nCol, colR)
+		column(m, cf * CFrame.new(0, hTop, 0), 14, 1.1)
+		mk(m, "Entablature", Vector3.new(c, 2.0, 3.2), cf * CFrame.new(0, hTop + 15, 0), MARBLE, M.Marble)
+		mk(m, "Frieze", Vector3.new(c, 1.5, 3.4), cf * CFrame.new(0, hTop + 16.7, 0), hex("5C3B33"), M.Slate)
+		mk(m, "Cornice", Vector3.new(c, 0.7, 3.8), cf * CFrame.new(0, hTop + 17.8, 0), MARBLE, M.Marble)
 		if i % 2 == 0 then
-			lantern(m, (cf * CFrame.new(0, 11.6 + 9, -1.4)).Position, false)
+			lantern(m, (cf * CFrame.new(0, hTop + 9, -1.4)).Position, i % 4 == 0)
 		end
 	end)
-	ring(32, 58, function(i, cf, a)
-		mk(m, "OuterWall", Vector3.new(chord(32, 58), 30, 2.2), cf * CFrame.new(0, 15, 0), LIME, M.Limestone)
-		mk(m, "OuterWallArch", Vector3.new(chord(32, 58) * 0.55, 9, 0.3), cf * CFrame.new(0, 17, -1.2), hex("2B2D33"), M.Slate, false)
-		cyl(m, "OuterWallArchTop", chord(32, 58) * 0.275, 0.3, cf * CFrame.new(0, 21.5, -1.2) * CFrame.Angles(0, math.rad(90), 0), hex("2B2D33"), M.Slate, false)
+	local nW = nseg(wallR, 11, 32)
+	ring(nW, wallR, function(i, cf, a)
+		local c = chord(nW, wallR)
+		mk(m, "OuterWall", Vector3.new(c, H, 2.2), cf * CFrame.new(0, H / 2, 0), LIME, M.Limestone)
+		mk(m, "OuterWallArch", Vector3.new(c * 0.55, 9, 0.3), cf * CFrame.new(0, hTop + 5.4, -1.2), hex("2B2D33"), M.Slate, false)
+		cyl(m, "OuterWallArchTop", c * 0.275, 0.3, cf * CFrame.new(0, hTop + 9.9, -1.2) * CFrame.Angles(0, math.rad(90), 0), hex("2B2D33"), M.Slate, false)
 		if i % 2 == 1 then
-			banner(m, cf * CFrame.new(0, 28.5, -1.5), 3, 11, if math.sin(a) < 0 then RED else BLUE)
+			banner(m, cf * CFrame.new(0, H - 1.6, -1.5), 3, 11, if math.sin(a) < 0 then RED else BLUE)
 		end
 	end)
-	-- กระถางไฟ + รูปปั้นบนชาน + แท่นผู้ชนะ
-	for i = 0, 5 do
-		local a = i / 6 * TAU + math.pi / 6
-		local pos = Vector3.new(math.cos(a) * 55.5, 11.6, math.sin(a) * 55.5)
-		brazier(m, pos, 1.2, true)
+	-- รูปปั้น/กระถางไฟสลับกันบนชาน (กระถางที่ 1-6 มีไฟ+ควัน ที่เหลือมีแค่แสง)
+	local N = math.max(12, 2 * math.round(TAU * (platR + 1.2) / 64))
+	local nb = 0
+	for i = 0, N - 1 do
+		local a = i / N * TAU + math.pi / N
+		local pos = Vector3.new(math.cos(a) * (platR + 1.2), hTop, math.sin(a) * (platR + 1.2))
+		if i % 2 == 0 then
+			statue(m, CFrame.lookAt(pos, Vector3.new(0, hTop, 0)), i % 4 == 2)
+		else
+			nb += 1
+			local flame = brazier(m, pos, 1.2, nb <= 6)
+			if nb > 6 then
+				light(flame, hex("FFA24E"), 42, 1.6)
+			end
+		end
 	end
-	for i = 0, 3 do
-		local a = i / 4 * TAU
-		local pos = Vector3.new(math.cos(a) * 55.5, 11.6, math.sin(a) * 55.5)
-		statue(m, CFrame.lookAt(pos, Vector3.new(0, 11.6, 0)), i % 2 == 1)
+	local bw, bh = boardSize(R)
+	for k = 0, 3 do
+		scoreBoard(m, k * math.pi / 2, wallR, H + 4, bw, bh, hex("D9B658"), H, H + 4)
 	end
-	mk(m, "PodiumChamp2", Vector3.new(3, 1.2, 3), CFrame.new(-4 + 50, 12.2, 0), MARBLE, M.Marble, false)
-	mk(m, "PodiumChamp1", Vector3.new(3, 1.8, 3), CFrame.new(50, 12.5, 0), hex("D9B658"), M.Metal, false)
-	mk(m, "PodiumChamp3", Vector3.new(3, 0.9, 3), CFrame.new(4 + 50, 12.05, 0), LIME, M.Marble, false)
-	scoreBoard(m, math.pi / 2, 49.4, 21.5, 22, 6.5, hex("17191F"), hex("D9B658"))
-	scoreBoard(m, -math.pi / 2, 49.4, 21.5, 22, 6.5, hex("17191F"), hex("D9B658"))
-	markSpawns(markers, 18, seats)
-	m:SetAttribute("Radius", 32)
+	markSpawns(markers, R, seats, wallR)
+	finish(m)
 	return m
 end
 
 ---------------- ธีม Underground Neon Ring
-local function buildNeon(): Model
-	local m, markers = newTemplate("NeonRing")
-	local R = 30
+local function buildNeon(R: number): Model
+	local m, markers = newTemplate("NeonRing", R)
+	local s = 1 + (R - 30) / 60
+	local sc = math.max(1, R / 60)
 	local PINK, CYAN = hex("FF2E88"), hex("27E1FF")
-	cyl(m, "Ground", 62, 4, CFrame.new(0, -3, 0), hex("15161A"), M.Concrete)
+	local T = 4 + math.floor((R - 30) / 25)
+	local hTop = 3.2 + (T - 1) * 1.6
+	local wallR = R + 3.6 + T * 3.4 + 5.8
+	local CEIL, WALLH = 42, 40
+	cyl(m, "Ground", wallR + 6, 4, CFrame.new(0, -2.05, 0), hex("15161A"), M.Concrete)
 	cyl(m, "Floor", R + 1.8, 2, CFrame.new(0, -1, 0), hex("3A3E47"), M.Concrete)
 	local fl = hex("3A3E47")
-	floorBand(m, 29.6, 29.2, 0.03, PINK, fl, M.Neon)
-	floorBand(m, 22.4, 22.1, 0.03, CYAN, fl, M.Neon)
-	halfDisc(m, 21.5, -1, hex("6A1E28"), M.SmoothPlastic, 0.04)
-	halfDisc(m, 21.5, 1, hex("1E3C6A"), M.SmoothPlastic, 0.04)
-	mk(m, "CenterLine", Vector3.new(58, 0.07, 0.35), CFrame.new(0, 0.06, 0), hex("FFE58A"), M.Neon, false)
-	cyl(m, "CenterDisc", 7, 0.1, CFrame.new(0, 0.07, 0), hex("14161B"), M.Slate, false)
-	floorBand(m, 7.4, 7.1, 0.08, PINK, fl, M.Neon)
-	local kz = mk(m, "FloorKanji", Vector3.new(12, 0.05, 12), CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, 0), DARK, M.SmoothPlastic, false)
+	floorBand(m, R - 0.4, R - 0.8, 0.03, PINK, fl, M.Neon)
+	floorBand(m, R * 0.75, R * 0.75 - 0.3, 0.03, CYAN, fl, M.Neon)
+	halfDisc(m, R - 8.5 * s, -1, hex("6A1E28"), M.SmoothPlastic, 0.04, sc)
+	halfDisc(m, R - 8.5 * s, 1, hex("1E3C6A"), M.SmoothPlastic, 0.04, sc)
+	mk(m, "CenterLine", Vector3.new(2 * R - 2, 0.07, 0.35 * sc), CFrame.new(0, 0.06, 0), hex("FFE58A"), M.Neon, false)
+	cyl(m, "CenterDisc", 7 * s, 0.1, CFrame.new(0, 0.07, 0), hex("14161B"), M.Slate, false)
+	floorBand(m, 7.4 * s, 7.1 * s, 0.08, PINK, fl, M.Neon)
+	local kz = mk(m, "FloorKanji", Vector3.new(12 * s, 0.05, 12 * s), CFrame.new(0, 0.2, 0), DARK, M.SmoothPlastic, false)
 	kz.Transparency = 1
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Top
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 40
+	g.PixelsPerStud = 40 / s
 	g.LightInfluence = 0
 	g.Parent = kz
 	local kl = Instance.new("TextLabel")
@@ -637,10 +740,12 @@ local function buildNeon(): Model
 	kl.Font = Enum.Font.SourceSansBold
 	kl.TextColor3 = PINK
 	kl.Parent = g
-	-- กรงลวด: เสา, ราวบน-กลาง(นีออน), แผงตาข่ายโปร่งแสง
-	ring(40, 31.6, function(i, cf)
+	mast(m, R, hex("FFE9C4"), 12)
+	-- กรงลวด
+	local nC = nseg(R + 1.6, 6, 40)
+	ring(nC, R + 1.6, function(i, cf)
 		cyl(m, "CagePost", 0.22, 13, cf * CFrame.new(0, 6.5, 0), hex("55585F"), M.Metal, false)
-		local c = chord(40, 31.6)
+		local c = chord(nC, R + 1.6)
 		mk(m, "CageMesh", Vector3.new(c, 11, 0.12), cf * CFrame.new(0, 6.2, 0), hex("8E949C"), M.Metal, false).Transparency = 0.72
 		local rail = mk(m, "CageRailTop", Vector3.new(c, 0.28, 0.28), cf * CFrame.new(0, 12.6, 0), if i % 2 == 0 then PINK else CYAN, M.Neon, false)
 		if i % 5 == 0 then
@@ -649,147 +754,178 @@ local function buildNeon(): Model
 		mk(m, "CageRailMid", Vector3.new(c, 0.18, 0.18), cf * CFrame.new(0, 6.0, 0), hex("55585F"), M.Metal, false)
 		mk(m, "CageFoot", Vector3.new(c, 1.6, 0.9), cf * CFrame.new(0, 0.8, 0), hex("3C3F46"), M.Concrete)
 	end)
-	barrier(m, 32.2)
-	-- อัฒจันทร์คอนกรีต 4 ชั้น + ฝูงชนเงาดำ + แท่งไฟ
+	barrier(m, R + 2.2)
+	-- อัฒจันทร์คอนกรีต T ชั้น + ฝูงชนเงาดำ + แท่งไฟ
 	local seats: { Vector3 } = {}
-	for t = 1, 4 do
-		local r = 33.6 + (t - 1) * 3.4
+	for t = 1, T do
+		local r = R + 3.6 + (t - 1) * 3.4
 		local h = 3.2 + (t - 1) * 1.6
-		ring(36, r + 1.7, function(i, cf)
-			mk(m, "Tier", Vector3.new(chord(36, r + 1.7), h, 3.4), cf * CFrame.new(0, h / 2, 0), if t % 2 == 0 then hex("3E4148") else hex("33363C"), M.Concrete)
-			if i % 2 == 0 then
-				local sc = rng:NextNumber(0.9, 1.15)
-				local p0 = cf * CFrame.new(rng:NextNumber(-1.2, 1.2), h + 1.0 * sc, 0.2)
-				mk(m, "CrowdBody", Vector3.new(1.3, 2.0 * sc, 0.8), p0, hex("0D0E11"), M.Fabric, false)
-				ball(m, "CrowdHead", Vector3.new(0.85, 0.95, 0.85), p0 * CFrame.new(0, 1.4 * sc, 0), hex("0D0E11"), M.Fabric, false)
+		local n = nseg(r + 1.7, 7, 36)
+		local cStep = math.max(2, math.ceil(n / 40))
+		local sStep = math.max(4, math.ceil(n / 40))
+		ring(n, r + 1.7, function(i, cf)
+			mk(m, "Tier", Vector3.new(chord(n, r + 1.7), h, 3.4), cf * CFrame.new(0, h / 2, 0), if t % 2 == 0 then hex("3E4148") else hex("33363C"), M.Concrete)
+			if i % cStep == 0 then
+				local sk = rng:NextNumber(0.9, 1.15)
+				local p0 = cf * CFrame.new(rng:NextNumber(-1.2, 1.2), h + 1.0 * sk, 0.2)
+				mk(m, "CrowdBody", Vector3.new(1.3, 2.0 * sk, 0.8), p0, hex("0D0E11"), M.Fabric, false)
+				ball(m, "CrowdHead", Vector3.new(0.85, 0.95, 0.85), p0 * CFrame.new(0, 1.4 * sk, 0), hex("0D0E11"), M.Fabric, false)
 				if rng:NextNumber() < 0.28 then
-					mk(m, "Glowstick", Vector3.new(0.14, 1.1, 0.14), p0 * CFrame.new(0.9, 1.9 * sc, 0) * CFrame.Angles(0, 0, math.rad(rng:NextNumber(-25, 25))), if rng:NextNumber() < 0.5 then PINK else CYAN, M.Neon, false)
+					mk(m, "Glowstick", Vector3.new(0.14, 1.1, 0.14), p0 * CFrame.new(0.9, 1.9 * sk, 0) * CFrame.Angles(0, 0, math.rad(rng:NextNumber(-25, 25))), if rng:NextNumber() < 0.5 then PINK else CYAN, M.Neon, false)
 				end
 			end
-			if t == 2 and i % 4 == 0 then
+			if t == 2 and i % sStep == 0 then
 				table.insert(seats, (cf * CFrame.new(0, h + 3, 0)).Position)
 			end
 		end)
 	end
-	-- กำแพงนอก + โปสเตอร์/ป้ายนีออนคันจิ + ท่อนีออน
+	-- กำแพงนอก + โปสเตอร์ + ท่อนีออน
 	local posters = { "戦", "闘魂", "喧嘩上等", "TOKYO", "極", "鬼", "勝", "UNDERGROUND", "地下闘技", "魂", "拳", "FIGHT" }
-	ring(36, 53, function(i, cf)
-		mk(m, "OuterWall", Vector3.new(chord(36, 53), 34, 2.4), cf * CFrame.new(0, 17, 0), hex("26282E"), M.Concrete)
-		mk(m, "WallPanel", Vector3.new(chord(36, 53) * 0.84, 16, 0.2), cf * CFrame.new(0, 9.5, -1.3), hex("30333A"), M.DiamondPlate, false)
-		if i % 3 == 0 then
-			local col = if i % 2 == 0 then PINK else CYAN
-			local pn = mk(m, "Poster", Vector3.new(7, 9, 0.2), cf * CFrame.new(0, 18, -1.4), hex("0F1014"), M.SmoothPlastic, false)
-			face(pn, posters[(i // 3) % #posters + 1], col, Enum.Font.SourceSansBold)
-			mk(m, "PosterRim", Vector3.new(7.4, 9.4, 0.15), cf * CFrame.new(0, 18, -1.3), col, M.Neon, false).Transparency = 0.3
+	local nW = nseg(wallR, 7, 36)
+	local pStep = math.max(3, math.ceil(nW / 36))
+	ring(nW, wallR, function(i, cf)
+		local c = chord(nW, wallR)
+		mk(m, "OuterWall", Vector3.new(c, WALLH, 2.4), cf * CFrame.new(0, WALLH / 2, 0), hex("26282E"), M.Concrete)
+		mk(m, "WallPanel", Vector3.new(c * 0.84, 16, 0.2), cf * CFrame.new(0, 9.5, -1.3), hex("30333A"), M.DiamondPlate, false)
+		if i % pStep == 0 then
+			local col = if (i // pStep) % 2 == 0 then PINK else CYAN
+			local pn = mk(m, "Poster", Vector3.new(7, 9, 0.2), cf * CFrame.new(0, 14, -1.4), hex("0F1014"), M.SmoothPlastic, false)
+			face(pn, posters[(i // pStep) % #posters + 1], col, Enum.Font.SourceSansBold)
+			mk(m, "PosterRim", Vector3.new(7.4, 9.4, 0.15), cf * CFrame.new(0, 14, -1.3), col, M.Neon, false).Transparency = 0.3
 			light(pn, col, 26, 0.7)
-		end
-		if i % 3 == 1 then
-			cyl(m, "NeonTube", 0.22, 14, cf * CFrame.new(0, 17, -1.5), if i % 2 == 0 then CYAN else PINK, M.Neon, false)
+		elseif i % pStep == 1 then
+			cyl(m, "NeonTube", 0.22, 14, cf * CFrame.new(0, 14, -1.5), if i % 2 == 0 then CYAN else PINK, M.Neon, false)
 		end
 	end)
-	-- เพดาน + ไฟแผงแขวน (ปิดแสงแดด บรรยากาศใต้ดิน)
-	cyl(m, "Ceiling", 58, 1, CFrame.new(0, 36, 0), hex("131418"), M.Concrete, false)
-	for i = 0, 5 do
-		local a = i / 6 * TAU
-		local pos = Vector3.new(math.cos(a) * 17, 29, math.sin(a) * 17)
-		cyl(m, "LampChain", 0.08, 7, CFrame.new(pos + Vector3.new(0, 3.5, 0)), hex("55585F"), M.Metal, false)
-		cyl(m, "LampShade", 2.2, 0.8, CFrame.new(pos), hex("2B2E34"), M.Metal, false)
-		local bulb = cyl(m, "LampBulb", 1.8, 0.2, CFrame.new(pos - Vector3.new(0, 0.45, 0)), hex("FFE9C4"), M.Neon, false)
-		light(bulb, hex("FFD9A8"), 85, 2.6)
+	-- เพดาน + ไฟแผงแขวน 1-2 วง (ไฟเพิ่มตามขนาดสนาม)
+	cyl(m, "Ceiling", wallR + 5, 1, CFrame.new(0, CEIL, 0), hex("131418"), M.Concrete, false)
+	local function lamps(rr: number, y: number)
+		local n = math.max(6, math.round(TAU * rr / 30))
+		for i = 0, n - 1 do
+			local a = i / n * TAU
+			local pos = Vector3.new(math.cos(a) * rr, y, math.sin(a) * rr)
+			cyl(m, "LampChain", 0.08, CEIL - y - 0.5, CFrame.new(pos + Vector3.new(0, (CEIL - y) / 2 - 0.25, 0)), hex("55585F"), M.Metal, false)
+			cyl(m, "LampShade", 2.2, 0.8, CFrame.new(pos), hex("2B2E34"), M.Metal, false)
+			local bulb = cyl(m, "LampBulb", 1.8, 0.2, CFrame.new(pos - Vector3.new(0, 0.45, 0)), hex("FFE9C4"), M.Neon, false)
+			light(bulb, hex("FFD9A8"), 60, if R > 70 then 1.8 else 2.6)
+		end
 	end
-	scoreBoard(m, math.pi / 2, 51.4, 24, 24, 7, hex("0B0C0F"), PINK)
-	scoreBoard(m, -math.pi / 2, 51.4, 24, 24, 7, hex("0B0C0F"), CYAN)
-	markSpawns(markers, 18, seats)
-	m:SetAttribute("Radius", 31)
+	lamps(R * 0.57, 34)
+	if R > 70 then
+		lamps(R * 0.92, 34)
+	end
+	local bw, bh = boardSize(R)
+	for k = 0, 3 do
+		scoreBoard(m, k * math.pi / 2, wallR - 3.4, 24, bw, bh, if k % 2 == 0 then PINK else CYAN, 24 + bh, CEIL - 0.5)
+	end
+	markSpawns(markers, R, seats, wallR)
+	finish(m)
 	return m
 end
 
 ---------------- ธีม Rooftop Night
-local function buildRooftop(): Model
-	local m, markers = newTemplate("Rooftop")
-	local R = 30
+local function buildRooftop(R: number): Model
+	local m, markers = newTemplate("Rooftop", R)
+	local s = 1 + (R - 30) / 60
+	local sc = math.max(1, R / 60)
 	local YEL = hex("F2C230")
-	cyl(m, "Ground", 62, 4, CFrame.new(0, -3, 0), hex("3A3D43"), M.Concrete)
+	local T = 2 + math.floor((R - 30) / 30)
+	local width = 3.6 * T + 7.8
+	local deckIn = R + 2.5
+	local outerR = deckIn + width - 0.5
+	cyl(m, "Ground", outerR + 14, 4, CFrame.new(0, -2.05, 0), hex("3A3D43"), M.Concrete)
 	cyl(m, "Floor", R + 1.8, 2, CFrame.new(0, -1, 0), hex("5B5E64"), M.Concrete)
 	local fl = hex("5B5E64")
-	-- วงแหวนเฮลิพอร์ต: แถบเหลือง-ดำ + เส้นขาว + ครึ่งสีทีม
-	ring(48, 29.2, function(i, cf)
-		mk(m, "Hazard", Vector3.new(chord(48, 29.2) * 0.98, 0.07, 1.6), cf * CFrame.new(0, 0.04, 0), if i % 2 == 0 then YEL else hex("17171A"), M.Concrete, false)
+	local nH = nseg(R - 0.8, 4 * sc, 48)
+	ring(nH, R - 0.8, function(i, cf)
+		mk(m, "Hazard", Vector3.new(chord(nH, R - 0.8) * 0.98, 0.07, 1.6), cf * CFrame.new(0, 0.04, 0), if i % 2 == 0 then YEL else hex("17171A"), M.Concrete, false)
 	end)
-	floorBand(m, 27.6, 27.3, 0.04, hex("E9E6DC"), fl, M.Concrete)
-	halfDisc(m, 21.5, -1, hex("7C3A36"), M.Concrete, 0.05)
-	halfDisc(m, 21.5, 1, hex("36527A"), M.Concrete, 0.05)
-	floorBand(m, 21.9, 21.6, 0.06, hex("E9E6DC"), fl, M.Concrete)
-	cyl(m, "CenterDisc", 6, 0.08, CFrame.new(0, 0.07, 0), hex("26282E"), M.Concrete, false)
-	floorBand(m, 6.2, 5.9, 0.09, YEL, hex("26282E"), M.Concrete)
+	floorBand(m, R - 2.4, R - 2.7, 0.04, hex("E9E6DC"), fl, M.Concrete)
+	halfDisc(m, R - 8.5 * s, -1, hex("7C3A36"), M.Concrete, 0.05, sc)
+	halfDisc(m, R - 8.5 * s, 1, hex("36527A"), M.Concrete, 0.05, sc)
+	floorBand(m, R - 8.1 * s, R - 8.4 * s, 0.06, hex("E9E6DC"), fl, M.Concrete)
+	cyl(m, "CenterDisc", 6 * s, 0.08, CFrame.new(0, 0.07, 0), hex("26282E"), M.Concrete, false)
+	floorBand(m, 6.2 * s, 5.9 * s, 0.09, YEL, hex("26282E"), M.Concrete)
 	for _, sx in { -2.2, 2.2 } do
-		mk(m, "HMark", Vector3.new(0.9, 0.05, 6), CFrame.new(sx, 0.16, 0), hex("E9E6DC"), M.Concrete, false)
+		mk(m, "HMark", Vector3.new(0.9 * s, 0.05, 6 * s), CFrame.new(sx * s, 0.16, 0), hex("E9E6DC"), M.Concrete, false)
 	end
-	mk(m, "HMark", Vector3.new(4.4, 0.05, 0.9), CFrame.new(0, 0.16, 0), hex("E9E6DC"), M.Concrete, false)
+	mk(m, "HMark", Vector3.new(4.4 * s, 0.05, 0.9 * s), CFrame.new(0, 0.16, 0), hex("E9E6DC"), M.Concrete, false)
+	mast(m, R, hex("FFE2A0"), 14)
 	-- รั้วตาข่าย + ฐานพาราเพ็ต
-	ring(40, 31.4, function(i, cf)
-		local c = chord(40, 31.4)
+	local nF = nseg(R + 1.4, 7, 40)
+	ring(nF, R + 1.4, function(_, cf)
+		local c = chord(nF, R + 1.4)
 		mk(m, "Parapet", Vector3.new(c, 3.2, 1.2), cf * CFrame.new(0, 1.6, 0), hex("6C6F76"), M.Concrete)
 		cyl(m, "FencePost", 0.16, 9, cf * CFrame.new(0, 7.2, 0), hex("55585F"), M.Metal, false)
 		mk(m, "FenceMesh", Vector3.new(c, 6.6, 0.1), cf * CFrame.new(0, 6.7, 0), hex("8E949C"), M.Metal, false).Transparency = 0.7
 		mk(m, "FenceRail", Vector3.new(c, 0.2, 0.2), cf * CFrame.new(0, 10.0, 0), hex("55585F"), M.Metal, false)
 	end)
-	barrier(m, 32.2)
-	-- ดาดฟ้าผู้ชม: ลังพาเลทเป็นที่นั่ง 2 แถว + ถังน้ำ + แอร์ + เสาอากาศ
+	barrier(m, R + 2.2)
+	-- ดาดฟ้าผู้ชม: ลังพาเลทเป็นที่นั่ง T แถว + ถังน้ำ + แอร์ + เสาอากาศ
 	local seats: { Vector3 } = {}
-	ring(36, 40, function(_, cf)
-		mk(m, "Deck", Vector3.new(chord(36, 40), 1, 15), cf * CFrame.new(0, 0.1, 0), hex("565A60"), M.Concrete)
+	local nD = nseg(deckIn + width / 2, 7, 36)
+	ring(nD, deckIn + width / 2, function(_, cf)
+		mk(m, "Deck", Vector3.new(chord(nD, deckIn + width / 2), 1, width), cf * CFrame.new(0, 0.1, 0), hex("565A60"), M.Concrete)
 	end)
-	for t = 1, 2 do
-		local r = 34.5 + (t - 1) * 3.6
-		ring(30, r, function(i, cf)
-			mk(m, "CrateStep", Vector3.new(chord(30, r) * 0.9, 1.4 + t * 0.6, 2.2), cf * CFrame.new(0, (1.4 + t * 0.6) / 2, 0), if (i + t) % 3 == 0 then hex("8A6A4C") else hex("6E5640"), M.Wood)
-			if t == 2 and i % 4 == 0 then
-				table.insert(seats, (cf * CFrame.new(0, 3.8, 0)).Position)
+	for t = 1, T do
+		local r = R + 4.5 + (t - 1) * 3.6
+		local n = nseg(r, 7, 30)
+		local sStep = math.max(4, math.ceil(n / 40))
+		ring(n, r, function(i, cf)
+			local hh = 1.4 + t * 0.6
+			mk(m, "CrateStep", Vector3.new(chord(n, r) * 0.9, hh, 2.2), cf * CFrame.new(0, hh / 2, 0), if (i + t) % 3 == 0 then hex("8A6A4C") else hex("6E5640"), M.Wood)
+			if t == T and i % sStep == 0 then
+				table.insert(seats, (cf * CFrame.new(0, hh + 1.2, 0)).Position)
 			end
 		end)
 	end
-	ring(36, 47, function(i, cf)
-		mk(m, "OuterParapet", Vector3.new(chord(36, 47), 5, 1.4), cf * CFrame.new(0, 2.5, 0), hex("6C6F76"), M.Concrete)
+	local nO = nseg(outerR, 7, 36)
+	ring(nO, outerR, function(_, cf)
+		local c = chord(nO, outerR)
+		mk(m, "OuterParapet", Vector3.new(c, 5, 1.4), cf * CFrame.new(0, 2.5, 0), hex("6C6F76"), M.Concrete)
 		cyl(m, "OuterPost", 0.16, 8, cf * CFrame.new(0, 8, 0), hex("55585F"), M.Metal, false)
-		mk(m, "OuterMesh", Vector3.new(chord(36, 47), 7, 0.1), cf * CFrame.new(0, 8.5, 0), hex("8E949C"), M.Metal, false).Transparency = 0.7
+		mk(m, "OuterMesh", Vector3.new(c, 7, 0.1), cf * CFrame.new(0, 8.5, 0), hex("8E949C"), M.Metal, false).Transparency = 0.7
 	end)
-	barrier(m, 48.4)
+	barrier(m, outerR + 1.4)
 	for _, a in { 0.4, 2.0, 3.6, 5.2 } do
-		local pos = Vector3.new(math.cos(a) * 43, 0, math.sin(a) * 43)
+		local pos = Vector3.new(math.cos(a) * (outerR - 3.8), 0, math.sin(a) * (outerR - 3.8))
 		mk(m, "ACUnit", Vector3.new(5, 3.2, 3.4), CFrame.new(pos + Vector3.new(0, 1.6, 0)) * CFrame.Angles(0, a, 0), hex("9A9EA6"), M.Metal)
 		cyl(m, "ACFan", 1.2, 0.3, CFrame.new(pos + Vector3.new(0, 3.3, 0)), hex("2A2C31"), M.Metal, false)
 	end
-	local tank = Vector3.new(0, 0, -44)
+	local tank = Vector3.new(0, 0, -(outerR - 3))
 	for _, o in { { -2.4, -2.4 }, { 2.4, -2.4 }, { -2.4, 2.4 }, { 2.4, 2.4 } } do
 		mk(m, "TankLeg", Vector3.new(0.5, 7, 0.5), CFrame.new(tank + Vector3.new(o[1], 3.5, o[2])), hex("4E4F55"), M.Metal)
 	end
 	cyl(m, "WaterTank", 3.6, 5.5, CFrame.new(tank + Vector3.new(0, 9.5, 0)), hex("6A4B38"), M.Wood)
 	mk(m, "TankRoof", Vector3.new(7.8, 1.2, 7.8), CFrame.new(tank + Vector3.new(0, 13, 0)), hex("4E4F55"), M.Metal)
-	cyl(m, "Antenna", 0.2, 26, CFrame.new(Vector3.new(30, 13, 38)), hex("55585F"), M.Metal)
-	local beacon = ball(m, "AntennaLight", Vector3.one * 1.1, CFrame.new(30, 26.4, 38), hex("FF3030"), M.Neon, false)
+	local ap = Vector3.new(math.cos(0.9) * (outerR + 4), 0, math.sin(0.9) * (outerR + 4))
+	cyl(m, "Antenna", 0.2, 26, CFrame.new(ap + Vector3.new(0, 13, 0)), hex("55585F"), M.Metal)
+	local beacon = ball(m, "AntennaLight", Vector3.one * 1.1, CFrame.new(ap + Vector3.new(0, 26.4, 0)), hex("FF3030"), M.Neon, false)
 	light(beacon, hex("FF3030"), 30, 1)
-	-- สายไฟประดับรอบสนาม (เสา + หลอดไฟ)
-	for i = 0, 7 do
-		local a = i / 8 * TAU
-		local pp = Vector3.new(math.cos(a) * 40.5, 0, math.sin(a) * 40.5)
+	-- สายไฟประดับ (เสา + หลอดไฟ) ห่างกันราว 30 สตั๊ด
+	local pr = outerR - 6.5
+	local nP = nseg(pr, 30, 8)
+	for i = 0, nP - 1 do
+		local a = i / nP * TAU
+		local pp = Vector3.new(math.cos(a) * pr, 0, math.sin(a) * pr)
 		cyl(m, "StringPole", 0.2, 11, CFrame.new(pp + Vector3.new(0, 5.5, 0)), hex("3A3C42"), M.Metal)
 		local bulb = ball(m, "Bulb", Vector3.one * 1.1, CFrame.new(pp + Vector3.new(0, 11.4, 0)), hex("FFE2A0"), M.Neon, false)
 		light(bulb, hex("FFD08A"), 36, 1.2)
-		local a2 = (i + 1) / 8 * TAU
-		for s = 1, 4 do
-			local t = s / 5
-			local mid = Vector3.new(math.cos(a) * 40.5, 0, math.sin(a) * 40.5):Lerp(Vector3.new(math.cos(a2) * 40.5, 0, math.sin(a2) * 40.5), t)
-			ball(m, "Bulb", Vector3.one * 0.6, CFrame.new(mid + Vector3.new(0, 10.6 - math.sin(t * math.pi) * -0.8, 0)), hex("FFE2A0"), M.Neon, false)
+		local a2 = (i + 1) / nP * TAU
+		for k = 1, 4 do
+			local t = k / 5
+			local mid = pp:Lerp(Vector3.new(math.cos(a2) * pr, 0, math.sin(a2) * pr), t)
+			ball(m, "Bulb", Vector3.one * 0.6, CFrame.new(mid + Vector3.new(0, 10.6 + math.sin(t * math.pi) * 0.8, 0)), hex("FFE2A0"), M.Neon, false)
 		end
 	end
-	-- ฉากเมืองไกลๆ: ตึกระฟ้าพร้อมหน้าต่างไฟ + ป้ายนีออน + ถนนด้านล่าง
-	cyl(m, "StreetBelow", 420, 2, CFrame.new(0, -140, 0), hex("1B1C21"), M.Asphalt, false)
-	for i = 0, 55 do
+	-- ฉากเมืองไกลๆ
+	local lo, hi = outerR + 28, math.max(300, outerR + 150)
+	cyl(m, "StreetBelow", hi + 120, 2, CFrame.new(0, -140, 0), hex("1B1C21"), M.Asphalt, false)
+	for i = 0, 55 + math.floor((R - 30) * 0.4) do
 		local a = rng:NextNumber(0, TAU)
-		local dist = rng:NextNumber(75, 300)
+		local dist = rng:NextNumber(lo, hi)
 		local w, d = rng:NextNumber(14, 34), rng:NextNumber(14, 34)
-		local top = rng:NextNumber(-20, 85) + (dist / 300) * 40
+		local top = rng:NextNumber(-20, 85) + (dist / hi) * 40
 		local height = top + 140
 		local pos = Vector3.new(math.cos(a) * dist, top - height / 2, math.sin(a) * dist)
 		local cf = CFrame.lookAt(pos, Vector3.new(0, pos.Y, 0))
@@ -811,18 +947,20 @@ local function buildRooftop(): Model
 			ball(m, "RedLight", Vector3.one * 1.6, cf * CFrame.new(0, height / 2 + 3, 0), hex("FF3030"), M.Neon, false)
 		end
 	end
-	scoreBoard(m, math.pi / 2, 46.4, 22, 22, 7, hex("0B0C0F"), YEL)
-	scoreBoard(m, -math.pi / 2, 46.4, 22, 22, 7, hex("0B0C0F"), YEL)
-	markSpawns(markers, 18, seats)
-	m:SetAttribute("Radius", 31)
+	local bw, bh = boardSize(R)
+	for k = 0, 3 do
+		scoreBoard(m, k * math.pi / 2, outerR + 1.6, 18, bw, bh, YEL, 0, 18)
+	end
+	markSpawns(markers, R, seats, outerR + 1)
+	finish(m)
 	return m
 end
 
-local builders: { [string]: () -> Model } = { NeonRing = buildNeon, GreekSand = buildGreek, Rooftop = buildRooftop }
+local builders: { [string]: (number) -> Model } = { NeonRing = buildNeon, GreekSand = buildGreek, Rooftop = buildRooftop }
 
-function Kit.BuildTemplate(theme: string): Model?
+function Kit.BuildTemplate(theme: string, R: number?): Model?
 	local b = builders[theme]
-	return b and b()
+	return b and b(math.clamp(R or Kit.MIN_R, Kit.MIN_R, Kit.MAX_R))
 end
 
 return Kit

@@ -60,7 +60,7 @@ function CombatState.CanAct(self: CombatState): boolean
 	if (self.State == "Stunned" or self.State == "Ragdoll") and os.clock() >= self.StunUntil then
 		self.State = "Idle"
 	end
-	return self.State == "Idle" and os.clock() >= self.RootUntil
+	return self.State == "Idle" and os.clock() >= self.RootUntil and not self.Character:GetAttribute("ArenaLocked")
 end
 
 -- ผู้เล่นที่ถูกมอนรุมต้องไม่ติดสตันตลอด: หลังหลุดสตัน/ลุกจากล้มมีช่วงภูมิคุ้มกันสตัน (กันสตันล็อก)
@@ -130,7 +130,7 @@ function CombatState.ApplyMovement(self: CombatState)
 	if not hum or hum.Health <= 0 then
 		return
 	end
-	local locked = self.State == "Ragdoll" or (self.State == "Stunned" and self.MoveLock) or now < self.RootUntil
+	local locked = self.Character:GetAttribute("ArenaLocked") == true or self.State == "Ragdoll" or (self.State == "Stunned" and self.MoveLock) or now < self.RootUntil
 	local base = (self.Character:GetAttribute("BaseWalkSpeed") :: number?) or 16
 	local speed = if locked then 0 else base * (1 - self.SlowFactor)
 	if hum.WalkSpeed ~= speed then

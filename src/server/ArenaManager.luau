@@ -7,6 +7,10 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Kit = require(script.Parent.ArenaKit)
 
+local countdownRemote = Instance.new("RemoteEvent")
+countdownRemote.Name = "ArenaCountdown"
+countdownRemote.Parent = ReplicatedStorage
+
 export type Inst = {
 	Id: number,
 	Kind: string,
@@ -18,17 +22,20 @@ export type Inst = {
 	Markers: Folder,
 	Members: { [Player]: string }, -- "fighter" | "spec"
 	Over: boolean,
-	Scores: { TextLabel },
+	OuterRadius: number,
+	Locked: boolean, -- ช่วงนับถอยหลัง: ล็อกนักสู้
+	CountdownCancel: boolean,
 	OnLeave: ((Player) -> ())?,
 }
 
 local Arena = {}
 
 local MAX_INSTANCES = 8
-local SPACING = 400
+local SPACING = 640
 local BASE = Vector3.new(-600, 600, 3000)
 local Z_ROWS = 4 -- ช่อง 4 คอลัมน์ x 2 แถว
-local SPEC_RADIUS = 75
+local BUDGET = 26 -- งบขนาดรวม: sum((R/40)^2) ของ instance ที่เปิดอยู่ (กันหน่วยความจำ/จำนวน part บวม)
+local MAX_TEMPLATES = 6
 
 local instances: { [number]: Inst } = {}
 local slotOf: { [Inst]: number } = {}
@@ -44,14 +51,26 @@ local templates = Instance.new("Folder")
 templates.Name = "ArenaTemplates"
 templates.Parent = ServerStorage
 
-local function template(theme: string): Model?
-	local t = templates:FindFirstChild(theme) :: Model?
+-- แม่แบบ cache ตามธีม+รัศมี (สร้างตอนต้องใช้ เก็บไว้ไม่เกิน MAX_TEMPLATES อันล่าสุด)
+local function template(theme: string, R: number): Model?
+	local key = `{theme}_{R}`
+	local t = templates:FindFirstChild(key) :: Model?
 	if not t then
-		t = Kit.BuildTemplate(theme)
+		t = Kit.BuildTemplate(theme, R)
 		if t then
-			t.Name = theme
+			t.Name = key
+			t:SetAttribute("UsedAt", os.clock())
 			t.Parent = templates
+			local list = templates:GetChildren()
+			if #list > MAX_TEMPLATES then
+				table.sort(list, function(a, b)
+					return (a:GetAttribute("UsedAt") or 0) < (b:GetAttribute("UsedAt") or 0)
+				end)
+				list[1]:Destroy()
+			end
 		end
+	elseif t then
+		t:SetAttribute("UsedAt", os.clock())
 	end
 	return t
 end
@@ -60,7 +79,7 @@ end
 task.defer(function()
 	task.wait(8)
 	for _, theme in Kit.THEMES do
-		template(theme)
+		template(theme, Kit.MIN_R)
 		task.wait(0.5)
 	end
 end)
@@ -116,7 +135,7 @@ local function setStatus(player: Player, inst: Inst?, role: string?)
 end
 
 ---------------------------------------------------------------- สร้าง/ทำลาย
-function Arena.Create(kind: string, label: string, theme: string?): Inst?
+function Arena.Create(kind: string, label: string, theme: string?, players: number?): Inst?
 	local slot: number? = nil
 	for i = 0, MAX_INSTANCES - 1 do
 		local used = false
@@ -134,7 +153,15 @@ function Arena.Create(kind: string, label: string, theme: string?): Inst?
 		return nil
 	end
 	local themeName = theme or Kit.THEMES[rng:NextInteger(1, #Kit.THEMES)]
-	local t = template(themeName)
+	local R = Kit.RadiusFor(players or 2)
+	local used = (R / 40) ^ 2
+	for _, other in instances do
+		used += (other.Radius / 40) ^ 2
+	end
+	if used > BUDGET then
+		return nil
+	end
+	local t = template(themeName, R)
 	if not t then
 		return nil
 	end
@@ -145,12 +172,8 @@ function Arena.Create(kind: string, label: string, theme: string?): Inst?
 	local origin = CFrame.new(BASE + Vector3.new((slot % 4) * SPACING, 0, (slot // 4) * SPACING))
 	model:PivotTo(origin)
 	model.Parent = container
-	local scores: { TextLabel } = {}
-	for _, d in model:GetDescendants() do
-		if d:IsA("TextLabel") and d.Parent and d.Parent.Parent and d.Parent.Parent.Name == "Score" then
-			table.insert(scores, d)
-		end
-	end
+	model:SetAttribute("BState", "wait")
+	model:SetAttribute("BTitle", label)
 	local inst: Inst = {
 		Id = nextId,
 		Kind = kind,
@@ -159,10 +182,12 @@ function Arena.Create(kind: string, label: string, theme: string?): Inst?
 		Model = model,
 		Origin = origin,
 		Radius = (model:GetAttribute("Radius") :: number?) or 30,
+		OuterRadius = (model:GetAttribute("OuterRadius") :: number?) or 75,
+		Locked = false,
+		CountdownCancel = false,
 		Markers = model:WaitForChild("Markers") :: Folder,
 		Members = {},
 		Over = false,
-		Scores = scores,
 	}
 	instances[inst.Id] = inst
 	slotOf[inst] = slot
@@ -190,10 +215,28 @@ function Arena.List(): { Inst }
 	return list
 end
 
-function Arena.SetScore(inst: Inst, text: string)
-	for _, l in inst.Scores do
-		l.Text = text
+-- ป้ายคะแนน: เซิร์ฟเวอร์เซ็ต Attribute บนโมเดล ไคลเอนต์ (ArenaBoard) วาดข้อความและนับเวลาเองจาก BEnds
+-- fields: State("wait"|"countdown"|"live"|"over"), Title, NameA, NameB, Mid, LeadA, LeadB, Note, Ends (เวลาเซิร์ฟเวอร์ GetServerTimeNow)
+function Arena.SetBoard(inst: Inst, fields: { [string]: any })
+	for k, v in fields do
+		inst.Model:SetAttribute("B" .. k, v)
 	end
+end
+
+-- เข้ากันได้กับโค้ดเดิม: ข้อความอิสระบรรทัดเดียวลงช่อง Note/Title
+function Arena.SetScore(inst: Inst, text: string)
+	inst.Model:SetAttribute("BNote", (text:gsub("<[^>]+>", ""):gsub("
+", " · ")))
+end
+
+function Arena.FighterCount(inst: Inst): number
+	local n = 0
+	for _, role in inst.Members do
+		if role == "fighter" then
+			n += 1
+		end
+	end
+	return n
 end
 
 function Arena.MarkerPos(inst: Inst, name: string): Vector3?
@@ -213,7 +256,7 @@ local function seatCf(inst: Inst): CFrame
 	return CFrame.lookAt(pos, Vector3.new(inst.Origin.X, pos.Y, inst.Origin.Z))
 end
 
--- เข้าสนามที่จุด marker (เช่น SpawnA2) เป็นนักสู้ หรือที่นั่งชม (marker = nil, role = "spec")
+-- เข้าสนามที่จุด marker (เช่น SpawnA4) เป็นนักสู้ หรือที่นั่งชม (marker = nil, role = "spec")
 function Arena.Enter(inst: Inst, player: Player, markerName: string?, role: string): boolean
 	if inst.Over or of[player] or not rootOf(player) then
 		return false
@@ -254,6 +297,7 @@ function Arena.Exit(player: Player)
 	local char = player.Character
 	if char then
 		char:SetAttribute("Team", nil)
+		char:SetAttribute("ArenaLocked", nil)
 		if rootOf(player) then
 			warp(player, lobbySpot())
 		end
@@ -270,6 +314,60 @@ function Arena.Leave(player: Player)
 		pcall(inst.OnLeave, player)
 	end
 	Arena.Exit(player)
+end
+
+-- นับถอยหลังก่อนเริ่มแมตช์ (เรียกหลังนักสู้ทุกคนเข้าสนามแล้ว): ล็อกการเดิน/โจมตีและกันดาเมจ (Attribute ArenaLocked)
+-- ไคลเอนต์รับเวลาจบแบบเวลาเซิร์ฟเวอร์ (ArenaCountdown "Start", endsAt) จึงซิงก์กัน
+-- คืน true = นับครบ แล้วปลดล็อก; false = ยกเลิก (มีคนออก/ตาย/หลุด หรือ aborted() เป็นจริง) ปลดล็อกทุกคนก่อนคืนค่า
+function Arena.RunCountdown(inst: Inst, secs: number, aborted: (() -> boolean)?): boolean
+	local fighters: { Player } = {}
+	for player, role in inst.Members do
+		if role == "fighter" then
+			table.insert(fighters, player)
+		end
+	end
+	if #fighters == 0 then
+		return false
+	end
+	local endsAt = workspace:GetServerTimeNow() + secs
+	inst.Locked = true
+	Arena.SetBoard(inst, { State = "countdown", Ends = endsAt })
+	for player in inst.Members do
+		countdownRemote:FireClient(player, "Start", endsAt)
+	end
+	local ok = true
+	while ok and workspace:GetServerTimeNow() < endsAt do
+		if inst.Over or (aborted and aborted()) then
+			ok = false
+			break
+		end
+		for _, player in fighters do
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if player.Parent ~= Players or inst.Members[player] ~= "fighter" or not char or not hum or hum.Health <= 0 then
+				ok = false
+			else
+				char:SetAttribute("ArenaLocked", true)
+				hum.WalkSpeed = 0
+			end
+		end
+		task.wait(0.1)
+	end
+	inst.Locked = false
+	for _, player in fighters do
+		local char = player.Character
+		if char then
+			char:SetAttribute("ArenaLocked", nil)
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 then
+				hum.WalkSpeed = (char:GetAttribute("BaseWalkSpeed") :: number?) or 16
+			end
+		end
+	end
+	for player in inst.Members do
+		countdownRemote:FireClient(player, if ok then "Fight" else "Cancel")
+	end
+	return ok
 end
 
 -- จบการต่อสู้: ถอนสถานะนักสู้ (ตีกันไม่ได้แล้ว) แต่ยังอยู่ในสนามรอส่งกลับ
@@ -377,10 +475,10 @@ task.spawn(function()
 				if root and hum and hum.Health > 0 then
 					local rel = root.Position - inst.Origin.Position
 					local flat = Vector2.new(rel.X, rel.Z).Magnitude
-					local limit = if role == "fighter" then inst.Radius + 2 else SPEC_RADIUS
+					local limit = if role == "fighter" then inst.Radius + 2 else inst.OuterRadius
 					if flat > limit or rel.Y < -25 or rel.Y > 80 then
 						if role == "fighter" then
-							local p = Arena.MarkerPos(inst, "SpawnA2")
+							local p = Arena.MarkerPos(inst, "SpawnA4")
 							if p then
 								(player.Character :: Model):PivotTo(CFrame.new(p + Vector3.new(0, 4, 0)))
 							end
