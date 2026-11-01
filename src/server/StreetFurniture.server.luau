@@ -11,6 +11,8 @@ local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
 	task.wait(0.5)
 end
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 local rng = Random.new(2024)
 local f = Instance.new("Folder")
@@ -143,3 +145,4 @@ end
 
 worldFolder:SetAttribute("FurnitureSets", count)
 print(`[StreetFurniture] วางชุดเฟอร์นิเจอร์ริมถนน {count} ชุด`)
+BuildSync.finish("StreetFurniture", __t0)

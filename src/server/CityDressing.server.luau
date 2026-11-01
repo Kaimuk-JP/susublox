@@ -15,6 +15,8 @@ local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
 	task.wait(0.5)
 end
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 local hex = Color3.fromHex
 local terrain = workspace.Terrain
@@ -184,3 +186,4 @@ if districtsFolder then
 		end
 	end
 end
+BuildSync.finish("CityDressing", __t0)

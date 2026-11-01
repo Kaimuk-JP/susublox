@@ -898,7 +898,7 @@ local function scaffold(model: Instance, cx: number, cz: number, w: number, d: n
 	net.Transparency = 0.25
 end
 
-function BK.tokyo(parent: Instance, lot: any, rng: Random): Instance
+local function tokyoBuild(parent: Instance, lot: any, rng: Random): Instance
 	if lot.Ground == "yard" then
 		return containerYard(parent, lot, rng)
 	end
@@ -954,6 +954,15 @@ function BK.tokyo(parent: Instance, lot: any, rng: Random): Instance
 		scaffold(model, cx, cz, w, d, h)
 	end
 	rotateModel(model, cx, cz, lot.Yaw)
+	return model
+end
+
+-- สร้างตึกในโฟลเดอร์ชั่วคราวนอก workspace (หมุน/วางชิ้นส่วนถูกกว่ามาก) แล้วค่อยย้ายเข้าจริงครั้งเดียว
+function BK.tokyo(parent: Instance, lot: any, rng: Random): Instance
+	local stage = Instance.new("Folder")
+	local model = tokyoBuild(stage, lot, rng)
+	model.Parent = parent
+	stage:Destroy()
 	return model
 end
 

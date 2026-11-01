@@ -98,16 +98,13 @@ local function waitFor(cond: () -> boolean, maxSeconds: number, from: number, to
 		task.wait(0.2)
 	end
 	setProgress(to)
+	print(string.format("[Loading] %s %.1fs (รวม %.1fs)", text, os.clock() - t0, os.clock() - started))
 end
 
+-- สัญญาณจริงจาก server (BuildSync): builder ทุกตัวเสร็จ; SchoolMapReady/World.Built เป็นแค่ข้อมูลเสริม
 waitFor(function()
-	return workspace:GetAttribute("SchoolMapReady") == true
-end, 120, 0.05, 0.45, "กำลังสร้างโรงเรียนและภูมิประเทศ...")
-
-waitFor(function()
-	local w = workspace:FindFirstChild("World")
-	return w ~= nil and w:GetAttribute("Built") == true
-end, 120, 0.45, 0.75, "กำลังสร้างย่านต่างๆ ของเมือง...")
+	return workspace:GetAttribute("GameReady") == true
+end, 120, 0.05, 0.75, "กำลังสร้างเมือง...")
 
 -- รอให้พื้นรอบตัวละครสตรีมเข้ามาจริง (ยิงเรย์ลงใต้ตัว)
 waitFor(function()
@@ -118,7 +115,9 @@ waitFor(function()
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { player.Character :: Instance }
-	return workspace:Raycast(root.Position + Vector3.new(0, 4, 0), Vector3.new(0, -60, 0), params) ~= nil
+	-- ตัวละครเกิดสูง (~y 100) ก่อนลงพื้น ต้องยิงไกลพอ
+	local hit = workspace:Raycast(root.Position + Vector3.new(0, 4, 0), Vector3.new(0, -400, 0), params)
+	return hit ~= nil
 end, 25, 0.75, 0.92, "กำลังโหลดพื้นที่รอบตัว...")
 
 -- ให้ฉากนิ่งสักพักหลังสร้างเสร็จ (ลดอาการกระตุกช่วงแรกจากการสตรีม/สร้างของท้ายๆ)
@@ -137,6 +136,7 @@ while os.clock() - settle < 6 do
 	end
 	setProgress(0.95 + 0.05 * math.clamp((os.clock() - settle) / 6, 0, 1))
 end
+print(string.format("[Loading] settle %.1fs (รวม %.1fs)", os.clock() - settle, os.clock() - started))
 setProgress(1, "พร้อมแล้ว!")
 
 conn:Disconnect()

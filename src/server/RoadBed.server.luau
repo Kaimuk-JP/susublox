@@ -4,6 +4,8 @@ local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
 	task.wait(0.5)
 end
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 local terrain = workspace.Terrain
 local count = 0
@@ -57,3 +59,4 @@ end
 bed(worldFolder:WaitForChild("Roads"), "Road")
 bed(worldFolder:WaitForChild("Sidewalks"), nil)
 print(string.format("[RoadBed] ปรับวัสดุใต้ถนน/ทางเท้า %d ชิ้น", count))
+BuildSync.finish("RoadBed", __t0)

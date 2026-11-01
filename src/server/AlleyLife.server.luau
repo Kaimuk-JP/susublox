@@ -13,6 +13,8 @@ local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
 	task.wait(0.5)
 end
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 local hex = Color3.fromHex
 local rng = Random.new(5150)
@@ -227,3 +229,4 @@ end
 worldFolder:SetAttribute("AlleysDressed", alleyCount)
 worldFolder:SetAttribute("PocketParks", pocketParks)
 print(`[AlleyLife] ซอยตกแต่ง {alleyCount} เส้น, ของวาง {props}, ไฟ {lights}, สวนกระเป๋า {pocketParks}, ลานอื่น {lotsDressed}`)
+BuildSync.finish("AlleyLife", __t0)

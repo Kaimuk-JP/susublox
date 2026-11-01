@@ -38,6 +38,7 @@ local C = {
 local rng = Random.new(42)
 
 -- สัญญาณให้ WorldBuilder รอ: โรงเรียนยังสร้างไม่เสร็จ (ห้ามใช้ Npcs เป็นสัญญาณ เพราะค้างอยู่ใน Place จากโหมด Edit)
+local __mapT0 = os.clock()
 workspace:SetAttribute("SchoolMapReady", false)
 
 -- ล้างของเดิม (Baseplate เทาของ Studio, แมพรอบก่อน) แล้วสร้างใหม่ทุกครั้ง
@@ -872,4 +873,5 @@ npcs.Parent = workspace
 
 -- แท็กให้ไฮไลต์/ระบบอื่นเรียกใช้ภายหลังได้
 CollectionService:AddTag(map, "SchoolMap")
+print(string.format("[Build] MapBuilder %.1fs", os.clock() - __mapT0))
 workspace:SetAttribute("SchoolMapReady", true)

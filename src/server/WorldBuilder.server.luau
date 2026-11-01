@@ -6,6 +6,8 @@ local RunService = game:GetService("RunService")
 
 local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 -- เพิ่มเลขนี้ทุกครั้งที่แก้โลก: ถ้าใน Place มีโลกที่สร้างไว้ล่วงหน้า (รันใน Edit) เวอร์ชันตรงกัน ตอนเล่นจะข้ามการสร้างใหม่
 local VERSION = 5
@@ -28,6 +30,7 @@ if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttri
 			task.wait()
 		end
 	end
+	BuildSync.finish("WorldBuilder", __t0)
 	return true
 end
 
@@ -35,12 +38,14 @@ end
 if running then
 	-- ห้ามใช้ Npcs เป็นสัญญาณ (ค้างอยู่ใน Place จากโหมด Edit ทำให้ไม่รอ แล้วกำแพง ±340 ของแมพเก่าถูกสร้างทับทีหลัง)
 	-- รอให้ MapBuilder ตั้ง SchoolMapReady=false ตอนเริ่ม แล้วรอจน true
-	task.wait(2)
+	-- รอให้ MapBuilder ตั้งค่าแอตทริบิวต์ครั้งแรก (nil -> false) ก่อน แล้วจึงรอ true (ไม่ต้อง wait ตายตัว)
 	local started = os.clock()
-	while workspace:GetAttribute("SchoolMapReady") ~= true and os.clock() - started < 240 do
-		task.wait(0.5)
+	while workspace:GetAttribute("SchoolMapReady") == nil and os.clock() - started < 10 do
+		task.wait(0.05)
 	end
-	task.wait(0.5)
+	while workspace:GetAttribute("SchoolMapReady") ~= true and os.clock() - started < 240 do
+		task.wait(0.1)
+	end
 end
 
 local hex = Color3.fromHex
@@ -568,6 +573,7 @@ local builders: { [string]: (World.District, Folder) -> () } = {
 	industrial = buildDocks,
 }
 
+local __tD = os.clock()
 local districtsFolder = sub(worldFolder, "Districts")
 for _, d in World.Districts do
 	local f = sub(districtsFolder, d.Id)
@@ -583,6 +589,7 @@ for _, d in World.Districts do
 	task.wait()
 end
 
+print(string.format("[Build] WorldBuilder districts %.1fs", os.clock() - __tD))
 ---------------------------------------------------------------- ตึกทั้งเมือง: ล็อตแคบริมถนนทุกสาย (LotGen) ไม่ทับถนน
 do
 	local LotGen = require(script.Parent.LotGen)
@@ -607,4 +614,5 @@ end
 
 worldFolder:SetAttribute("Version", VERSION)
 worldFolder:SetAttribute("Built", true)
+BuildSync.finish("WorldBuilder", __t0)
 return true

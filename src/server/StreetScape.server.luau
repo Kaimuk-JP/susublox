@@ -11,6 +11,8 @@ local worldFolder = workspace:WaitForChild("World")
 while not worldFolder:GetAttribute("Built") do
 	task.wait(0.5)
 end
+local BuildSync = require(script.Parent.BuildSync)
+local __t0 = os.clock()
 
 local hex = Color3.fromHex
 local rng = Random.new(77)
@@ -185,3 +187,4 @@ end
 
 worldFolder:SetAttribute("UtilityPoles", poleCount)
 print(`[StreetScape] เสาไฟฟ้า {poleCount} ต้น`)
+BuildSync.finish("StreetScape", __t0)
