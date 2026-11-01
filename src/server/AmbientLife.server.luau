@@ -224,6 +224,46 @@ for i, route in routes do
 	end
 end
 
+-- ถูกรถวิ่งชน: กระเด็น ล้มลง เสียเลือดเล็กน้อย (รถวิ่งไม่มีแรงชนทางฟิสิกส์ จึงตรวจด้วยกล่องรอบตัวรถ)
+do
+	local Players = game:GetService("Players")
+	local Combat = require(script.Parent.Combat)
+	local hitAt: { [Player]: number } = {}
+	local HALF = Vector3.new(2.6, 3, 5.2) -- ครึ่งหนึ่งของกล่องชน (กว้าง สูง ยาว) รวมระยะตัวละครแล้ว
+	task.spawn(function()
+		while true do
+			task.wait(0.1)
+			local now = os.clock()
+			for _, car in traffic:GetChildren() do
+				if car:IsA("Model") then
+					local cf = car:GetPivot()
+					for _, player in Players:GetPlayers() do
+						local char = player.Character
+						local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+						local hum = char and char:FindFirstChildOfClass("Humanoid")
+						if root and hum and hum.Health > 0 and now - (hitAt[player] or 0) > 2 then
+							local p = cf:PointToObjectSpace(root.Position)
+							if math.abs(p.X) < HALF.X and math.abs(p.Y - 2) < HALF.Y and math.abs(p.Z) < HALF.Z then
+								hitAt[player] = now
+								local s = Combat.Get(char)
+								local forward = cf.LookVector
+								local side = cf.RightVector * (if p.X >= 0 then 1 else -1)
+								local push = (forward * 1.0 + side * 0.7).Unit
+								if s then
+									s:Knockdown(1.6)
+									Combat.Impulse(s, push * 55 + Vector3.new(0, 38, 0), 0.35)
+									Combat.PlayAnim(char, "Knockdown")
+								end
+								hum:TakeDamage(math.max(10, hum.MaxHealth * 0.12))
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+end
+
 ---------------------------------------------------------------- คนเดินถนน (เกิดเมื่อมีผู้เล่นเข้าใกล้ย่าน)
 local PEDESTRIANS = 6
 local npcFolder = Instance.new("Folder")
