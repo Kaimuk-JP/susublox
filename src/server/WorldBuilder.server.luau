@@ -6,11 +6,12 @@ local RunService = game:GetService("RunService")
 
 local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
+local DockKit = require(script.Parent.DockKit)
 local BuildSync = require(script.Parent.BuildSync)
 local __t0 = os.clock()
 
 -- เพิ่มเลขนี้ทุกครั้งที่แก้โลก: ถ้าใน Place มีโลกที่สร้างไว้ล่วงหน้า (รันใน Edit) เวอร์ชันตรงกัน ตอนเล่นจะข้ามการสร้างใหม่
-local VERSION = 5
+local VERSION = 6
 local running = RunService:IsRunning()
 local prebuilt = workspace:FindFirstChild("World")
 if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttribute("Version") == VERSION then
@@ -565,32 +566,7 @@ local function buildDocks(d: World.District, f: Folder)
 	terrain:FillBlock(CFrame.new(cx + 180, -2, cz + 20), Vector3.new(110, 20, 420), Enum.Material.Air) -- ขุดอ่าว
 	terrain:FillBlock(CFrame.new(cx + 180, -10.5, cz + 20), Vector3.new(110, 3, 420), Enum.Material.Sand)
 	terrain:FillBlock(CFrame.new(cx + 180, -5, cz + 20), Vector3.new(110, 8, 420), Enum.Material.Water)
-	BK.box("Quay", 628, 686, 0, 0.35, 440, 840, hex("8F8B83"), f, Enum.Material.Concrete)
-	local pz = 705
-	BK.box("Pier", cx + 70, cx + 135, 0, 1.2, pz - 5, pz + 5, hex("6F5236"), f, Enum.Material.WoodPlanks)
-	for x = cx + 75, cx + 135, 10 do
-		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, pz - 5.4), hex("6B5A47"), f, Enum.Material.Wood)
-		BK.cylinder("PierPost", 0.6, 4, Vector3.new(x, -0.5, pz + 5.4), hex("6B5A47"), f, Enum.Material.Wood)
-	end
-	local sx, sz = cx + 165, pz
-	BK.box("ShipHull", sx - 14, sx + 14, -1, 9, sz - 45, sz + 45, hex("8E2B2B"), f)
-	BK.box("ShipDeck", sx - 14, sx + 14, 9, 9.6, sz - 45, sz + 45, hex("4A525C"), f)
-	BK.box("ShipCabin", sx - 10, sx + 10, 9.6, 20, sz + 18, sz + 38, hex("D9D0BE"), f)
-	for _, z in { sz + 20, sz + 28, sz + 36 } do
-		local win = BK.box("ShipWindow", sx - 10.1, sx + 10.1, 14, 16, z - 1.5, z + 1.5, hex("F0D9A0"), f, Enum.Material.Neon)
-		win.CanCollide = false
-	end
-	BK.cylinder("ShipFunnel", 2, 6, Vector3.new(sx, 23, sz + 28), hex("9E3B33"), f)
-	-- เครนยักษ์ริมท่า (คร่อมทางขนส่ง)
-	for _, x in { 648, 672 } do
-		for _, z in { 622, 638 } do
-			BK.cylinder("CraneLeg", 0.8, 28, Vector3.new(x, 14, z), hex("A8643A"), f)
-		end
-		BK.box("CraneBeam", x - 1, x + 1, 27, 29, 614, 650, hex("A8643A"), f)
-	end
-	for z = 450, 830, 55 do
-		BK.lamp(f, 640, z, hex("FFB36B"))
-	end
+	DockKit.build(f)
 	stone(d, f)
 end
 

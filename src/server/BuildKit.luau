@@ -76,6 +76,17 @@ end
 
 local hex = Color3.fromHex
 
+-- ป้ายตัวอักษรญี่ปุ่น: ใช้ฟอนต์ที่มีอักษรจีน-ญี่ปุ่น (GothamBold ไม่มี จึงถูกแทนที่ด้วยฟอนต์สำรองตัวเล็กเพี้ยน)
+function BK.jpFont(p: Part)
+	local gui = p:FindFirstChildWhichIsA("SurfaceGui")
+	local label = gui and gui:FindFirstChildWhichIsA("TextLabel")
+	if gui and label then
+		label.Font = Enum.Font.SourceSansBold
+		gui.LightInfluence = 0.25 -- ฝั่งเงาอ่านออก
+		gui.Brightness = 1.4
+	end
+end
+
 local function jitter(c: Color3, amt: number): Color3
 	local h, sat, v = c:ToHSV()
 	return Color3.fromHSV(h, math.clamp(sat + BK.rng:NextNumber(-amt, amt), 0, 1), math.clamp(v + BK.rng:NextNumber(-amt, amt), 0, 1))
@@ -749,6 +760,121 @@ local function rotateModel(model: Instance, cx: number, cz: number, yaw: number)
 		end
 	end
 end
+BK.rotateModel = rotateModel
+
+---------------------------------------------------------------- ท่าเรือ: ตู้คอนเทนเนอร์ / โฟล์คลิฟต์ / พาเลท / ถังน้ำมัน
+-- 1 stud ~ 0.35 m: ตู้ 20ft = 17 x 7 x 7.4 stud (ยาว x กว้าง x สูง) ตู้ 40ft = 35
+local CONTAINER_PAINT = { "8F4B3A", "A25A3E", "3D5E80", "2F4D6B", "4C6E58", "3F5F4C", "8E3A36", "A04440", "AEB0AB", "A58B4A" }
+local CONTAINER_OWNER = { "SSLU", "SUSU", "KMTU", "NYKU", "TLLU" }
+local CONTAINER_BRAND = { "SUSU LINE", "MARUKO", "KISO", "SUSU MARINE", "HAMA" }
+local CONTAINER_H = 7.4
+
+local function stencilGui(p: BasePart, face: Enum.NormalId, code: string, brand: string?)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 14
+	gui.MaxDistance = 110
+	gui.Parent = p
+	local c = Instance.new("TextLabel")
+	c.BackgroundTransparency = 1
+	c.Size = UDim2.fromScale(0.44, 0.1)
+	c.Position = UDim2.fromScale(0.52, 0.05)
+	c.Text = code
+	c.TextColor3 = hex("ECE8DA")
+	c.Font = Enum.Font.SourceSansBold
+	c.TextScaled = true
+	c.TextXAlignment = Enum.TextXAlignment.Right
+	c.Parent = gui
+	if brand then
+		local b = Instance.new("TextLabel")
+		b.BackgroundTransparency = 1
+		b.Size = UDim2.fromScale(0.7, 0.3)
+		b.Position = UDim2.fromScale(0.15, 0.4)
+		b.Text = brand
+		b.TextColor3 = hex("ECE8DA")
+		b.Font = Enum.Font.SourceSansBold
+		b.TextScaled = true
+		b.Parent = gui
+	end
+end
+
+-- ตู้คอนเทนเนอร์ 1 ใบ (สีหม่นสุ่ม ผนังลูกฟูก ประตูท้ายตู้ เลขรหัสสเตนซิล) rng ต้องเป็นของเราเอง ไม่ใช่ lotRng
+function BK.container(parent: Instance, cx: number, y0: number, cz: number, alongX: boolean, len: number, rng: Random, stencil: boolean): Part
+	local sx, sz = if alongX then len else 7, if alongX then 7 else len
+	local h0, s0, v0 = hex(CONTAINER_PAINT[rng:NextInteger(1, #CONTAINER_PAINT)]):ToHSV()
+	local col = Color3.fromHSV(h0, s0, math.clamp(v0 * rng:NextNumber(0.86, 1.08), 0, 1))
+	local body = BK.box("Container", cx - sx / 2, cx + sx / 2, y0, y0 + CONTAINER_H, cz - sz / 2, cz + sz / 2, col, parent, Enum.Material.Metal)
+	local sgn = if rng:NextNumber() < 0.5 then -1 else 1
+	local dark = col:Lerp(Color3.new(0, 0, 0), 0.25)
+	if alongX then
+		local ex = cx + sgn * sx / 2
+		BK.box("ContainerDoor", math.min(ex, ex + sgn * 0.2), math.max(ex, ex + sgn * 0.2), y0 + 0.4, y0 + CONTAINER_H - 0.4, cz - sz / 2 + 0.35, cz + sz / 2 - 0.35, dark, parent, Enum.Material.Metal)
+	else
+		local ez = cz + sgn * sz / 2
+		BK.box("ContainerDoor", cx - sx / 2 + 0.35, cx + sx / 2 - 0.35, y0 + 0.4, y0 + CONTAINER_H - 0.4, math.min(ez, ez + sgn * 0.2), math.max(ez, ez + sgn * 0.2), dark, parent, Enum.Material.Metal)
+	end
+	if stencil then
+		local code = string.format("%s %06d %d", CONTAINER_OWNER[rng:NextInteger(1, #CONTAINER_OWNER)], rng:NextInteger(100000, 999999), rng:NextInteger(0, 9))
+		local brand = if rng:NextNumber() < 0.5 then CONTAINER_BRAND[rng:NextInteger(1, #CONTAINER_BRAND)] else nil
+		if alongX then
+			stencilGui(body, Enum.NormalId.Front, code, brand)
+			stencilGui(body, Enum.NormalId.Back, code, brand)
+		else
+			stencilGui(body, Enum.NormalId.Right, code, brand)
+			stencilGui(body, Enum.NormalId.Left, code, brand)
+		end
+	end
+	return body
+end
+
+-- ส่วนประกอบเล็กตามพิกัดท้องถิ่นของ origin (หน้า = +Z)
+local function lpart(origin: CFrame, parent: Instance, name: string, size: Vector3, lp: Vector3, color: Color3, mat: Enum.Material?): Part
+	local p = BK.part(name, size, origin.Position, color, parent, mat or Enum.Material.Metal)
+	p.CFrame = origin * CFrame.new(lp)
+	return p
+end
+
+-- พาเลทไม้ + ลังกระดาษ (วางตามแกน x ของ origin)
+function BK.pallet(parent: Instance, origin: CFrame, loaded: boolean)
+	lpart(origin, parent, "Pallet", Vector3.new(3.4, 0.5, 2.4), Vector3.new(0, 0.25, 0), hex("A9885A"), Enum.Material.WoodPlanks)
+	if loaded then
+		lpart(origin, parent, "Cartons", Vector3.new(3.1, 2.3, 2.1), Vector3.new(0, 1.65, 0), hex("B99B6B"), Enum.Material.Fabric)
+		lpart(origin, parent, "Wrap", Vector3.new(3.15, 0.5, 2.15), Vector3.new(0, 2.0, 0), hex("D8D8D0"), Enum.Material.Fabric).Transparency = 0.35
+	end
+end
+
+-- ถังน้ำมัน 200L (สูง ~2.6 stud)
+function BK.drum(parent: Instance, x: number, z: number, y0: number, color: Color3)
+	BK.cylinder("Drum", 0.8, 2.6, Vector3.new(x, y0 + 1.3, z), color, parent, Enum.Material.Metal)
+	BK.cylinder("DrumRim", 0.84, 0.18, Vector3.new(x, y0 + 2.2, z), color:Lerp(Color3.new(0, 0, 0), 0.3), parent, Enum.Material.Metal)
+end
+
+-- โฟล์คลิฟต์ง่าย ๆ (ยาว ~8 กว้าง ~3.2 สูง ~6.4 stud) หน้า = +Z ของ origin
+function BK.forklift(parent: Instance, origin: CFrame, body: Color3)
+	local m = Instance.new("Folder")
+	m.Name = "Forklift"
+	m.Parent = parent
+	local dark = hex("2A2C32")
+	lpart(origin, m, "FLBody", Vector3.new(3.2, 2.0, 5.2), Vector3.new(0, 2.0, -0.6), body)
+	lpart(origin, m, "FLWeight", Vector3.new(3.2, 2.6, 1.6), Vector3.new(0, 2.3, -3.2), body:Lerp(Color3.new(0, 0, 0), 0.2))
+	lpart(origin, m, "FLSeat", Vector3.new(1.8, 0.7, 1.6), Vector3.new(0, 3.35, -1.2), dark, Enum.Material.Fabric)
+	for _, sx in { -1.35, 1.35 } do
+		for _, sz in { -2.4, 0.6 } do
+			lpart(origin, m, "FLPost", Vector3.new(0.25, 3.2, 0.25), Vector3.new(sx, 4.6, sz), dark)
+		end
+		local w1 = lpart(origin, m, "FLWheel", Vector3.new(1.0, 1.9, 1.9), Vector3.new(sx * 1.05, 0.95, 1.1), dark, Enum.Material.Rubber)
+		w1.Shape = Enum.PartType.Cylinder
+		local w2 = lpart(origin, m, "FLWheel", Vector3.new(1.0, 1.6, 1.6), Vector3.new(sx * 1.05, 0.8, -2.3), dark, Enum.Material.Rubber)
+		w2.Shape = Enum.PartType.Cylinder
+	end
+	lpart(origin, m, "FLRoof", Vector3.new(3.2, 0.25, 3.4), Vector3.new(0, 6.3, -0.9), dark)
+	for _, sx in { -0.7, 0.7 } do
+		lpart(origin, m, "FLMast", Vector3.new(0.35, 6.2, 0.35), Vector3.new(sx, 3.4, 2.6), hex("5E6168"))
+		lpart(origin, m, "FLFork", Vector3.new(0.45, 0.35, 3.8), Vector3.new(sx * 1.1, 0.45, 4.2), hex("4A4C52"))
+	end
+	lpart(origin, m, "FLCarriage", Vector3.new(2.6, 1.6, 0.3), Vector3.new(0, 1.3, 2.9), hex("5E6168"))
+end
 
 local function exteriorStairs(model: Instance, cx: number, cz: number, w: number, d: number, h: number, rng: Random)
 	local steel = hex("5E6168")
@@ -862,27 +988,242 @@ local function houseGround(model: Instance, cx: number, cz: number, w: number, d
 	end
 end
 
--- ลานตู้คอนเทนเนอร์ (ล็อตท่าเรือ): กองตู้ซ้อนไม่เท่ากัน
+-- ลานตู้คอนเทนเนอร์ (ล็อตท่าเรือ): ตู้ 20ft ขนาดจริง กองซ้อน 1-3 ชั้น สีหม่นต่างกัน เลขรหัส รั้วลวดตาข่ายพร้อมประตู โฟล์คลิฟต์
+-- ใช้ rng ของตัวเองสำหรับรายละเอียด แต่ดึงเลขจาก lotRng เท่าเดิมทุกครั้ง (ผังล็อตอื่นไม่เลื่อน)
 local function containerYard(parent: Instance, lot: any, rng: Random)
 	local model = Instance.new("Folder")
 	model.Name = "Yard"
 	model.Parent = parent
-	local alongX = lot.Yaw == 0 or lot.Yaw == 180
-	local sx, sz = if alongX then 11 else 5, if alongX then 5 else 11
-	local cols = math.max(1, math.floor((lot.Fx2 - lot.Fx1) / (sx + 1.5)))
-	local rows = math.max(1, math.floor((lot.Fz2 - lot.Fz1) / (sz + 1.5)))
-	for c = 0, cols - 1 do
-		for r = 0, rows - 1 do
-			if rng:NextNumber() < 0.8 then
-				local px = lot.Fx1 + (c + 0.5) * ((lot.Fx2 - lot.Fx1) / cols)
-				local pz = lot.Fz1 + (r + 0.5) * ((lot.Fz2 - lot.Fz1) / rows)
-				for s = 0, rng:NextInteger(0, 2) do
-					BK.box("Container", px - sx / 2, px + sx / 2, 0.3 + s * 5.2, 5.5 + s * 5.2, pz - sz / 2, pz + sz / 2, hex(CONTAINER_COLORS[rng:NextInteger(1, #CONTAINER_COLORS)]), model, Enum.Material.Metal)
+	do -- ดึงเลขตามอัลกอริทึมเดิม (ตู้ 11x5)
+		local ax = lot.Yaw == 0 or lot.Yaw == 180
+		local osx, osz = if ax then 11 else 5, if ax then 5 else 11
+		local oc = math.max(1, math.floor((lot.Fx2 - lot.Fx1) / (osx + 1.5)))
+		local orr = math.max(1, math.floor((lot.Fz2 - lot.Fz1) / (osz + 1.5)))
+		for _ = 0, oc - 1 do
+			for _ = 0, orr - 1 do
+				if rng:NextNumber() < 0.8 then
+					for _ = 0, rng:NextInteger(0, 2) do
+						rng:NextInteger(1, #CONTAINER_COLORS)
+					end
 				end
 			end
 		end
 	end
+	local prng = Random.new(math.floor(lot.X * 31 + lot.Z * 17))
+	local ex, ez = lot.Fx2 - lot.Fx1, lot.Fz2 - lot.Fz1
+	local U = 17
+	local alongX, cols, rows = true, 0, 0
+	for _ = 1, 2 do
+		local ca, ra = math.floor((ex - 0.6 + 1.0) / (U + 1.0)), math.floor((ez - 0.6 + 1.0) / 8)
+		local cb, rb = math.floor((ex - 0.6 + 1.0) / 8), math.floor((ez - 0.6 + 1.0) / (U + 1.0))
+		if ca * ra >= cb * rb then
+			alongX, cols, rows = true, ca, ra
+		else
+			alongX, cols, rows = false, cb, rb
+		end
+		if cols * rows > 0 then
+			break
+		end
+		U = 8.5 -- ล็อตแคบ: ตู้ 10ft
+	end
+	local emptyCell: Vector3? = nil
+	for c = 0, cols - 1 do
+		for r = 0, rows - 1 do
+			local px = lot.Fx1 + (c + 0.5) * (ex / cols)
+			local pz = lot.Fz1 + (r + 0.5) * (ez / rows)
+			if prng:NextNumber() < 0.78 then
+				local q = prng:NextNumber()
+				local tiers = if q < 0.4 then 1 elseif q < 0.8 then 2 else 3
+				for s = 0, tiers - 1 do
+					BK.container(model, px, 0.1 + s * (CONTAINER_H + 0.05), pz, alongX, U, prng, true)
+				end
+			elseif not emptyCell then
+				emptyCell = Vector3.new(px, 0, pz)
+			end
+		end
+	end
+	if emptyCell and prng:NextNumber() < 0.7 then
+		BK.forklift(model, CFrame.new(emptyCell) * CFrame.Angles(0, math.rad(prng:NextInteger(0, 3) * 90 + prng:NextInteger(-12, 12)), 0), hex(if prng:NextNumber() < 0.5 then "C9722A" else "B8962E"))
+		BK.pallet(model, CFrame.new(emptyCell + Vector3.new(0, 0, 6)) * CFrame.Angles(0, math.rad(90), 0), true)
+	end
+	-- รั้วลวดตาข่ายด้านหน้า (ด้านติดถนน) เว้นประตู 9 stud ตรงกลาง
+	local yaw = lot.Yaw
+	local fx1, fz1, fx2, fz2
+	if yaw == 0 then
+		fx1, fz1, fx2, fz2 = lot.Fx1, lot.Fz2 - 0.3, lot.Fx2, lot.Fz2 - 0.3
+	elseif yaw == 180 then
+		fx1, fz1, fx2, fz2 = lot.Fx1, lot.Fz1 + 0.3, lot.Fx2, lot.Fz1 + 0.3
+	elseif yaw == 90 then
+		fx1, fz1, fx2, fz2 = lot.Fx2 - 0.3, lot.Fz1, lot.Fx2 - 0.3, lot.Fz2
+	else
+		fx1, fz1, fx2, fz2 = lot.Fx1 + 0.3, lot.Fz1, lot.Fx1 + 0.3, lot.Fz2
+	end
+	local mx, mz = (fx1 + fx2) / 2, (fz1 + fz2) / 2
+	local len = math.sqrt((fx2 - fx1) ^ 2 + (fz2 - fz1) ^ 2)
+	if len > 14 then
+		local ux, uz = (fx2 - fx1) / len, (fz2 - fz1) / len
+		BK.fence(model, fx1, fz1, mx - ux * 4.5, mz - uz * 4.5, 6.5)
+		BK.fence(model, mx + ux * 4.5, mz + uz * 4.5, fx2, fz2, 6.5)
+		for _, s in { -1, 1 } do
+			BK.cylinder("GatePost", 0.35, 7.5, Vector3.new(mx + s * ux * 4.5, 3.75, mz + s * uz * 4.5), hex("44464D"), model, Enum.Material.Metal)
+		end
+	end
 	return model
+end
+
+---------------------------------------------------------------- โกดังท่าเรือ: ผนังเหล็กลูกฟูก ประตูม้วน ท่าขนของ หน้าต่างเล็ก ป้าย ปล่องหลังคา
+-- ทำในพิกัดท้องถิ่น (หน้า = +Z) ก่อนหมุนตาม lot.Yaw; prng เป็นของเราเอง
+local WH_ACCENT = { "3F566E", "4F7358", "9E3B33", "B8944A" }
+local WH_DOOR = { "5C7A96", "6E8F6E", "A0584A", "B8B2A2", "C4A24F" }
+local WH_KANJI = { "一", "二", "三", "四", "五", "六", "七", "八" }
+local WH_EN = { "SUSU LOGISTICS", "SUSU MARINE", "SUSU CARGO", "KISO WAREHOUSE" }
+
+local function warehouseDetail(model: Instance, cx: number, cz: number, w: number, d: number, h: number, prng: Random)
+	for _, c in model:GetChildren() do
+		local n = c.Name
+		if n == "Window" or n == "WindowFrame" or n == "AirCon" or n == "RoofVent" or n == "WaterTank" or n == "TankLeg" or n == "TankCap" or n == "Antenna" or n == "Balcony" or n == "BalconyRail" or n == "Sign" or string.sub(n, 1, 7) == "Parapet" then
+			c:Destroy()
+		end
+	end
+	local walls = model:FindFirstChild("Walls") :: Part?
+	if walls then
+		walls.Material = Enum.Material.Metal
+	end
+	local accent = hex(WH_ACCENT[prng:NextInteger(1, #WH_ACCENT)])
+	local doorCol = hex(WH_DOOR[prng:NextInteger(1, #WH_DOOR)])
+	local steel = hex("5E6168")
+	local z0 = cz + d / 2
+	local x0 = cx - w / 2
+	-- แถบสีรอบอาคาร
+	local sy1, sy2 = h - 3.2, h - 2.5
+	BK.box("WhStripe", x0 - 0.15, cx + w / 2 + 0.15, sy1, sy2, z0, z0 + 0.15, accent, model, Enum.Material.Metal)
+	BK.box("WhStripe", x0 - 0.15, cx + w / 2 + 0.15, sy1, sy2, cz - d / 2 - 0.15, cz - d / 2, accent, model, Enum.Material.Metal)
+	BK.box("WhStripe", x0 - 0.15, x0, sy1, sy2, cz - d / 2, z0, accent, model, Enum.Material.Metal)
+	BK.box("WhStripe", cx + w / 2, cx + w / 2 + 0.15, sy1, sy2, cz - d / 2, z0, accent, model, Enum.Material.Metal)
+	-- ซี่ลูกฟูกแนวนอนของผนังเหล็ก (เส้นเงาเข้มทุก 3.2 stud)
+	local rib = walls and walls.Color:Lerp(Color3.new(0, 0, 0), 0.18) or hex("7A7E80")
+	local by = 1.6
+	while by < sy1 - 0.5 do
+		BK.box("WhRib", x0 - 0.08, cx + w / 2 + 0.08, by, by + 0.35, z0, z0 + 0.08, rib, model, Enum.Material.Metal)
+		BK.box("WhRib", x0 - 0.08, cx + w / 2 + 0.08, by, by + 0.35, cz - d / 2 - 0.08, cz - d / 2, rib, model, Enum.Material.Metal)
+		BK.box("WhRib", x0 - 0.08, x0, by, by + 0.35, cz - d / 2, z0, rib, model, Enum.Material.Metal)
+		BK.box("WhRib", cx + w / 2, cx + w / 2 + 0.08, by, by + 0.35, cz - d / 2, z0, rib, model, Enum.Material.Metal)
+		by += 3.2
+	end
+	local occ: { { number } } = {}
+	local function rollerDoor(xc: number, y0: number, width: number, height: number, label: string)
+		BK.box("DoorFrame", xc - width / 2 - 0.4, xc + width / 2 + 0.4, y0 - 0.3, y0 + height + 0.5, z0, z0 + 0.2, hex("3A3D42"), model, Enum.Material.Metal)
+		local door = BK.box("RollerDoor", xc - width / 2, xc + width / 2, y0, y0 + height, z0, z0 + 0.45, doorCol, model, Enum.Material.Metal)
+		local sl = y0 + 1.5
+		while sl < y0 + height - 0.6 do
+			BK.box("DoorSlat", xc - width / 2, xc + width / 2, sl, sl + 0.18, z0 + 0.45, z0 + 0.52, doorCol:Lerp(Color3.new(0, 0, 0), 0.3), model, Enum.Material.Metal)
+			sl += 1.5
+		end
+		BK.box("DoorHood", xc - width / 2 - 0.3, xc + width / 2 + 0.3, y0 + height, y0 + height + 0.9, z0, z0 + 0.7, hex("3A3D42"), model, Enum.Material.Metal)
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Back
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 24
+		gui.MaxDistance = 140
+		gui.Parent = door
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.fromScale(0.42, 0.34)
+		t.Position = UDim2.fromScale(0.29, 0.1)
+		t.Text = label
+		t.TextColor3 = hex("F2F0E6")
+		t.Font = Enum.Font.SourceSansBold
+		t.TextScaled = true
+		t.Parent = gui
+		-- โคมไฟติดผนังเหนือประตู
+		BK.box("WallLamp", xc - 0.6, xc + 0.6, y0 + height + 1.2, y0 + height + 1.8, z0, z0 + 0.9, hex("2A2C32"), model, Enum.Material.Metal)
+		BK.box("WallLampGlass", xc - 0.45, xc + 0.45, y0 + height + 1.05, y0 + height + 1.2, z0 + 0.1, z0 + 0.8, hex("F2E4B0"), model, Enum.Material.Glass)
+		table.insert(occ, { xc - width / 2 - 0.4, xc + width / 2 + 0.4 })
+	end
+	local doorH = math.min(8.6, h - 3.8)
+	local bay = prng:NextInteger(1, 4)
+	local gx = x0 + 2 + 4
+	rollerDoor(gx, 0.3, 8, doorH, tostring(bay))
+	BK.cylinder("Drum", 0.8, 2.6, Vector3.new(x0 + 0.95, 1.3, z0 + 0.95), hex(if prng:NextNumber() < 0.5 then "3F5F8A" else "9E3B33"), model, Enum.Material.Metal)
+	if w >= 22 then
+		-- ท่าขนของยกสูง + หลังคากันฝน + พาเลท
+		local dx = cx + w / 2 - 6.5
+		local dockH = math.min(6.5, h - 6.2)
+		BK.box("LoadingDock", dx - 5.2, dx + 5.2, 0, 1.4, z0, z0 + 2.6, hex("9A9890"), model, Enum.Material.Concrete)
+		BK.box("DockEdge", dx - 5.2, dx + 5.2, 1.4, 1.46, z0 + 2.25, z0 + 2.6, hex("E0B93A"), model, Enum.Material.Concrete)
+		for _, s in { -3, 3 } do
+			BK.box("DockBumper", dx + s - 0.6, dx + s + 0.6, 0.2, 1.2, z0 + 2.6, z0 + 2.95, hex("1C1D21"), model, Enum.Material.Rubber)
+		end
+		rollerDoor(dx, 1.4, 7.4, dockH, tostring(bay + 1))
+		BK.box("DockCanopy", dx - 5.2, dx + 5.2, 1.4 + dockH + 0.55, 1.4 + dockH + 0.85, z0, z0 + 3.4, steel, model, Enum.Material.Metal)
+		for _, s in { -4.9, 4.9 } do
+			BK.cylinder("DockPost", 0.18, dockH + 0.55, Vector3.new(dx + s, 1.4 + (dockH + 0.55) / 2, z0 + 3.2), steel, model, Enum.Material.Metal)
+		end
+		BK.pallet(model, CFrame.new(dx - 2.4, 1.46, z0 + 1.25), true)
+		BK.pallet(model, CFrame.new(dx + 2.5, 1.46, z0 + 1.25), prng:NextNumber() < 0.6)
+		table.insert(occ, { dx - 5.6, dx + 5.6 })
+	end
+	-- ประตูคนเข้าที่ผนังด้านข้าง (-X)
+	local mdz = z0 - 4.5
+	BK.box("ManDoor", x0 - 0.25, x0, 0.3, 6.6, mdz - 1.5, mdz + 1.5, hex("3C5A48"), model, Enum.Material.Metal)
+	BK.box("ManDoorStep", x0 - 1.2, x0, 0, 0.4, mdz - 1.8, mdz + 1.8, hex("8F8B83"), model, Enum.Material.Concrete)
+	BK.box("WallLamp", x0 - 0.7, x0, 7.2, 7.8, mdz - 0.5, mdz + 0.5, hex("2A2C32"), model, Enum.Material.Metal)
+	-- ป้าย 第N倉庫 + ชื่อบริษัท (หน้าตึก)
+	local jp = "第" .. WH_KANJI[prng:NextInteger(1, #WH_KANJI)] .. "倉庫"
+	local en = WH_EN[prng:NextInteger(1, #WH_EN)]
+	local sy = h - 1.9
+	local jpSign = BK.sign(model, jp, Vector3.new(7.2, 2.5, 0.35), Vector3.new(x0 + 4.4, sy, z0 + 0.2), 180, accent, hex("F2F0E6"))
+	jpSign.Material = Enum.Material.Metal
+	BK.jpFont(jpSign)
+	local ew = math.min(9.5, w - 9.5)
+	local enSign = BK.sign(model, en, Vector3.new(ew, 1.9, 0.35), Vector3.new(cx + w / 2 - 1.5 - ew / 2, sy, z0 + 0.2), 180, hex("ECE8DA"), accent:Lerp(Color3.new(0, 0, 0), 0.25))
+	enSign.Material = Enum.Material.Metal
+	BK.jpFont(enSign)
+	-- หน้าต่างบานเล็กสูง (ข้ามช่วงประตู)
+	local wy = h - 5.6
+	local function win(x: number, z: number, onX: boolean, sign: number)
+		local fs = if onX then Vector3.new(0.2, 1.9, 3.4) else Vector3.new(3.4, 1.9, 0.2)
+		local gs = if onX then Vector3.new(0.3, 1.5, 3.0) else Vector3.new(3.0, 1.5, 0.3)
+		local ox, oz = if onX then sign else 0, if onX then 0 else sign
+		local f = BK.part("WhWindowFrame", fs, Vector3.new(x + ox * 0.08, wy, z + oz * 0.08), hex("BFC2C0"), model, Enum.Material.Metal)
+		local g = BK.part("WhWindow", gs, Vector3.new(x + ox * 0.12, wy, z + oz * 0.12), hex("5E7F98"), model, Enum.Material.Glass)
+		g.Transparency = 0.25
+		f.CanCollide, g.CanCollide = false, false
+	end
+	local function blocked(x: number): boolean
+		for _, o in occ do
+			if x > o[1] - 1.9 and x < o[2] + 1.9 then
+				return true
+			end
+		end
+		return false
+	end
+	local x = x0 + 3
+	while x < cx + w / 2 - 2.5 do
+		if not blocked(x) then
+			win(x, z0, false, 1)
+		end
+		win(x, cz - d / 2, false, -1)
+		x += 6.2
+	end
+	local z = cz - d / 2 + 3.5
+	while z < z0 - 2.5 do
+		win(cx + w / 2, z, true, 1)
+		if math.abs(z - mdz) > 3.4 then
+			win(x0, z, true, -1)
+		end
+		z += 7
+	end
+	-- สันหลังคา + ปล่องระบายอากาศแบบเทอร์ไบน์
+	local rise = math.clamp(w * 0.22, 1.8, 3.2)
+	local ry = h + 0.6 + rise
+	BK.box("RidgeCap", cx - 0.6, cx + 0.6, ry - 0.1, ry + 0.4, cz - d / 2 - 0.9, z0 + 0.9, hex("4A525C"), model, Enum.Material.Metal)
+	local nv = math.max(2, math.floor(d / 8))
+	for k = 1, nv do
+		local vz = cz - d / 2 + (k - 0.5) * (d / nv)
+		BK.cylinder("RoofVentBase", 0.6, 0.9, Vector3.new(cx, ry + 0.8, vz), hex("8C8F93"), model, Enum.Material.Metal)
+		BK.ball("RoofVent", 2.1, Vector3.new(cx, ry + 2.0, vz), hex("B8BABA"), model, Enum.Material.Metal)
+	end
 end
 
 local function scaffold(model: Instance, cx: number, cz: number, w: number, d: number, h: number)
@@ -940,6 +1281,9 @@ local function tokyoBuild(parent: Instance, lot: any, rng: Random): Instance
 	local model = BK.building(parent, cx, cz, w, d, h, wall, roof, o)
 	if lot.Ground == "ind" or lot.Era == "wood" then
 		gableRoof(model, cx, cz, w, d, h, hex(({ "4A525C", "5B5D6B", "6B4F44" })[rng:NextInteger(1, 3)]))
+	end
+	if lot.Ground == "ind" then
+		warehouseDetail(model, cx, cz, w, d, h, Random.new(math.floor(cx * 13 + cz * 29)))
 	end
 	if lot.Ground == "house" then
 		houseGround(model, cx, cz, w, d, rng)
