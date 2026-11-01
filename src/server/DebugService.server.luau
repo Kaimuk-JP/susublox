@@ -19,6 +19,7 @@ local DEBUG = {
 
 local Progression = require(game.ReplicatedStorage.Shared.Progression)
 local StyleData = require(game.ReplicatedStorage.Shared.Styles)
+local Passives = require(game.ReplicatedStorage.Shared.Passives)
 local Combat = require(script.Parent.Combat)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -43,6 +44,24 @@ local function boost(player: Player)
 	for id in StyleData.Styles do
 		table.insert(p.UnlockedStyles, id)
 		p.Mastery[id] = { Level = DEBUG.Mastery, Exp = 0 }
+	end
+	-- ลงแต้มสเตตัสให้เต็มทุกช่อง (แบ่งเท่าๆ กัน) แล้วใส่พาสซีฟให้เต็มทุกช่อง
+	local statNames = { "Strength", "Health", "Stamina", "Speed" }
+	local share = math.floor(DEBUG.StatPoints / #statNames) -- ตั้งค่าตายตัว (ไม่บวกซ้ำทุกครั้งที่เข้าเกม)
+	for _, name in statNames do
+		(p.Stats :: any)[name] = share
+	end
+	p.StatPoints = DEBUG.StatPoints - share * #statNames
+	table.clear(p.Passives)
+	local ids = {}
+	for id in Passives.All do
+		table.insert(ids, id)
+	end
+	table.sort(ids)
+	for _, id in ids do
+		if #p.Passives < Passives.MaxSlots and Passives.CanEquip(p.Level, id) then
+			table.insert(p.Passives, id)
+		end
 	end
 	p.TutorialDone = true
 	for _, id in require(game.ReplicatedStorage.Shared.Outfits).Order do
