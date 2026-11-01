@@ -58,6 +58,18 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 				d.CanTouch = false
 			end
 		end
+		-- โมเดลนำเข้าถูกปิดการชนไว้ทั้งคัน ผู้เล่นเลยเดินทะลุ: ใส่กล่องชนล่องหนครอบตัวรถจอด
+		local bbCf, bbSize = model:GetBoundingBox()
+		local collider = Instance.new("Part")
+		collider.Name = "Collider"
+		collider.Size = bbSize * Vector3.new(0.95, 1, 0.97)
+		collider.CFrame = bbCf
+		collider.Transparency = 1
+		collider.Anchored = true
+		collider.CanCollide = true
+		collider.CanQuery = false
+		collider.CanTouch = false
+		collider.Parent = model
 		return model, primary
 	end
 	-- รถวิ่ง: ตัวขยับล่องหนที่ Anchored ตัวเดียว ชิ้นอื่นเชื่อมตามด้วย Weld ไม่ชนผู้เล่น
