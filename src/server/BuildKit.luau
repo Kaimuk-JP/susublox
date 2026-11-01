@@ -273,7 +273,7 @@ end
 
 -- ต้นไม้จริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Trees) ข้อตกลง: Pivot = โคนต้นที่พื้น สูงราว 12 studs ไม่มีสคริปต์
 -- ถ้ามีจะใช้แทนต้นไม้ที่ประกอบจากก้อนกลม; ถ้าไม่มีก็ใช้แบบเดิม
-function BK.importedTree(parent: Instance, x: number, z: number, scale: number, names: { string }?): boolean
+function BK.importedTree(parent: Instance, x: number, z: number, scale: number, names: { string }?, maxCrown: number?): boolean
 	local assets = game:GetService("ServerStorage"):FindFirstChild("ImportedAssets")
 	local folder = assets and assets:FindFirstChild("Trees")
 	local list = folder and folder:GetChildren() or {}
@@ -301,35 +301,53 @@ function BK.importedTree(parent: Instance, x: number, z: number, scale: number, 
 			d.Anchored = true
 		end
 	end
-	model:ScaleTo(math.max(0.5, scale) * BK.rng:NextNumber(0.9, 1.15))
+	-- ปรับตามขนาดจริงของโมเดล (ไม่เชื่อว่าสูง 12 studs): เป้าหมายสูง 12*scale และเรือนยอดกว้างไม่เกิน maxCrown
+	local _, size = model:GetBoundingBox()
+	local factor = (12 * math.max(0.5, scale) * BK.rng:NextNumber(0.9, 1.1)) / math.max(size.Y, 0.1)
+	if maxCrown then
+		factor = math.min(factor, maxCrown / math.max(size.X, size.Z, 0.1))
+	end
+	model:ScaleTo(model:GetScale() * factor)
 	model:PivotTo(CFrame.new(x, 0, z) * CFrame.Angles(0, BK.rng:NextNumber(0, 6.28), 0))
 	model.Parent = parent
 	return true
 end
 
-function BK.roundTree(parent: Instance, x: number, z: number, scale: number, leaf: Color3?, names: { string }?)
-	if BK.importedTree(parent, x, z, scale, names) then
+-- ต้นไม้สำรองเมื่อไม่มีโมเดลนำเข้า: ลำต้นเรียว กิ่งหลายแขนง ใบเป็นกระจุกเล็กๆ กระจายไม่สมมาตร (ไม่เป็นลูกบอลใหญ่)
+function BK.roundTree(parent: Instance, x: number, z: number, scale: number, leaf: Color3?, names: { string }?, maxCrown: number?)
+	if BK.importedTree(parent, x, z, scale, names, maxCrown) then
 		return
 	end
-	local s = scale
-	local bark = jitter(hex("7A5A44"), 0.04)
-	BK.cylinder("TrunkBase", 1.25 * s, 1.5 * s, Vector3.new(x, 0.75 * s, z), bark, parent, Enum.Material.Wood)
-	local top = Vector3.new(x + BK.rng:NextNumber(-0.7, 0.7) * s, 8 * s, z + BK.rng:NextNumber(-0.7, 0.7) * s)
-	BK.branch(parent, Vector3.new(x, 1 * s, z), top, 0.8 * s, bark)
-	local base = leaf or hex("56803F")
-	for _ = 1, 2 do
-		local a = BK.rng:NextNumber(0, 6.28)
-		BK.branch(parent, Vector3.new(x, 5 * s, z), top + Vector3.new(math.cos(a) * 3.4 * s, 0.4 * s, math.sin(a) * 3.4 * s), 0.35 * s, bark)
+	local s = math.min(scale, 1.1)
+	local bark = jitter(hex("5E4A3A"), 0.04)
+	local h = 9 * s
+	BK.cylinder("TrunkBase", 0.9 * s, 1.2 * s, Vector3.new(x, 0.6 * s, z), bark, parent, Enum.Material.Wood)
+	local top = Vector3.new(x + BK.rng:NextNumber(-0.5, 0.5) * s, h * 0.8, z + BK.rng:NextNumber(-0.5, 0.5) * s)
+	BK.branch(parent, Vector3.new(x, 0.8 * s, z), top, 0.4 * s, bark)
+	-- ใบสีเขียวธรรมชาติ: บังคับ hue ช่วงเขียว-เหลืองเขียว ไม่ให้ส้ม/น้ำตาล
+	local base = leaf or hex("587A3E")
+	local hh, ss, vv = base:ToHSV()
+	if hh < 0.17 or hh > 0.45 then
+		base = Color3.fromHSV(0.25, 0.42, math.max(vv, 0.45))
+	else
+		base = Color3.fromHSV(hh, math.min(ss, 0.55), vv)
 	end
-	BK.blob(parent, top + Vector3.new(0, 2.2 * s, 0), 8.6 * s, jitter(base, 0.04))
-	local n = 6
-	local phase = BK.rng:NextNumber(0, 6.28)
-	for i = 1, n do
-		local a = phase + i / n * 6.28
-		local r = 3.5 * s * BK.rng:NextNumber(0.75, 1.1)
-		BK.blob(parent, top + Vector3.new(math.cos(a) * r, BK.rng:NextNumber(-0.6, 2.4) * s, math.sin(a) * r), BK.rng:NextNumber(5, 6.8) * s, jitter(base, 0.07))
+	local arms = BK.rng:NextInteger(4, 6)
+	for i = 1, arms do
+		local a = i / arms * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
+		local y0 = h * BK.rng:NextNumber(0.5, 0.72)
+		local reach = BK.rng:NextNumber(1.8, 3.2) * s
+		local tip = Vector3.new(x + math.cos(a) * reach, y0 + BK.rng:NextNumber(0.8, 2.2) * s, z + math.sin(a) * reach)
+		BK.branch(parent, Vector3.new(x, y0 - 1.2 * s, z), tip, 0.16 * s, bark)
+		for _ = 1, 4 do
+			local o = Vector3.new(BK.rng:NextNumber(-1.1, 1.1), BK.rng:NextNumber(-0.7, 1.2), BK.rng:NextNumber(-1.1, 1.1)) * s
+			BK.blob(parent, tip + o, BK.rng:NextNumber(1.5, 2.5) * s, jitter(base, 0.08))
+		end
 	end
-	BK.blob(parent, top + Vector3.new(0, 4.6 * s, 0), 5.2 * s, jitter(base, 0.05))
+	for _ = 1, 5 do
+		local o = Vector3.new(BK.rng:NextNumber(-1.2, 1.2), BK.rng:NextNumber(0.2, 2.4), BK.rng:NextNumber(-1.2, 1.2)) * s
+		BK.blob(parent, top + o, BK.rng:NextNumber(1.6, 2.6) * s, jitter(base, 0.08))
+	end
 end
 
 function BK.sakura(parent: Instance, x: number, z: number, scale: number)

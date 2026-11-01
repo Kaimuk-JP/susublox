@@ -69,7 +69,7 @@ for _, side in { -1, 1 } do
 					BK.light(lantern, hex("FF6A3D"), 22, 1.1)
 				end
 				if rng:NextNumber() < 0.5 then
-					BK.roundTree(f, sx + rng:NextNumber(-4, 4), MAIN_Z + side * (25 + rng:NextNumber(0, 10)), rng:NextNumber(1.1, 1.7), if rng:NextNumber() > 0.7 then hex("6E8E50") else nil, STREET_TREES)
+					BK.roundTree(f, sx + rng:NextNumber(-4, 4), MAIN_Z + side * (25 + rng:NextNumber(0, 10)), rng:NextNumber(0.7, 1.0), if rng:NextNumber() > 0.7 then hex("6E8E50") else nil, STREET_TREES, 9)
 				end
 			end
 		end
