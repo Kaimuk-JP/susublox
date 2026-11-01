@@ -436,6 +436,15 @@ local orbNames: { [string]: string } = {
 	Docks = "ลังสินค้า",
 }
 
+-- หน้าตาของสะสมตามธีมย่าน (ชิ้นเล็ก เรืองแสงอ่อน หมุนช้าฝั่ง client)
+local orbLooks = {
+	SakuraPark = { shape = Enum.PartType.Ball, size = Vector3.new(1.5, 1.1, 1.5), material = Enum.Material.Neon, color = Color3.fromHex("F7B6C8"), glow = Color3.fromHex("FFC6D6") },
+	Shotengai = { shape = Enum.PartType.Block, size = Vector3.new(1.8, 1.3, 1.4), material = Enum.Material.SmoothPlastic, color = Color3.fromHex("C69C6D"), glow = Color3.fromHex("FFD9A0") },
+	Downtown = { shape = Enum.PartType.Block, size = Vector3.new(1.5, 1.7, 0.7), material = Enum.Material.Fabric, color = Color3.fromHex("2F4A7A"), glow = Color3.fromHex("9CC0FF") },
+	Docks = { shape = Enum.PartType.Block, size = Vector3.new(1.9, 1.6, 1.9), material = Enum.Material.Wood, color = Color3.fromHex("8A5A2B"), glow = Color3.fromHex("FFC070") },
+	Default = { shape = Enum.PartType.Ball, size = Vector3.one * 1.6, material = Enum.Material.Neon, color = Color3.fromHex("FFE066"), glow = Color3.fromHex("FFE066") },
+}
+
 for _, d in World.Districts do
 	local hasCollect = false
 	for _, q in WQ.ForDistrict(d.Id) do
@@ -452,17 +461,20 @@ for _, d in World.Districts do
 			if pos then
 				local orb = Instance.new("Part")
 				orb.Name = orbNames[d.Id] or "ของสะสม"
-				orb.Shape = Enum.PartType.Ball
-				orb.Size = Vector3.one * 2.2
+				local look = orbLooks[d.Id] or orbLooks.Default
+				orb.Shape = look.shape
+				orb.Size = look.size
 				orb.Anchored = true
 				orb.CanCollide = false
-				orb.Material = Enum.Material.Neon
-				orb.Color = Color3.fromHex("FFE066")
-				orb.Position = pos + Vector3.new(0, 2.5, 0)
+				orb.Material = look.material
+				orb.Color = look.color
+				orb.Position = pos + Vector3.new(0, 2.2, 0)
+				orb.Orientation = Vector3.new(0, math.random(0, 359), 0)
 				orb.Parent = orbFolder
 				local light = Instance.new("PointLight")
-				light.Color = orb.Color
-				light.Range = 14
+				light.Color = look.glow
+				light.Brightness = 0.8
+				light.Range = 9
 				light.Parent = orb
 				local ready = true
 				orb.Touched:Connect(function(hit)

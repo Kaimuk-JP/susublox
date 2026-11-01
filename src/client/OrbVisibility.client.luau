@@ -1,6 +1,7 @@
 --!strict
 -- ของสะสมภารกิจ (Orbs_<ย่าน>) แสดงเฉพาะตอนผู้เล่นรับเควสเก็บของของย่านนั้นอยู่
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
@@ -36,5 +37,22 @@ task.spawn(function()
 			end
 		end
 		task.wait(0.5)
+	end
+end)
+
+-- หมุนช้าๆ เฉพาะชิ้นที่มองเห็น (หมุนฝั่ง client อย่างเดียว)
+RunService.Heartbeat:Connect(function(dt)
+	local world = workspace:FindFirstChild("World")
+	if not world then
+		return
+	end
+	for _, f in world:GetChildren() do
+		if f:IsA("Folder") and f.Name:sub(1, 5) == "Orbs_" and player:GetAttribute("Orb_" .. f.Name:sub(6)) == true then
+			for _, orb in f:GetChildren() do
+				if orb:IsA("BasePart") and orb.Transparency < 1 then
+					orb.CFrame *= CFrame.Angles(0, dt * 1.1, 0)
+				end
+			end
+		end
 	end
 end)

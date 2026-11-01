@@ -260,7 +260,13 @@ function BK.blob(parent: Instance, pos: Vector3, d: number, color: Color3, mater
 	return p
 end
 
+local PINE_TREES = { "Tree_Pine1", "Tree_Pine2", "Tree_Pine3" }
+local SAKURA_TREES = { "Tree_Sakura1", "Tree_Sakura2", "Tree_Sakura3", "Tree_SakuraPark" }
+
 function BK.pine(parent: Instance, x: number, z: number, h: number)
+	if BK.importedTree(parent, x, z, h / 12, PINE_TREES, h * 0.55) then
+		return
+	end
 	local bark = jitter(hex("6B4E3B"), 0.04)
 	BK.cylinder("PineTrunk", h * 0.045 + 0.35, h * 0.5, Vector3.new(x, h * 0.25, z), bark, parent, Enum.Material.Wood)
 	local green = jitter(hex("35603B"), 0.05)
@@ -351,23 +357,40 @@ function BK.roundTree(parent: Instance, x: number, z: number, scale: number, lea
 end
 
 function BK.sakura(parent: Instance, x: number, z: number, scale: number)
-	local s = scale
-	local bark = jitter(hex("6E5448"), 0.03)
-	BK.cylinder("TrunkBase", 1.5 * s, 1.4 * s, Vector3.new(x, 0.7 * s, z), bark, parent, Enum.Material.Wood)
-	local lean = Vector3.new(BK.rng:NextNumber(-1.2, 1.2) * s, 0, BK.rng:NextNumber(-1.2, 1.2) * s)
-	local fork = Vector3.new(x, 6.5 * s, z) + lean
-	BK.branch(parent, Vector3.new(x, 1 * s, z), fork, 1.05 * s, bark)
-	local crownC = fork + Vector3.new(0, 3.5 * s, 0)
-	for i = 1, 3 do
-		local a = i / 3 * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
-		BK.branch(parent, fork, crownC + Vector3.new(math.cos(a) * 4.6 * s, 0.6 * s, math.sin(a) * 4.6 * s), 0.45 * s, bark)
+	local s = math.min(scale, 1.3)
+	local imported = BK.importedTree(parent, x, z, s * 1.1, SAKURA_TREES, 13)
+	local center
+	if not imported then
+		local bark = jitter(hex("5E4A3A"), 0.03)
+		BK.cylinder("TrunkBase", 1.0 * s, 1.0 * s, Vector3.new(x, 0.5 * s, z), bark, parent, Enum.Material.Wood)
+		local lean = Vector3.new(BK.rng:NextNumber(-0.8, 0.8) * s, 0, BK.rng:NextNumber(-0.8, 0.8) * s)
+		local fork = Vector3.new(x, 4.5 * s, z) + lean
+		BK.branch(parent, Vector3.new(x, 0.8 * s, z), fork, 0.55 * s, bark)
+		local crownC = fork + Vector3.new(0, 2 * s, 0)
+		-- กระจุกดอกเล็กๆ หลายก้อนบนกิ่งแยก ไม่ใช่ลูกบอลใหญ่
+		local pinks = { hex("F0B8C8"), hex("E8A7BB"), hex("F6CAD6"), hex("DE9AB0") }
+		for i = 1, 6 do
+			local a = i / 6 * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
+			local r = BK.rng:NextNumber(2.2, 3.6) * s
+			local tip = crownC + Vector3.new(math.cos(a) * r, BK.rng:NextNumber(-0.8, 1.6) * s, math.sin(a) * r)
+			BK.branch(parent, fork, tip, 0.2 * s, bark)
+			for _ = 1, 4 do
+				local o = Vector3.new(BK.rng:NextNumber(-1.2, 1.2), BK.rng:NextNumber(-0.8, 1.2), BK.rng:NextNumber(-1.2, 1.2)) * s
+				local b = BK.blob(parent, tip + o, BK.rng:NextNumber(1.6, 2.6) * s, jitter(pinks[BK.rng:NextInteger(1, 4)], 0.03), Enum.Material.SmoothPlastic)
+				center = center or b
+			end
+		end
 	end
-	local pinks = { hex("D9AEB6"), hex("E0BCC3"), hex("CFA2AC"), hex("E6C8CE") }
-	local center = BK.blob(parent, crownC + Vector3.new(0, 1.2 * s, 0), 11 * s, jitter(pinks[1], 0.03))
-	for i = 1, 7 do
-		local a = i / 7 * 6.28 + BK.rng:NextNumber(-0.3, 0.3)
-		local r = 4.8 * s * BK.rng:NextNumber(0.8, 1.1)
-		BK.blob(parent, crownC + Vector3.new(math.cos(a) * r, BK.rng:NextNumber(-1.5, 1.8) * s, math.sin(a) * r), BK.rng:NextNumber(6, 8) * s, jitter(pinks[BK.rng:NextInteger(1, 4)], 0.03))
+	if not center then
+		center = Instance.new("Part")
+		center.Name = "PetalAnchor"
+		center.Size = Vector3.one
+		center.Transparency = 1
+		center.Anchored = true
+		center.CanCollide = false
+		center.CanQuery = false
+		center.Position = Vector3.new(x, 9 * s, z)
+		center.Parent = parent
 	end
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
