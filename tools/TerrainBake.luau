@@ -13,7 +13,7 @@ local SURFACE_OFFSET = 2 -- ผิว Terrain ที่ render จริงส�
 
 local flatCircles = {}
 for _, d in World.Districts do
-	table.insert(flatCircles, { d.Center.X, d.Center.Z, d.Radius + 70 })
+	table.insert(flatCircles, { d.Center.X, d.Center.Z, d.Radius + 40 })
 end
 local flatBoxes = {
 	{ -200, 200, -150, 340 }, -- โรงเรียน + อารีน่า (x1, x2, z1, z2)
@@ -91,7 +91,7 @@ local function naturalMask(x, z)
 		local dz = math.max(b[3] - z, 0, z - b[4])
 		m = math.min(m, smooth((math.sqrt(dx * dx + dz * dz) - 20) / 80))
 	end
-	m = math.min(m, smooth((distanceToRoad(x, z) - 25) / 60))
+	m = math.min(m, smooth((distanceToRoad(x, z) - 35) / 45))
 	-- แนวแม่น้ำคิโซ (z=420, กว้าง 40; CityDressing ขุดตอนเริ่มเกม) ต้องเรียบ ไม่มีเนินค้างกลางน้ำ
 	m = math.min(m, smooth((math.abs(z - 420) - 45) / 60))
 	return m
@@ -101,7 +101,7 @@ local function height(x, z)
 	local m = naturalMask(x, z)
 	local h = 0
 	if m > 0 then
-		local n = math.noise(x / 180, z / 180, 3) * 22 + math.noise(x / 70, z / 70, 9) * 8 + math.noise(x / 28, z / 28, 17) * 2.5
+		local n = math.noise(x / 180, z / 180, 3) * 34 + math.noise(x / 70, z / 70, 9) * 10 + math.noise(x / 28, z / 28, 17) * 2.5
 		h = math.max(n, -1) * m
 	end
 	h = math.max(h, (hillAt(x, z)))
@@ -195,6 +195,32 @@ for cx = math.floor(B.MinX / RES) * RES, B.MaxX - 1, CHUNK do -- ต้องช
 		if count % 4 == 0 then
 			task.wait()
 		end
+	end
+end
+-- ปูหญ้าเกินขอบโลก 400 studs + แนวเขาล้อมนอกขอบโลก (WorldBuilder ข้ามส่วนนี้เมื่อ TerrainBaked)
+do
+	local tile = 400
+	for x = B.MinX - 400, B.MaxX + 399, tile do
+		for z = B.MinZ - 400, B.MaxZ + 399, tile do
+			local inside = x >= B.MinX and x + tile <= B.MaxX and z >= B.MinZ and z + tile <= B.MaxZ
+			if not inside then
+				terrain:FillBlock(CFrame.new(x + tile / 2, -8, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.LeafyGrass)
+			end
+		end
+		task.wait()
+	end
+	local function mountain(x, z, r)
+		terrain:FillBall(Vector3.new(x, -r * 0.45, z), r, Enum.Material.LeafyGrass)
+		terrain:FillBall(Vector3.new(x, -r * 0.45 + r * 0.55, z), r * 0.55, Enum.Material.Rock)
+	end
+	local pad = 150
+	for x = B.MinX - pad, B.MaxX + pad, 150 do
+		mountain(x, B.MinZ - pad, 85 + (x % 3) * 12)
+		mountain(x + 40, B.MaxZ + pad, 80 + (x % 4) * 10)
+	end
+	for z = B.MinZ - pad, B.MaxZ + pad, 150 do
+		mountain(B.MinX - pad, z + 30, 85 + (z % 3) * 12)
+		mountain(B.MaxX + pad, z + 30, 80 + (z % 4) * 10)
 	end
 end
 workspace:SetAttribute("TerrainBaked", true)
