@@ -844,9 +844,9 @@ Lighting.ClockTime = 16.2
 local atmosphere = Instance.new("Atmosphere")
 atmosphere.Color = Color3.fromHex("C9B9A6")
 atmosphere.Decay = Color3.fromHex("D9A070")
-atmosphere.Density = 0.32
-atmosphere.Offset = 0.2
-atmosphere.Haze = 1.6
+atmosphere.Density = 0.13
+atmosphere.Offset = 0.08
+atmosphere.Haze = 0.1
 atmosphere.Glare = 0.15
 atmosphere.Parent = Lighting
 local bloom = Instance.new("BloomEffect")
@@ -859,10 +859,10 @@ sunRays.Intensity = 0.04
 sunRays.Spread = 0.6
 sunRays.Parent = Lighting
 local cc = Instance.new("ColorCorrectionEffect")
-cc.Saturation = -0.12
+cc.Saturation = -0.03
 cc.Contrast = 0.12
 cc.Brightness = -0.02
-cc.TintColor = Color3.fromHex("FFF0E0")
+cc.TintColor = Color3.fromHex("FFFDF8")
 cc.Parent = Lighting
 
 ---------------------------------------------------------------- NPC ทดสอบหลังโรงเรียน

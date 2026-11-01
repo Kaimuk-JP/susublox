@@ -3,11 +3,11 @@
 -- ตั้ง workspace Attribute "Weather" (DayNight ปรับแสง/หมอก/เมฆ, client WeatherFX วาดฝน/หิมะ/ฟ้าแลบ)
 -- ทดสอบ: ตั้ง workspace Attribute "ForceWeather" เป็นชื่อสภาพอากาศเพื่อบังคับ (ลบทิ้งเพื่อกลับไปสุ่ม)
 local WEATHERS = {
-	{ Name = "Clear", Weight = 34 },
+	{ Name = "Clear", Weight = 50 },
 	{ Name = "Cloudy", Weight = 20 },
 	{ Name = "Rain", Weight = 20 },
 	{ Name = "Storm", Weight = 8 },
-	{ Name = "Fog", Weight = 8 },
+	{ Name = "Fog", Weight = 4 },
 	{ Name = "Snow", Weight = 10 },
 }
 local rng = Random.new()

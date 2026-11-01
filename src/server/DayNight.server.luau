@@ -10,7 +10,7 @@ local hex = Color3.fromHex
 -- Brightness / OutdoorAmbient / Ambient = แสงพื้นฐาน; Haze* = Atmosphere; Cc* = ColorCorrection; Bloom = ความแรงเรืองแสง
 local phases = {
 	{ From = 6, Name = "Day", Brightness = 2.6, Outdoor = Color3.fromRGB(135, 135, 138), Ambient = Color3.fromRGB(86, 86, 90),
-		HazeColor = hex("C4CBCF"), Decay = hex("D2B896"), Density = 0.2, Tint = hex("FFF6EA"), Sat = -0.1, Contrast = 0.1, Bloom = 0.18 },
+		HazeColor = hex("BCCADA"), Decay = hex("C2CCD8"), Density = 0.13, Tint = hex("FFFDF8"), Sat = -0.03, Contrast = 0.14, Bloom = 0.16 },
 	{ From = 15, Name = "GoldenHour", Brightness = 2.2, Outdoor = Color3.fromRGB(125, 112, 100), Ambient = Color3.fromRGB(78, 70, 66),
 		HazeColor = hex("D3B792"), Decay = hex("DE9A62"), Density = 0.28, Tint = hex("FFE6C8"), Sat = -0.08, Contrast = 0.14, Bloom = 0.24 },
 	{ From = 17.5, Name = "Evening", Brightness = 1.7, Outdoor = Color3.fromRGB(104, 88, 90), Ambient = Color3.fromRGB(64, 56, 62),
@@ -104,7 +104,8 @@ local function apply(phase, instant: boolean?)
 			Color = phase.HazeColor:Lerp(grey, m.Grey),
 			Decay = phase.Decay,
 			Density = math.clamp(phase.Density + m.Fog, 0, 0.5),
-			Haze = 0.2 + m.Haze,
+			Haze = 0.1 + m.Haze,
+			Offset = if isNight then 0.2 else 0.08,
 		}):Play()
 	end
 	local cc = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")

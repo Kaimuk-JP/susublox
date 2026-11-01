@@ -2,7 +2,7 @@
 -- จับเวลา builder ฝั่ง server และตั้ง workspace attribute "GameReady" เมื่อ builder ท้ายๆ ทำงานครบ (หน้าโหลดฝั่ง client รอสัญญาณนี้)
 local BuildSync = {}
 
-local EXPECTED = { "WorldBuilder", "AlleyLife", "CityDressing", "StreetScape", "StreetFurniture", "RoadBed" }
+local EXPECTED = { "WorldBuilder", "AlleyLife", "CityDressing", "StreetScape", "StreetFurniture", "RoadBed", "TidyGround" }
 local done: { [string]: boolean } = {}
 local start = os.clock()
 
