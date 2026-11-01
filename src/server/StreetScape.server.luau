@@ -127,10 +127,10 @@ for _, r in World.Roads do
 	for _, side in { -1, 1 } do
 		if horizontal then
 			local z = z1 + side * (w / 2 - 1.1)
-			BK.box("EdgeLine", math.min(x1, x2), math.max(x1, x2), 0.3, 0.35, z - 0.15, z + 0.15, hex("FFFFFF"), f)
+			BK.box("EdgeLine", math.min(x1, x2), math.max(x1, x2), 0.3, 0.37, z - 0.15, z + 0.15, hex("FFFFFF"), f)
 		else
 			local x = x1 + side * (w / 2 - 1.1)
-			BK.box("EdgeLine", x - 0.15, x + 0.15, 0.3, 0.35, math.min(z1, z2), math.max(z1, z2), hex("FFFFFF"), f)
+			BK.box("EdgeLine", x - 0.15, x + 0.15, 0.3, 0.37, math.min(z1, z2), math.max(z1, z2), hex("FFFFFF"), f)
 		end
 	end
 end

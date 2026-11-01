@@ -234,7 +234,7 @@ box("War_Floor_Red", -50, 50, -3, 0.3, 210, 260, Color3.fromHex("F4B6B6"), groun
 box("War_Floor_Blue", -50, 50, -3, 0.3, 260, 310, Color3.fromHex("B6D4F4"), ground)
 box("Path_Cafeteria", -100, -80, -3, 0.3, -10, 10, C.concrete, ground)
 box("Path_BackLot", -10, 10, -3, 0.3, 60, 90, C.concrete, ground)
-box("Path_War", -10, 10, -3, 0.3, 130, 210, C.concrete, ground)
+box("Path_War", -10, 10, -3, 0.32, 130, 210, C.concrete, ground)
 -- ขอบทางเดิน
 for _, z in { -10.4, 10.4 } do
 	box("PathEdge", -100, -80, 0, 0.45, z - 0.3, z + 0.3, C.white, ground)
@@ -257,7 +257,7 @@ end
 local school = folder("School")
 local X1, X2, Z1, Z2 = -60, 60, -120, -60
 
-box("Plinth", X1 - 1, X2 + 1, -3, 0.3, Z1 - 1, Z2 + 1, C.darkConcrete, school)
+box("Plinth", X1 - 1, X2 + 1, -3, 0.32, Z1 - 1, Z2 + 1, C.darkConcrete, school)
 
 for level = 0, 2 do
 	local y0 = level * 16
@@ -717,7 +717,7 @@ end
 
 ---------------------------------------------------------------- สนามกีฬา (ฝั่งตะวันตกเฉียงใต้) x -140..-50, z 55..125
 local field = folder("Field")
-box("TrackOuter", -142, -48, -3, 0.28, 52, 128, C.track, field)
+box("TrackOuter", -142, -48, -3, 0.26, 52, 128, C.track, field)
 for i = 0, 7 do -- ลายตัดหญ้าสลับสี
 	box("FieldGrass", -137 + i * 10.5, -137 + (i + 1) * 10.5, 0.28, 0.4, 57, 123, if i % 2 == 0 then C.grassField else Color3.fromHex("8CCB7A"), field, Enum.Material.Grass)
 end
