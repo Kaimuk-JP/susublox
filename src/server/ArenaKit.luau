@@ -811,8 +811,8 @@ local function buildRooftop(): Model
 			ball(m, "RedLight", Vector3.one * 1.6, cf * CFrame.new(0, height / 2 + 3, 0), hex("FF3030"), M.Neon, false)
 		end
 	end
-	scoreBoard(m, math.pi / 2, 46.4, 11, 22, 7, hex("0B0C0F"), YEL)
-	scoreBoard(m, -math.pi / 2, 46.4, 11, 22, 7, hex("0B0C0F"), YEL)
+	scoreBoard(m, math.pi / 2, 46.4, 22, 22, 7, hex("0B0C0F"), YEL)
+	scoreBoard(m, -math.pi / 2, 46.4, 22, 22, 7, hex("0B0C0F"), YEL)
 	markSpawns(markers, 18, seats)
 	m:SetAttribute("Radius", 31)
 	return m
