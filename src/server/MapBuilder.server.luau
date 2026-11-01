@@ -692,9 +692,14 @@ for _, p in { { -20, 20 }, { 20, 20 }, { -20, -30 }, { 20, -30 }, { -50, 0 }, { 
 end
 
 -- เสาธง
-cylinder("FlagPole", 0.5, 24, Vector3.new(0, 12.3, 30), C.concrete, props)
-ball("FlagPoleTop", 1.2, Vector3.new(0, 24.6, 30), C.yellow, props, Enum.Material.Neon)
-box("Flag", 0.5, 8, 19, 24, 29.7, 30.3, C.red, props)
+cylinder("FlagPole", 0.5, 26, Vector3.new(0, 13.3, 30), C.concrete, props)
+ball("FlagPoleTop", 1.6, Vector3.new(0, 26.6, 30), C.yellow, props, Enum.Material.Neon)
+box("Flag", 0.5, 10.5, 20, 26, 29.85, 30.15, C.red, props, Enum.Material.Fabric)
+-- วงกลมขาว (ธงญี่ปุ่น) ตามผ้าไปเมื่อธงพลิ้ว
+local flagDisc = cylinder("FlagDisc", 1.7, 0.1, Vector3.new(5.5, 23, 30), C.white, props, Enum.Material.Fabric)
+flagDisc.CFrame = CFrame.new(5.5, 23, 30) * CFrame.Angles(0, math.rad(90), 0)
+flagDisc.Size = Vector3.new(0.6, 3.4, 3.4)
+noCollide(flagDisc)
 
 -- ตู้กดน้ำริมทางเดินโรงอาหาร + ที่จอดจักรยาน + ถังขยะ
 for i, color in { C.red, C.blue } do

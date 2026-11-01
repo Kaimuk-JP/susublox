@@ -5,10 +5,10 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
-local STRIPS = 12
+local STRIPS = 20
 local ACTIVE_RANGE = 160 -- ใกล้กว่านี้ถึงจะสร้างผ้า/ขยับ
 local WAVE_SPEED = 3.2
-local WAVE_LENGTH = 5 -- ความยาวคลื่นเป็น studs
+local WAVE_LENGTH = 6 -- ความยาวคลื่นเป็น studs
 
 type Flag = {
 	Part: BasePart,
@@ -22,8 +22,15 @@ type Flag = {
 	Dir: number, -- +1 ถ้าปลายผ้าอยู่ด้านบวกของแกนยาว (ขอบผูกเสาอยู่ด้านลบ)
 	Phase: number,
 	Up: Vector3,
+	Disc: BasePart?, -- ตราวงกลม (FlagDisc) ที่ต้องพลิ้วไปกับผ้า: วาดด้วยแถบบางๆ ซ้อนบนแถบผ้า
+	DiscU: number, -- ตำแหน่งกลางวงกลมตามความยาวผ้า (0 = ขอบผูกเสา, 1 = ปลาย)
+	DiscV: number, -- ระยะกลางวงกลมตามแกนความสูงจากกลางผ้า
+	DiscR: number,
+	Emblem: { BasePart? },
 }
 
+local WEATHER_WIND = { Clear = 1.0, Cloudy = 1.1, Rain = 1.5, Storm = 2.2 }
+local wind = 1 -- ตัวคูณลมที่ค่อยๆ ไล่ตามสภาพอากาศ
 local flags: { [BasePart]: Flag } = {}
 
 local function axisOf(size: Vector3): (Vector3, Vector3, Vector3, number, number, number)
@@ -51,13 +58,35 @@ local function register(part: Instance)
 		return
 	end
 	local long, thin, up, longSize, height, thick = axisOf(part.Size)
-	-- ด้านที่ติดเสา: ปลายของแกนยาวที่ใกล้ FlagPole ในโฟลเดอร์เดียวกัน (ไม่เจอเสาก็ใช้ปลายด้านลบ)
+	-- ด้านที่ติดเสา: ปลายของแกนยาวที่ใกล้เสาที่สุดในโฟลเดอร์เดียวกัน (ไกลเกินความยาวผ้าถือว่าไม่ใช่เสาของธงนี้ -> ใช้ปลายด้านลบ)
 	local dir = -1
 	local parent = part.Parent
-	local pole = parent and (parent:FindFirstChild("FlagPole") or parent:FindFirstChild("CampSignPost"))
-	if pole and pole:IsA("BasePart") then
-		local rel = part.CFrame:PointToObjectSpace(pole.Position)
+	local best, bestD = nil, longSize
+	local disc: BasePart? = nil
+	if parent then
+		for _, sib in parent:GetChildren() do
+			if sib:IsA("BasePart") then
+				if sib.Name == "FlagPole" or sib.Name == "CampPole" or sib.Name == "CampSignPost" then
+					local d = (sib.Position - part.Position).Magnitude
+					if d < bestD then
+						best, bestD = sib, d
+					end
+				elseif sib.Name == "FlagDisc" and (sib.Position - part.Position).Magnitude < longSize then
+					disc = sib
+				end
+			end
+		end
+	end
+	if best then
+		local rel = part.CFrame:PointToObjectSpace(best.Position)
 		dir = if rel:Dot(long) > 0 then 1 else -1
+	end
+	local discU, discV, discR = 0.5, 0, 0
+	if disc then
+		local rel = part.CFrame:PointToObjectSpace(disc.Position)
+		discU = 0.5 - dir * rel:Dot(long) / longSize
+		discV = rel:Dot(up)
+		discR = math.max(disc.Size.Y, disc.Size.Z) / 2
 	end
 	flags[part] = {
 		Part = part,
@@ -71,6 +100,11 @@ local function register(part: Instance)
 		Dir = dir,
 		Phase = (part.Position.X * 0.13 + part.Position.Z * 0.07) % 6.28,
 		Up = up,
+		Disc = disc,
+		DiscU = discU,
+		DiscV = discV,
+		DiscR = discR,
+		Emblem = {},
 	}
 end
 
@@ -93,12 +127,36 @@ local function activate(f: Flag)
 		s.Parent = folder
 		table.insert(f.Strips, s)
 	end
+	if f.Disc then
+		local d = f.Disc
+		for i = 1, STRIPS do
+			local dx = ((i - 0.5) / STRIPS - f.DiscU) * f.LongSize
+			if math.abs(dx) < f.DiscR then
+				local e = Instance.new("Part")
+				e.Anchored = true
+				e.CanCollide = false
+				e.CanQuery = false
+				e.CanTouch = false
+				e.CastShadow = false
+				e.Material = d.Material
+				e.Color = d.Color
+				e.Size = Vector3.new(segLen + 0.06, 2 * math.sqrt(f.DiscR ^ 2 - dx ^ 2), f.Thick + 0.1)
+				e.Parent = folder
+				f.Emblem[i] = e
+			end
+		end
+		d.LocalTransparencyModifier = 1
+	end
 	f.Cloth = folder
 	part.LocalTransparencyModifier = 1
 end
 
 local function deactivate(f: Flag)
 	if f.Cloth then
+		if f.Disc then
+			f.Disc.LocalTransparencyModifier = 0
+			table.clear(f.Emblem)
+		end
 		f.Cloth:Destroy()
 		f.Cloth = nil
 		table.clear(f.Strips)
@@ -106,20 +164,21 @@ local function deactivate(f: Flag)
 	end
 end
 
-local function update(f: Flag, t: number)
+local function update(f: Flag, t: number, wp: number)
+	local windMul = wind
 	local base = f.Part.CFrame
 	local longW = base:VectorToWorldSpace(f.Long)
 	local thinW = base:VectorToWorldSpace(f.Thin)
 	local upW = base:VectorToWorldSpace(f.Up)
 	local n = #f.Strips
 	local segLen = f.LongSize / n
-	local gust = 0.85 + 0.25 * math.sin(t * 0.7 + f.Phase)
+	local gust = (0.85 + 0.25 * math.sin(t * 0.7 + f.Phase)) * windMul
 	local prevOff = 0
 	for i, strip in f.Strips do
 		local u = (i - 0.5) / n -- 0 = ขอบผูกเสา, 1 = ปลายผ้า
 		local along = f.Dir * f.LongSize * (0.5 - u)
-		local amp = (0.1 + 0.9 * u) * f.LongSize * 0.15 * gust
-		local off = amp * math.sin(u * f.LongSize / WAVE_LENGTH * 6.283 - t * WAVE_SPEED + f.Phase)
+		local amp = math.min((0.1 + 0.9 * u) * f.LongSize * 0.1 * gust, f.LongSize * 0.3 * u + 0.1)
+		local off = amp * math.sin(u * f.LongSize / WAVE_LENGTH * 6.283 - wp + f.Phase)
 		local sag = -0.05 * u * f.Height * math.sin(t * 1.9 + u * 3)
 		local center = f.Part.Position + longW * along + thinW * off + upW * sag
 		-- ทิศของแถบตามความชันของคลื่น (จากปลายผูกไปปลายผ้า) ให้แถบต่อกันเนียน
@@ -128,7 +187,12 @@ local function update(f: Flag, t: number)
 		prevOff = off
 		local vz = vx:Cross(upW).Unit
 		local vy = vz:Cross(vx).Unit
-		strip.CFrame = CFrame.fromMatrix(center, vx, vy, vz)
+		local cf = CFrame.fromMatrix(center, vx, vy, vz)
+		strip.CFrame = cf
+		local e = f.Emblem[i]
+		if e then
+			e.CFrame = cf * CFrame.new(0, f.DiscV, 0)
+		end
 	end
 end
 
@@ -152,8 +216,12 @@ workspace.DescendantRemoving:Connect(function(d)
 end)
 
 local acc = 0
+local windPhase = 0
 RunService.Heartbeat:Connect(function(dt)
+	local target = WEATHER_WIND[(workspace:GetAttribute("Weather") or "Clear") :: string] or 1
 	acc += dt
+	wind += (target - wind) * math.min(dt * 0.5, 1)
+	windPhase += dt * WAVE_SPEED * wind
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local cam = workspace.CurrentCamera
@@ -168,7 +236,7 @@ RunService.Heartbeat:Connect(function(dt)
 			if not f.Cloth then
 				activate(f)
 			end
-			update(f, t)
+			update(f, t, windPhase)
 		elseif f.Cloth then
 			deactivate(f)
 		end

@@ -303,7 +303,7 @@ local function harborOffice(f: Folder)
 	local fx, fz = cx + 5.5 + 6, cz - 6
 	BK.cylinder("FlagPole", 0.25, 20, Vector3.new(fx, 10, fz), hex("C9C6BA"), f, Enum.Material.Metal)
 	BK.box("Flag", fx - 0.05, fx + 0.05, 14.5, 18.5, fz, fz + 6, hex("F2F0E6"), f, Enum.Material.Fabric)
-	local disc = BK.part("FlagDisc", Vector3.new(0.14, 2.6, 2.6), Vector3.new(fx + 0.09, 16.5, fz + 3), hex("C0302E"), f, Enum.Material.Fabric)
+	local disc = BK.part("FlagDisc", Vector3.new(0.24, 2.6, 2.6), Vector3.new(fx, 16.5, fz + 3), hex("C0302E"), f, Enum.Material.Fabric)
 	disc.Shape = Enum.PartType.Cylinder
 	for _, d in { Vector3.new(cx + 8, 0, cz + 11), Vector3.new(cx + 9.8, 0, cz + 11.4), Vector3.new(cx + 8.8, 0, cz + 13.1) } do
 		BK.drum(f, d.X, d.Z, 0, hex("9E3B33"))
