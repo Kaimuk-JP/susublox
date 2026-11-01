@@ -25,6 +25,45 @@ local paint = { "EF233C", "4D7CFE", "FFE066", "FFFFFF", "2B2D42", "5FBF7A", "FF8
 -- โมเดลรถจริงที่นำเข้าและตรวจแล้ว (ServerStorage.ImportedAssets.Cars) ข้อตกลง: Pivot = กึ่งกลางใต้ล้อ หน้ารถหัน -Z ไม่มีสคริปต์
 -- ถ้ามีจะใช้แทนรถที่สร้างด้วยชิ้นส่วนเอง; ถ้าไม่มีก็ใช้โมเดลโค้ดด้านล่าง (ไม่พัง)
 local ServerStorage = game:GetService("ServerStorage")
+-- คนขี่นั่งบนมอเตอร์ไซค์ (ตำแหน่งสะโพกอ่านจาก Attribute RiderY/RiderZ ของโมเดลต้นฉบับ แกนหน้ารถ -Z) ถูก weld เข้ากับตัวรถ ไม่ชน ลบพร้อมรถ
+local function addRider(model: Model, primary: BasePart, src: Instance)
+	local y, z, pose = src:GetAttribute("RiderY"), src:GetAttribute("RiderZ"), src:GetAttribute("RiderPose")
+	if type(y) ~= "number" or type(z) ~= "number" then
+		return
+	end
+	local rider = RigFactory.CreateRider(model, if type(pose) == "string" then pose else "scooter")
+	if not rider then
+		return
+	end
+	rider:PivotTo(model:GetPivot() * CFrame.new(0, y, z))
+	local root = rider:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if root then
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = primary, root
+		w.Parent = root
+	end
+end
+
+-- ป้ายไฟแท็กซี่บนหลังคา (ไม่มีโลโก้/ตัวอักษรยี่ห้อ)
+local function addTaxiLamp(model: Model, primary: BasePart, moving: boolean)
+	local _, size = model:GetBoundingBox()
+	local lamp = Instance.new("Part")
+	lamp.Name = "TaxiLamp"
+	lamp.Size = Vector3.new(1.3, 0.45, 0.7)
+	lamp.Color = Color3.fromHex("F2E8B8")
+	lamp.Material = Enum.Material.Neon
+	lamp.CFrame = model:GetPivot() * CFrame.new(0, size.Y + 0.2, -0.3)
+	lamp.CanCollide, lamp.CanQuery, lamp.CanTouch = false, false, false
+	lamp.Massless = true
+	lamp.Anchored = not moving
+	lamp.Parent = model
+	if moving then
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = primary, lamp
+		w.Parent = lamp
+	end
+end
+
 local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Model?, BasePart?)
 	local assets = ServerStorage:FindFirstChild("ImportedAssets")
 	local folder = assets and assets:FindFirstChild("Cars")
@@ -32,12 +71,38 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	if #list == 0 then
 		return nil
 	end
-	local src = list[rng:NextInteger(1, #list)]
+	-- สัดส่วนยุค ~1985-2005: เล็ก/kei 40%, เก๋ง 20%, ตู้/กระบะ 15%, มอเตอร์ไซค์ 15% (มีคนขี่), แท็กซี่ 10% (ติดป้ายไฟหลังคาบนเก๋ง)
+	local byKind: { [string]: { Instance } } = {}
+	for _, c in list do
+		local k = c:GetAttribute("Kind")
+		local key = if type(k) == "string" then k else "sedan"
+		byKind[key] = byKind[key] or {}
+		table.insert(byKind[key], c)
+	end
+	local roll, kind = rng:NextNumber(), "kei"
+	if roll < 0.4 then
+		kind = "kei"
+	elseif roll < 0.6 then
+		kind = "sedan"
+	elseif roll < 0.75 then
+		kind = "van"
+	elseif roll < 0.9 then
+		kind = "bike"
+	else
+		kind = "taxi"
+	end
+	local isTaxi = kind == "taxi"
+	if isTaxi then
+		kind = "sedan"
+	end
+	local pool = byKind[kind] or list
+	local src = pool[rng:NextInteger(1, #pool)]
 	if not src:IsA("Model") then
 		return nil
 	end
 	local model = src:Clone()
 	model.Name = if moving then "TrafficCar" else "ParkedCar"
+	model:SetAttribute("Src", src.Name)
 	-- สีตัวถังของโมเดลนำเข้าบางคันเป็นสีดิบ (#00FF00 / #FF0000) ให้เปลี่ยนเป็นสีรถจริงหม่น ๆ (ตัวถัง) หรือดำด้าน (ชิ้นแต่ง)
 	local paints = { "D8D6D0", "2E3036", "8A8D91", "3F566E", "7A2E2A", "B8B2A4" }
 	local paint = Color3.fromHex(paints[rng:NextInteger(1, #paints)])
@@ -54,13 +119,20 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 			d:Destroy() -- กันไว้อีกชั้น ไม่เอาสคริปต์/เสียงจากโมเดลภายนอก
 		end
 	end
-	local primary = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	local primary = model.PrimaryPart
+	if not primary then
+		local bestVol = -1
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") and d.Size.X * d.Size.Y * d.Size.Z > bestVol then
+				primary, bestVol = d, d.Size.X * d.Size.Y * d.Size.Z
+			end
+		end
+	end
 	if not primary then
 		model:Destroy()
 		return nil
 	end
-	model.PrimaryPart = primary
-	model:PivotTo(cf)
+	model:PivotTo(cf) -- ไม่ตั้ง PrimaryPart ทับ: จะเปลี่ยนทิศ pivot ของโมเดลที่ปรับ WorldPivot ไว้แล้ว
 	-- โมเดลที่ยาวตามแกน X (หันข้างถนน เช่นสกูตเตอร์) หมุน 90 องศาให้ยาวตามแกน Z (ทิศวิ่ง) ก่อน แล้วค่อยวางพื้น
 	-- ทิศหน้า/หลัง (180 องศา) ตั้งด้วย Attribute FrontYaw บนโมเดลต้นฉบับ (องศา) ถ้าหน้ารถหันกลับด้าน
 	local _, firstSize = model:GetBoundingBox()
@@ -97,6 +169,12 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 		collider.CanQuery = false
 		collider.CanTouch = false
 		collider.Parent = model
+		if isTaxi then
+			addTaxiLamp(model, primary, false)
+		end
+		if kind == "bike" and rng:NextNumber() < 0.5 then
+			addRider(model, primary, src)
+		end
 		return model, primary
 	end
 	-- รถวิ่ง: ตัวขยับล่องหนที่ Anchored ตัวเดียว ชิ้นอื่นเชื่อมตามด้วย Weld ไม่ชนผู้เล่น
@@ -124,6 +202,14 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	local w = Instance.new("WeldConstraint")
 	w.Part0, w.Part1 = mover, primary
 	w.Parent = primary
+	if isTaxi then
+		addTaxiLamp(model, primary, true)
+	end
+	if kind == "bike" then
+		addRider(model, primary, src)
+	end
+	-- ให้ pivot ของโมเดลตามตัวขยับ (ถ้าไม่มี PrimaryPart GetPivot จะค้างที่ตำแหน่งเกิด ทำให้ตรวจรถชนผู้เล่นพลาด)
+	model.PrimaryPart = mover
 	return model, mover
 end
 

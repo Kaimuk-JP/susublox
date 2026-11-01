@@ -458,6 +458,23 @@ local function gang(ctx: Ctx, accent: Color3, kind: string?)
 	end
 end
 
+local RIDER_TOPS = { "2A9D8F", "E76F51", "264653", "E9C46A", "8AB17D", "F4F1DE", "6D597A", "B56576", "3A86A8", "C8323C" }
+local HELMET_COLORS = { "F2F2F2", "1C1D21", "B3262D", "2F6DB5", "E9C46A" }
+
+-- ผู้ขับมอเตอร์ไซค์: เสื้อยืดหลายสี ผมปกติ (หมวกกันน็อก ~40%)
+local function rider(ctx: Ctx, _accent: Color3)
+	paint(ctx.Rig, ctx.Skin, hex(pick(RIDER_TOPS)), hex(pick({ "2B3A55", "1F2430", "3A4252", "55504A" })), hex(pick(SHOES)), true)
+	if rng:NextNumber() < 0.4 then
+		local hs = ctx.Head.Size
+		applyHair(ctx, "bald", "black")
+		prop(ctx.Rig, ctx.Head, Vector3.new(hs.X * 1.3, hs.Y * 1.2, hs.Z * 1.3), at(0, hs.Y * 0.1, hs.Z * 0.02), hex(pick(HELMET_COLORS)), Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+		prop(ctx.Rig, ctx.Head, Vector3.new(hs.X * 1.0, hs.Y * 0.3, 0.12), at(0, hs.Y * 0.04, -hs.Z * 0.62), hex("101216"), Enum.Material.Glass) -- กระจกบังลม
+		ctx.Rig:SetAttribute("Helmet", true)
+	else
+		applyHair(ctx, pick({ "spiky", "spiky", "short", "side", "pompadour" }), pick({ "brown", "black", "black", "bleach" }))
+	end
+end
+
 local function worker(ctx: Ctx, accent: Color3)
 	paint(ctx.Rig, ctx.Skin, hex("3F4650"), hex("2E343C"), hex("2B2420"), true)
 	prop(ctx.Rig, ctx.Torso, Vector3.new(ctx.Torso.Size.X * 1.04, ctx.Torso.Size.Y * 0.9, ctx.Torso.Size.Z * 1.08), at(0, 0, 0), accent, Enum.Material.Fabric) -- เสื้อกั๊กสีแก๊ง
@@ -494,6 +511,7 @@ local LOOKS: { [string]: Look } = {
 	leader = { Scale = { Height = 1.08, Width = 1.12, Head = 1.0 }, Build = function(c, a) gang(c, a, "leader") end },
 	worker = { Scale = { Height = 1.02, Width = 1.1, Head = 1.0 }, Build = worker },
 	boss = { Scale = { Height = 1.15, Width = 1.22, Head = 1.0 }, Build = boss },
+	rider = { Scale = { Height = 0.86, Width = 0.92, Head = 1.0 }, Build = rider },
 }
 
 local PEDESTRIAN_MIX = { "maleCasual", "maleCasual", "femaleCasual", "femaleCasual", "salaryman", "salaryman", "officeLady", "schoolgirl", "schoolgirl", "schoolboy", "elderly", "delivery", "shopkeeper" }
@@ -667,8 +685,99 @@ function RigFactory.Create(name: string, position: Vector3, parent: Instance, at
 	end
 	model:PivotTo(CFrame.new(position))
 	model.Parent = parent
-	setupLocomotion(model, hum)
+	if not (attributes and attributes.NoLocomotion) then
+		setupLocomotion(model, hum)
+	end
 	return model
+end
+
+---------------------------------------------------------------- ผู้ขับมอเตอร์ไซค์ (ท่านั่ง: ตัวเอนไปข้างหน้า มือจับแฮนด์ เข่างอบนที่พักเท้า)
+-- มุมองศารอบแกน X ของ Motor6D.C0 (บวก = ไปข้างหน้า) หน้าตัวละครหัน -Z
+local RIDER_POSES: { [string]: { [string]: number } } = {
+	bike = { waist = -30, neck = 26, hip = 80, knee = -92, ankle = 8, shoulder = 80, elbow = 32, splay = 7 },
+	scooter = { waist = -6, neck = 6, hip = 74, knee = -76, ankle = 0, shoulder = 50, elbow = 34, splay = 5 },
+}
+
+local function bend(rig: Model, joint: string, rx: number, rz: number?)
+	local m = rig:FindFirstChild(joint, true)
+	if m and m:IsA("Motor6D") then
+		m.C0 = m.C0 * CFrame.Angles(math.rad(rx), 0, math.rad(rz or 0))
+	end
+end
+
+-- สร้างคนขี่ที่นั่งอยู่ท่าขี่ ไม่มี Humanoid ไม่ชน ไม่มีน้ำหนัก (Weld เข้ากับรถที่ผู้เรียกทำ) pivot ที่ HumanoidRootPart
+function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
+	local rig = RigFactory.Create("คนขับมอเตอร์ไซค์", Vector3.new(0, 1000, 0), parent, { NoLocomotion = true }, nil, "rider")
+	if not rig then
+		return nil
+	end
+	local pose = RIDER_POSES[poseName] or RIDER_POSES.scooter
+	-- R15 จาก CreateHumanoidModelFromDescription ใช้ AnimationConstraint (ขยับด้วย Animator เท่านั้น) แปลงเป็น Motor6D เพื่อตั้งท่าด้วย C0
+	for _, d in rig:GetDescendants() do
+		if d:IsA("AnimationConstraint") and d.Attachment0 and d.Attachment1 then
+			local m = Instance.new("Motor6D")
+			m.Name = d.Name
+			m.Part0 = d.Attachment0.Parent :: BasePart
+			m.Part1 = d.Attachment1.Parent :: BasePart
+			m.C0 = d.Attachment0.CFrame
+			m.C1 = d.Attachment1.CFrame
+			m.Parent = d.Parent
+			d:Destroy()
+		end
+	end
+	bend(rig, "Waist", pose.waist)
+	bend(rig, "Neck", pose.neck)
+	bend(rig, "RightHip", pose.hip, pose.splay)
+	bend(rig, "LeftHip", pose.hip, -pose.splay)
+	bend(rig, "RightKnee", pose.knee)
+	bend(rig, "LeftKnee", pose.knee)
+	bend(rig, "RightAnkle", pose.ankle)
+	bend(rig, "LeftAnkle", pose.ankle)
+	bend(rig, "RightShoulder", pose.shoulder, -6)
+	bend(rig, "LeftShoulder", pose.shoulder, 6)
+	bend(rig, "RightElbow", pose.elbow)
+	bend(rig, "LeftElbow", pose.elbow)
+	local hum = rig:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum:Destroy()
+	end
+	-- วางชิ้นส่วนตามท่าเอง (forward kinematics) เพราะถ้ารถจอดถูก Anchored ฟิสิกส์จะไม่ขยับข้อต่อให้
+	local joints: { JointInstance } = {}
+	for _, d in rig:GetDescendants() do
+		if d:IsA("JointInstance") then
+			table.insert(joints, d)
+		end
+	end
+	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart
+	local placed: { [Instance]: boolean } = { [root] = true }
+	local queue: { BasePart } = { root }
+	while #queue > 0 do
+		local cur = table.remove(queue, 1) :: BasePart
+		for _, j in joints do
+			local p0, p1 = j.Part0, j.Part1
+			if p0 and p1 then
+				if p0 == cur and not placed[p1] then
+					p1.CFrame = cur.CFrame * j.C0 * j.C1:Inverse()
+					placed[p1] = true
+					table.insert(queue, p1)
+				elseif p1 == cur and not placed[p0] then
+					p0.CFrame = cur.CFrame * j.C1 * j.C0:Inverse()
+					placed[p0] = true
+					table.insert(queue, p0)
+				end
+			end
+		end
+	end
+	for _, d in rig:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = false
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.Massless = true
+		end
+	end
+	return rig
 end
 
 return RigFactory
