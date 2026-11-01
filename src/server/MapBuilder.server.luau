@@ -9,29 +9,29 @@ local Lighting = game:GetService("Lighting")
 local RigFactory = require(script.Parent.RigFactory)
 
 local C = {
-	paving = Color3.fromHex("E8D5BC"),
-	pavingAlt = Color3.fromHex("F7B8CA"),
-	concrete = Color3.fromHex("C9CED6"),
-	darkConcrete = Color3.fromHex("8E94A3"),
-	wall = Color3.fromHex("F7F1E5"),
-	white = Color3.fromHex("FFFFFF"),
-	trim = Color3.fromHex("FFB7C5"),
-	glass = Color3.fromHex("BFE9FF"),
-	wood = Color3.fromHex("D9B382"),
-	darkWood = Color3.fromHex("9C7A54"),
-	roof = Color3.fromHex("7EC8E3"),
-	navy = Color3.fromHex("2B2D42"),
-	red = Color3.fromHex("EF233C"),
-	blue = Color3.fromHex("4D7CFE"),
-	yellow = Color3.fromHex("FFE066"),
-	trunk = Color3.fromHex("8D6E63"),
-	hedge = Color3.fromHex("5FAF6B"),
-	grassField = Color3.fromHex("9FD88A"),
-	track = Color3.fromHex("D98E6B"),
-	petal = Color3.fromHex("FFB7C5"),
-	petalLight = Color3.fromHex("FFD6E0"),
-	stone = Color3.fromHex("B5B8C2"),
-	water = Color3.fromHex("6FC5F0"),
+	paving = Color3.fromHex("B8AE9C"),
+	pavingAlt = Color3.fromHex("8C857A"),
+	concrete = Color3.fromHex("A3A5A6"),
+	darkConcrete = Color3.fromHex("6E7175"),
+	wall = Color3.fromHex("D6CDBA"),
+	white = Color3.fromHex("E4E0D6"),
+	trim = Color3.fromHex("6B5646"),
+	glass = Color3.fromHex("86A0AA"),
+	wood = Color3.fromHex("8A6A4C"),
+	darkWood = Color3.fromHex("5E4632"),
+	roof = Color3.fromHex("4A5560"),
+	navy = Color3.fromHex("2A2D33"),
+	red = Color3.fromHex("9A3A32"),
+	blue = Color3.fromHex("3E5A78"),
+	yellow = Color3.fromHex("D2AC48"),
+	trunk = Color3.fromHex("5A4636"),
+	hedge = Color3.fromHex("4A6B3E"),
+	grassField = Color3.fromHex("7A9A5A"),
+	track = Color3.fromHex("8F6248"),
+	petal = Color3.fromHex("E2B2BA"),
+	petalLight = Color3.fromHex("EDCBD0"),
+	stone = Color3.fromHex("928F88"),
+	water = Color3.fromHex("4F7F8F"),
 }
 
 local rng = Random.new(42)
@@ -70,6 +70,15 @@ local function folder(name: string): Folder
 end
 
 ---------------------------------------------------------------- ตัวช่วยสร้างชิ้นส่วน
+-- ไม่ระบุวัสดุ = เลือกจากสี (น้ำตาล = ไม้, อื่น ๆ = คอนกรีต)
+local function autoMaterial(c: Color3): Enum.Material
+	local h, sat, v = c:ToHSV()
+	if sat > 0.22 and (h < 0.12 or h > 0.97) and v < 0.7 and v > 0.2 then
+		return Enum.Material.Wood
+	end
+	return Enum.Material.Concrete
+end
+
 local function part(name: string, size: Vector3, position: Vector3, color: Color3, parent: Instance, material: Enum.Material?): Part
 	local p = Instance.new("Part")
 	p.Name = name
@@ -77,7 +86,7 @@ local function part(name: string, size: Vector3, position: Vector3, color: Color
 	p.Size = size
 	p.Position = position
 	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
+	p.Material = material or autoMaterial(color)
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent
@@ -121,7 +130,7 @@ local function sign(parent: Instance, text: string, size: Vector3, position: Vec
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextColor3 = fg
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
 	label.Parent = gui
 	return p
@@ -188,9 +197,9 @@ end
 
 ---------------------------------------------------------------- Terrain: หญ้า น้ำ เนินเขา
 -- ผิว Terrain จริงสูงกว่าขอบบนของบล็อก ~2 stud (voxel 4 stud) จึงวางที่ -8 ให้ผิวหญ้าอยู่ที่ y≈0 เสมอกับพื้นชิ้นส่วน
-terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromHex("F3E3B8"))
+terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromHex("C9B88F"))
 if not baked then
-	terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("B2EBA6"))
+	terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromHex("7E9A5C"))
 	terrain:FillBlock(CFrame.new(0, -8, 110), Vector3.new(760, 12, 800), Enum.Material.LeafyGrass)
 
 	-- เนินเขารอบฉากย้ายไปเป็นแนวเขานอกขอบโลกใน WorldBuilder (เนินกลางโลกเคยทับสวน ถนน บ้าน)
@@ -200,7 +209,7 @@ end
 terrain:FillCylinder(CFrame.new(125, -2, 95), 4, 21, Enum.Material.Sand) -- ชายหาดรอบสระ
 terrain:FillCylinder(CFrame.new(125, -1.5, 95), 9, 17, Enum.Material.Air) -- ขุดแอ่ง
 terrain:FillCylinder(CFrame.new(125, -6, 95), 6, 17, Enum.Material.Water)
-terrain.WaterColor = Color3.fromHex("8FD8FF")
+terrain.WaterColor = Color3.fromHex("4F7F8F")
 terrain.WaterTransparency = 0.45
 terrain.WaterWaveSize = 0.12
 terrain.WaterReflectance = 0.5
@@ -230,8 +239,8 @@ box("SchoolYard", -80, 80, -3, 0.3, -60, 60, C.paving, ground)
 box("Cafeteria_Floor", -160, -100, -3, 0.3, -25, 25, C.paving, ground)
 box("Gym_Floor", 80, 180, -3, 0.3, -35, 35, C.wood, ground, Enum.Material.WoodPlanks)
 box("BackLot", -10, 10, -3, 0.3, 90, 130, C.concrete, ground) -- ซอยหลังโรงเรียนถูกรื้อ เหลือแค่ทางเดินต่อไปอารีน่า
-box("War_Floor_Red", -50, 50, -3, 0.3, 210, 260, Color3.fromHex("F4B6B6"), ground)
-box("War_Floor_Blue", -50, 50, -3, 0.3, 260, 310, Color3.fromHex("B6D4F4"), ground)
+box("War_Floor_Red", -50, 50, -3, 0.3, 210, 260, Color3.fromHex("9A6A66"), ground)
+box("War_Floor_Blue", -50, 50, -3, 0.3, 260, 310, Color3.fromHex("66798F"), ground)
 box("Path_Cafeteria", -100, -80, -3, 0.3, -10, 10, C.concrete, ground)
 box("Path_BackLot", -10, 10, -3, 0.3, 60, 90, C.concrete, ground)
 box("Path_War", -10, 10, -3, 0.32, 130, 210, C.concrete, ground)
@@ -522,7 +531,7 @@ box("CoverBlue", -12, -6, 0.3, 4, 291, 295, C.blue, war)
 box("CoverBlue", 6, 12, 0.3, 4, 291, 295, C.blue, war)
 box("CoverMid", -4, 4, 0.3, 4, 258, 262, C.concrete, war)
 cylinder("MidCircle", 9, 0.1, Vector3.new(0, 0.36, 260), C.white, war)
-cylinder("MidCircleInner", 8.5, 0.12, Vector3.new(0, 0.38, 260), Color3.fromHex("DCE3EE"), war)
+cylinder("MidCircleInner", 8.5, 0.12, Vector3.new(0, 0.38, 260), Color3.fromHex("BFC3C6"), war)
 
 ---------------------------------------------------------------- ของตกแต่งสนามหน้าโรงเรียน
 local props = folder("Props")
@@ -530,10 +539,10 @@ local props = folder("Props")
 -- ต้นซากุระ: ลำต้น + มงกุฎหลายก้อน + กลีบร่วง
 local function sakura(x: number, z: number, scale: number)
 	cylinder("Trunk", 1.2 * scale, 9 * scale, Vector3.new(x, 4.5 * scale, z), C.trunk, props, Enum.Material.Wood)
-	local crown = ball("Crown", 15 * scale, Vector3.new(x, 13 * scale, z), C.petal, props, Enum.Material.SmoothPlastic)
-	ball("Crown", 10 * scale, Vector3.new(x + 4 * scale, 11 * scale, z + 3 * scale), C.petalLight, props, Enum.Material.SmoothPlastic)
-	ball("Crown", 9 * scale, Vector3.new(x - 4 * scale, 12 * scale, z - 3 * scale), C.petal, props, Enum.Material.SmoothPlastic)
-	ball("Crown", 8 * scale, Vector3.new(x + 1 * scale, 17 * scale, z - 2 * scale), C.petalLight, props, Enum.Material.SmoothPlastic)
+	local crown = ball("Crown", 15 * scale, Vector3.new(x, 13 * scale, z), C.petal, props, Enum.Material.Grass)
+	ball("Crown", 10 * scale, Vector3.new(x + 4 * scale, 11 * scale, z + 3 * scale), C.petalLight, props, Enum.Material.Grass)
+	ball("Crown", 9 * scale, Vector3.new(x - 4 * scale, 12 * scale, z - 3 * scale), C.petal, props, Enum.Material.Grass)
+	ball("Crown", 8 * scale, Vector3.new(x + 1 * scale, 17 * scale, z - 2 * scale), C.petalLight, props, Enum.Material.Grass)
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	e.Color = ColorSequence.new(C.petal, C.petalLight)
@@ -576,8 +585,8 @@ petals.Parent = petalSky
 
 -- น้ำพุกลางลาน (ด้านหน้าอาคาร): สระวงกลมมีขอบหิน + ชามน้ำพุ 3 ชั้น + น้ำไหลลงทีละชั้น
 local FOUNTAIN = Vector3.new(0, 0, -30)
-local stoneDark = Color3.fromHex("B9B3A8")
-local waterColor = Color3.fromHex("7FD3F0")
+local stoneDark = Color3.fromHex("8A857B")
+local waterColor = Color3.fromHex("5F8F9A")
 local function fountainPart(p: Part, material: Enum.Material?)
 	p.Material = material or Enum.Material.Marble
 	return p
@@ -608,7 +617,7 @@ for _, t in tiers do
 	spill.Parent = w
 	local ring = Instance.new("ParticleEmitter")
 	ring.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	ring.Color = ColorSequence.new(Color3.fromHex("DDF4FF"), waterColor)
+	ring.Color = ColorSequence.new(Color3.fromHex("AEC4C8"), waterColor)
 	ring.Size = NumberSequence.new(0.28)
 	ring.Lifetime = NumberRange.new(0.7, 1.0)
 	ring.Speed = NumberRange.new(t.r * 0.9, t.r * 1.2)
@@ -625,7 +634,7 @@ fountainTop.Transparency = 1
 fountainTop.CanCollide = false
 local jet = Instance.new("ParticleEmitter")
 jet.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-jet.Color = ColorSequence.new(Color3.fromHex("DDF4FF"), waterColor)
+jet.Color = ColorSequence.new(Color3.fromHex("AEC4C8"), waterColor)
 jet.Size = NumberSequence.new(0.35)
 jet.Lifetime = NumberRange.new(1.0, 1.5)
 jet.Speed = NumberRange.new(10, 14)
@@ -643,8 +652,8 @@ local function hedge(x1: number, x2: number, z1: number, z2: number)
 	for i = 0, math.floor(length / 3) do
 		local fx = if x2 - x1 > z2 - z1 then x1 + i * 3 + rng:NextNumber(0, 1.4) else (x1 + x2) / 2 + (if rng:NextNumber() > 0.5 then 1.8 else -1.8)
 		local fz = if x2 - x1 > z2 - z1 then (z1 + z2) / 2 + (if rng:NextNumber() > 0.5 then 1.8 else -1.8) else z1 + i * 3 + rng:NextNumber(0, 1.4)
-		local color = ({ C.trim, C.yellow, C.white, Color3.fromHex("FF8FAB") })[rng:NextInteger(1, 4)]
-		ball("Flower", 1.1, Vector3.new(fx, 0.9, fz), color, props, Enum.Material.SmoothPlastic)
+		local color = ({ C.trim, C.yellow, C.white, Color3.fromHex("C98A97") })[rng:NextInteger(1, 4)]
+		ball("Flower", 1.1, Vector3.new(fx, 0.9, fz), color, props, Enum.Material.Grass)
 	end
 end
 hedge(-78, -14, 57, 59) -- ขอบใต้ซ้าย
@@ -719,7 +728,7 @@ end
 local field = folder("Field")
 box("TrackOuter", -142, -48, -3, 0.26, 52, 128, C.track, field)
 for i = 0, 7 do -- ลายตัดหญ้าสลับสี
-	box("FieldGrass", -137 + i * 10.5, -137 + (i + 1) * 10.5, 0.28, 0.4, 57, 123, if i % 2 == 0 then C.grassField else Color3.fromHex("8CCB7A"), field, Enum.Material.Grass)
+	box("FieldGrass", -137 + i * 10.5, -137 + (i + 1) * 10.5, 0.28, 0.4, 57, 123, if i % 2 == 0 then C.grassField else Color3.fromHex("6E8E50"), field, Enum.Material.Grass)
 end
 for _, def in { { -137, -53, 56.7, 57.3 }, { -137, -53, 122.7, 123.3 }, { -137.3, -136.7, 57, 123 }, { -53.3, -52.7, 57, 123 }, { -95.3, -94.7, 57, 123 } } do
 	box("FieldLine", def[1], def[2], 0.4, 0.45, def[3], def[4], C.white, field)
@@ -761,7 +770,7 @@ end
 for i = 1, 9 do
 	local a = rng:NextNumber(0, math.pi * 2)
 	local r = rng:NextNumber(2, 13)
-	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, 0.06, 95 + math.sin(a) * r), Color3.fromHex("5FBF7A"), pond)
+	local pad = cylinder("LilyPad", 1.2, 0.08, Vector3.new(125 + math.cos(a) * r, 0.06, 95 + math.sin(a) * r), Color3.fromHex("4F7358"), pond)
 	pad.CanCollide = false
 	if i % 3 == 0 then
 		local flower = ball("Lotus", 0.9, Vector3.new(pad.Position.X, 0.3, pad.Position.Z), C.trim, pond)
@@ -779,7 +788,7 @@ for i = 1, 60 do
 	cylinder("PineTrunk", 0.9, h * 0.35, Vector3.new(x, h * 0.17, z), C.trunk, scenery)
 	for layer = 0, 2 do
 		local s = (3 - layer) * 3.2
-		local cone = ball("PineLeaves", s, Vector3.new(x, h * 0.35 + layer * h * 0.2 + s * 0.3, z), Color3.fromHex("4FA06A"), scenery, Enum.Material.SmoothPlastic)
+		local cone = ball("PineLeaves", s, Vector3.new(x, h * 0.35 + layer * h * 0.2 + s * 0.3, z), Color3.fromHex("3F6B45"), scenery, Enum.Material.Grass)
 		cone.Size = Vector3.new(s, s * 1.3, s)
 	end
 end
@@ -793,7 +802,7 @@ spawn.Anchored = true
 spawn.Size = Vector3.new(12, 0.4, 12)
 spawn.Position = Vector3.new(0, 0.55, 0)
 spawn.Color = C.trim
-spawn.Material = Enum.Material.SmoothPlastic
+spawn.Material = Enum.Material.Concrete
 spawn.Neutral = true
 spawn.Parent = map
 for _, d in spawn:GetChildren() do
@@ -821,13 +830,13 @@ Lighting.EnvironmentDiffuseScale = 0.7
 Lighting.EnvironmentSpecularScale = 0.4
 Lighting.OutdoorAmbient = Color3.fromRGB(165, 165, 180)
 Lighting.Ambient = Color3.fromRGB(135, 135, 150)
-Lighting.ColorShift_Top = Color3.fromHex("FFF1DA")
+Lighting.ColorShift_Top = Color3.fromHex("FFE2BC")
 Lighting.GlobalShadows = true
 Lighting.ClockTime = 14
 
 local atmosphere = Instance.new("Atmosphere")
-atmosphere.Color = Color3.fromHex("D6EBFF")
-atmosphere.Decay = Color3.fromHex("FFE3D6")
+atmosphere.Color = Color3.fromHex("C4CFD6")
+atmosphere.Decay = Color3.fromHex("E0B494")
 atmosphere.Density = 0.3
 atmosphere.Haze = 0.4
 atmosphere.Glare = 0
@@ -844,7 +853,7 @@ sunRays.Parent = Lighting
 local cc = Instance.new("ColorCorrectionEffect")
 cc.Saturation = 0.18
 cc.Contrast = 0.06
-cc.TintColor = Color3.fromHex("FFF6F8")
+cc.TintColor = Color3.fromHex("FFF0E0")
 cc.Parent = Lighting
 
 ---------------------------------------------------------------- NPC ทดสอบหลังโรงเรียน

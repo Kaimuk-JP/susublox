@@ -36,7 +36,7 @@ local function skip(x: number): boolean
 end
 
 ---------------------------------------------------------------- กำแพงหิน + เสา + โคมแดง
-local STONE, STONE_DARK, PLASTER, TILE = hex("B8B2A4"), hex("8F8A7F"), hex("D9D2C4"), hex("5B5D6B")
+local STONE, STONE_DARK, PLASTER, TILE = hex("9A9488"), hex("6F6B62"), hex("B3AB9B"), hex("5B5D6B")
 
 for _, side in { -1, 1 } do
 	local baseZ = MAIN_Z + side * 15
@@ -47,10 +47,10 @@ for _, side in { -1, 1 } do
 			BK.box("WallPanel", x + 1.2, x + 8.8, 0, 3, baseZ - 0.6, baseZ + 0.6, PLASTER, f, Enum.Material.Concrete)
 			BK.box("WallTile", x + 1, x + 9, 3, 3.7, baseZ - 0.9, baseZ + 0.9, TILE, f, Enum.Material.Slate)
 			if (x / 10) % 2 == 0 then
-				local lantern = BK.ball("Lantern", 1.7, Vector3.new(x, 4.1, baseZ - side * 1.7), hex("E8352E"), f, Enum.Material.Neon)
+				local lantern = BK.ball("Lantern", 1.7, Vector3.new(x, 4.1, baseZ - side * 1.7), hex("A8352C"), f, Enum.Material.Neon)
 				lantern.Size = Vector3.new(1.4, 2, 1.4)
 				BK.light(lantern, hex("FF6A3D"), 22, 1.1)
-				BK.cylinder("LanternCord", 0.08, 1.2, Vector3.new(x, 5, baseZ - side * 1.7), hex("2B2D42"), f)
+				BK.cylinder("LanternCord", 0.08, 1.2, Vector3.new(x, 5, baseZ - side * 1.7), hex("2A2C32"), f)
 			end
 		end
 	end
@@ -72,9 +72,9 @@ for x = B.MinX + 50, B.MaxX - 50, POLE_STEP do
 		BK.cylinder("UtilityPole", 0.45, 19, Vector3.new(x, 9.5, POLE_SIDE_Z), hex("6B5A47"), f, Enum.Material.Wood)
 		BK.box("CrossArm", x - 3.2, x + 3.2, 17.4, 17.9, POLE_SIDE_Z - 0.25, POLE_SIDE_Z + 0.25, hex("5A4A3A"), f, Enum.Material.Wood)
 		for _, ox in { -2.6, 0, 2.6 } do
-			BK.cylinder("Insulator", 0.22, 0.7, Vector3.new(x + ox, 18.2, POLE_SIDE_Z), hex("C9CED6"), f)
+			BK.cylinder("Insulator", 0.22, 0.7, Vector3.new(x + ox, 18.2, POLE_SIDE_Z), hex("A5A7A8"), f)
 		end
-		BK.box("Transformer", x + 0.5, x + 1.9, 13.2, 15, POLE_SIDE_Z - 0.7, POLE_SIDE_Z + 0.7, hex("8E94A3"), f, Enum.Material.Metal)
+		BK.box("Transformer", x + 0.5, x + 1.9, 13.2, 15, POLE_SIDE_Z - 0.7, POLE_SIDE_Z + 0.7, hex("70747A"), f, Enum.Material.Metal)
 	end
 end
 
@@ -86,7 +86,7 @@ local function wire(p1: Vector3, p2: Vector3, sag: number)
 		local pos = p1:Lerp(p2, t) - Vector3.new(0, sag * 4 * t * (1 - t), 0)
 		local mid = (prev + pos) / 2
 		local length = (pos - prev).Magnitude
-		local w = BK.part("Wire", Vector3.new(0.12, 0.12, length), mid, hex("1A1A22"), f)
+		local w = BK.part("Wire", Vector3.new(0.12, 0.12, length), mid, hex("1B1C20"), f)
 		w.CFrame = CFrame.lookAt(mid, pos)
 		w.CanCollide, w.CanQuery, w.CanTouch = false, false, false
 		prev = pos
@@ -104,15 +104,15 @@ end
 ---------------------------------------------------------------- ป้ายรถเมล์
 local function busStop(x: number, side: number)
 	local z = MAIN_Z + side * 11
-	BK.box("ShelterRoof", x - 4, x + 4, 7, 7.5, z - 2, z + 2, hex("4D7CFE"), f, Enum.Material.Metal)
+	BK.box("ShelterRoof", x - 4, x + 4, 7, 7.5, z - 2, z + 2, hex("3F566E"), f, Enum.Material.Metal)
 	for _, ox in { -3.6, 3.6 } do
-		BK.cylinder("ShelterPost", 0.2, 7, Vector3.new(x + ox, 3.5, z + side * 1.8), hex("2B2D42"), f, Enum.Material.Metal)
+		BK.cylinder("ShelterPost", 0.2, 7, Vector3.new(x + ox, 3.5, z + side * 1.8), hex("2A2C32"), f, Enum.Material.Metal)
 	end
-	local glass = BK.box("ShelterGlass", x - 3.6, x + 3.6, 1.2, 6.8, z + side * 1.9 - 0.1, z + side * 1.9 + 0.1, hex("BFE9FF"), f, Enum.Material.Glass)
+	local glass = BK.box("ShelterGlass", x - 3.6, x + 3.6, 1.2, 6.8, z + side * 1.9 - 0.1, z + side * 1.9 + 0.1, hex("8FA3AB"), f, Enum.Material.Glass)
 	glass.Transparency = 0.6
-	BK.box("ShelterBench", x - 2.5, x + 2.5, 1.6, 2, z + side * 1.2 - 0.5, z + side * 1.2 + 0.5, hex("9C7A54"), f, Enum.Material.Wood)
-	BK.cylinder("BusSignPole", 0.15, 8, Vector3.new(x + 5.5, 4, z), hex("C9CED6"), f, Enum.Material.Metal)
-	BK.sign(f, "BUS", Vector3.new(2.4, 2.4, 0.2), Vector3.new(x + 5.5, 8.4, z), if side == 1 then 180 else 0, hex("4D7CFE"), hex("FFFFFF"))
+	BK.box("ShelterBench", x - 2.5, x + 2.5, 1.6, 2, z + side * 1.2 - 0.5, z + side * 1.2 + 0.5, hex("6F5236"), f, Enum.Material.Wood)
+	BK.cylinder("BusSignPole", 0.15, 8, Vector3.new(x + 5.5, 4, z), hex("A5A7A8"), f, Enum.Material.Metal)
+	BK.sign(f, "BUS", Vector3.new(2.4, 2.4, 0.2), Vector3.new(x + 5.5, 8.4, z), if side == 1 then 180 else 0, hex("3F566E"), hex("FFFFFF"))
 end
 for _, spec in { { -700, 1 }, { -300, -1 }, { 300, 1 }, { 700, -1 }, { -250, 1 }, { 250, -1 } } do
 	if not skip(spec[1]) then

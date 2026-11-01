@@ -4,6 +4,15 @@ local BK = {}
 
 BK.rng = Random.new(1234)
 
+-- ไม่ระบุวัสดุ = เลือกจากสี (น้ำตาล = ไม้, อื่น ๆ = คอนกรีต) ไม่ใช้ SmoothPlastic แบบของเล่น
+local function autoMaterial(c: Color3): Enum.Material
+	local h, sat, v = c:ToHSV()
+	if sat > 0.22 and (h < 0.12 or h > 0.97) and v < 0.7 and v > 0.2 then
+		return Enum.Material.Wood
+	end
+	return Enum.Material.Concrete
+end
+
 function BK.part(name: string, size: Vector3, position: Vector3, color: Color3, parent: Instance, material: Enum.Material?): Part
 	local p = Instance.new("Part")
 	p.Name = name
@@ -11,7 +20,7 @@ function BK.part(name: string, size: Vector3, position: Vector3, color: Color3, 
 	p.Size = size
 	p.Position = position
 	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
+	p.Material = material or autoMaterial(color)
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent
@@ -59,7 +68,7 @@ function BK.sign(parent: Instance, text: string, size: Vector3, position: Vector
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextColor3 = fg
-	label.Font = Enum.Font.FredokaOne
+	label.Font = Enum.Font.GothamBold
 	label.TextScaled = true
 	label.Parent = gui
 	return p
@@ -93,7 +102,7 @@ end
 function BK.pine(parent: Instance, x: number, z: number, h: number)
 	local bark = jitter(hex("6B4E3B"), 0.04)
 	BK.cylinder("PineTrunk", h * 0.045 + 0.35, h * 0.5, Vector3.new(x, h * 0.25, z), bark, parent, Enum.Material.Wood)
-	local green = jitter(hex("3E8453"), 0.05)
+	local green = jitter(hex("35603B"), 0.05)
 	for i = 0, 4 do
 		local d = h * 0.46 * (1 - i * 0.18)
 		BK.blob(parent, Vector3.new(x, h * 0.22 + i * h * 0.15 + d * 0.2, z), d, jitter(green, 0.03))
@@ -137,7 +146,7 @@ function BK.roundTree(parent: Instance, x: number, z: number, scale: number, lea
 	BK.cylinder("TrunkBase", 1.25 * s, 1.5 * s, Vector3.new(x, 0.75 * s, z), bark, parent, Enum.Material.Wood)
 	local top = Vector3.new(x + BK.rng:NextNumber(-0.7, 0.7) * s, 8 * s, z + BK.rng:NextNumber(-0.7, 0.7) * s)
 	BK.branch(parent, Vector3.new(x, 1 * s, z), top, 0.8 * s, bark)
-	local base = leaf or hex("5FAE5C")
+	local base = leaf or hex("56803F")
 	for _ = 1, 2 do
 		local a = BK.rng:NextNumber(0, 6.28)
 		BK.branch(parent, Vector3.new(x, 5 * s, z), top + Vector3.new(math.cos(a) * 3.4 * s, 0.4 * s, math.sin(a) * 3.4 * s), 0.35 * s, bark)
@@ -165,7 +174,7 @@ function BK.sakura(parent: Instance, x: number, z: number, scale: number)
 		local a = i / 3 * 6.28 + BK.rng:NextNumber(-0.4, 0.4)
 		BK.branch(parent, fork, crownC + Vector3.new(math.cos(a) * 4.6 * s, 0.6 * s, math.sin(a) * 4.6 * s), 0.45 * s, bark)
 	end
-	local pinks = { hex("FFB7C5"), hex("FFC6D3"), hex("FFA9BC"), hex("FFD6E0") }
+	local pinks = { hex("D9AEB6"), hex("E0BCC3"), hex("CFA2AC"), hex("E6C8CE") }
 	local center = BK.blob(parent, crownC + Vector3.new(0, 1.2 * s, 0), 11 * s, jitter(pinks[1], 0.03))
 	for i = 1, 7 do
 		local a = i / 7 * 6.28 + BK.rng:NextNumber(-0.3, 0.3)
@@ -174,7 +183,7 @@ function BK.sakura(parent: Instance, x: number, z: number, scale: number)
 	end
 	local e = Instance.new("ParticleEmitter")
 	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	e.Color = ColorSequence.new(hex("FFB7C5"), hex("FFD6E0"))
+	e.Color = ColorSequence.new(hex("D9AEB6"), hex("E6C8CE"))
 	e.Size = NumberSequence.new(0.5)
 	e.Lifetime = NumberRange.new(6, 9)
 	e.Speed = NumberRange.new(0, 1)
@@ -187,7 +196,7 @@ function BK.sakura(parent: Instance, x: number, z: number, scale: number)
 end
 
 function BK.bush(parent: Instance, x: number, z: number, s: number, color: Color3?)
-	local base = color or hex("4E9A58")
+	local base = color or hex("486F3C")
 	BK.blob(parent, Vector3.new(x, 1.1 * s, z), 3.6 * s, jitter(base, 0.05))
 	for _ = 1, 2 do
 		BK.blob(parent, Vector3.new(x + BK.rng:NextNumber(-1.4, 1.4) * s, 0.9 * s, z + BK.rng:NextNumber(-1.4, 1.4) * s), BK.rng:NextNumber(2.2, 3) * s, jitter(base, 0.06))
@@ -210,7 +219,7 @@ function BK.rock(parent: Instance, x: number, z: number, s: number)
 end
 
 function BK.flowers(parent: Instance, x: number, z: number, color: Color3, radius: number)
-	local base = BK.blob(parent, Vector3.new(x, 0.4, z), radius * 1.8, hex("5FAE5C"))
+	local base = BK.blob(parent, Vector3.new(x, 0.4, z), radius * 1.8, hex("56803F"))
 	base.Size = Vector3.new(radius * 1.8, 0.8, radius * 1.8)
 	for _ = 1, 7 do
 		local a, r = BK.rng:NextNumber(0, 6.28), BK.rng:NextNumber(0, radius)
@@ -242,8 +251,8 @@ function BK.car(parent: Instance, x: number, z: number, yaw: number, color: Colo
 			w.Shape = Enum.PartType.Cylinder
 			w.CFrame = cf * CFrame.new(sx * 2.05, 0.95, sz)
 		end
-		BK.noCollide(piece("Headlight", Vector3.new(0.9, 0.45, 0.2), Vector3.new(sx * 1.4, 1.9, -4.55), hex("FFF3C9"), Enum.Material.Neon))
-		BK.noCollide(piece("Taillight", Vector3.new(0.9, 0.4, 0.2), Vector3.new(sx * 1.4, 1.9, 4.55), hex("E8352E"), Enum.Material.Neon))
+		BK.noCollide(piece("Headlight", Vector3.new(0.9, 0.45, 0.2), Vector3.new(sx * 1.4, 1.9, -4.55), hex("F0D9A0"), Enum.Material.Neon))
+		BK.noCollide(piece("Taillight", Vector3.new(0.9, 0.4, 0.2), Vector3.new(sx * 1.4, 1.9, 4.55), hex("A8352C"), Enum.Material.Neon))
 	end
 	return m
 end
@@ -257,7 +266,7 @@ function BK.bench(parent: Instance, x: number, z: number, yaw: number)
 	piece(Vector3.new(5, 0.3, 1.6), Vector3.new(0, 1.6, 0), hex("8D6E4B"), Enum.Material.WoodPlanks)
 	piece(Vector3.new(5, 1.2, 0.25), Vector3.new(0, 2.5, 0.7), hex("8D6E4B"), Enum.Material.WoodPlanks)
 	for _, sx in { -2.1, 2.1 } do
-		piece(Vector3.new(0.3, 1.6, 1.5), Vector3.new(sx, 0.8, 0), hex("2B2D42"), Enum.Material.Metal)
+		piece(Vector3.new(0.3, 1.6, 1.5), Vector3.new(sx, 0.8, 0), hex("2A2C32"), Enum.Material.Metal)
 	end
 end
 
@@ -281,10 +290,10 @@ end
 
 function BK.lamp(parent: Instance, x: number, z: number, color: Color3?)
 	local glow = color or hex("FFE066")
-	BK.cylinder("PoleBase", 0.7, 0.8, Vector3.new(x, 0.4, z), hex("3A3D4A"), parent, Enum.Material.Metal)
-	BK.cylinder("Pole", 0.25, 11.6, Vector3.new(x, 6.2, z), hex("2B2D42"), parent, Enum.Material.Metal)
-	BK.box("LampArm", x - 0.15, x + 0.15, 11.8, 12, z - 1.4, z + 0.2, hex("2B2D42"), parent, Enum.Material.Metal)
-	BK.box("LampHousing", x - 0.7, x + 0.7, 11.5, 11.9, z - 2.1, z - 0.7, hex("3A3D4A"), parent, Enum.Material.Metal)
+	BK.cylinder("PoleBase", 0.7, 0.8, Vector3.new(x, 0.4, z), hex("34363C"), parent, Enum.Material.Metal)
+	BK.cylinder("Pole", 0.25, 11.6, Vector3.new(x, 6.2, z), hex("2A2C32"), parent, Enum.Material.Metal)
+	BK.box("LampArm", x - 0.15, x + 0.15, 11.8, 12, z - 1.4, z + 0.2, hex("2A2C32"), parent, Enum.Material.Metal)
+	BK.box("LampHousing", x - 0.7, x + 0.7, 11.5, 11.9, z - 2.1, z - 0.7, hex("34363C"), parent, Enum.Material.Metal)
 	local bulb = BK.box("Bulb", x - 0.5, x + 0.5, 11.35, 11.5, z - 1.9, z - 0.9, glow, parent, Enum.Material.Neon)
 	BK.light(bulb, glow, 30, 1.1)
 end
@@ -300,7 +309,12 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 	local facing: number = o.Facing or 1
 	local trim = wall:Lerp(Color3.new(0.35, 0.36, 0.4), 0.35)
 	local frameColor = wall:Lerp(Color3.new(1, 1, 1), 0.5)
-	BK.box("Walls", cx - w / 2, cx + w / 2, y0, y0 + h, cz - d / 2, cz + d / 2, wall, model, o.Material or Enum.Material.Concrete)
+	local wallMat: Enum.Material = o.Material
+	if not wallMat then
+		local r = BK.rng:NextNumber()
+		wallMat = if r < 0.45 then Enum.Material.Plaster elseif r < 0.8 or h > 18 then Enum.Material.Concrete else Enum.Material.Brick
+	end
+	BK.box("Walls", cx - w / 2, cx + w / 2, y0, y0 + h, cz - d / 2, cz + d / 2, wall, model, wallMat)
 	BK.box("BaseTrim", cx - w / 2 - 0.3, cx + w / 2 + 0.3, y0, y0 + 1.2, cz - d / 2 - 0.3, cz + d / 2 + 0.3, trim:Lerp(Color3.new(0, 0, 0), 0.2), model, Enum.Material.Concrete)
 	-- ชายคา + แผ่นหลังคา (Concrete เทาเข้ม ไม่ใช้ Slate ที่ลายใหญ่เกินไป)
 	BK.box("Cornice", cx - w / 2 - 0.9, cx + w / 2 + 0.9, y0 + h - 0.9, y0 + h, cz - d / 2 - 0.9, cz + d / 2 + 0.9, trim, model, Enum.Material.Concrete)
@@ -329,21 +343,21 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 		for _ = 1, 2 do
 			local vx = cx + BK.rng:NextNumber(-w / 2 + 3, w / 2 - 3)
 			local vz = cz + BK.rng:NextNumber(-d / 2 + 3, d / 2 - 3)
-			BK.box("RoofVent", vx - 1.2, vx + 1.2, py, py + 1.8, vz - 1.2, vz + 1.2, hex("8E94A3"), model, Enum.Material.Metal)
+			BK.box("RoofVent", vx - 1.2, vx + 1.2, py, py + 1.8, vz - 1.2, vz + 1.2, hex("70747A"), model, Enum.Material.Metal)
 		end
 		if h > 14 and BK.rng:NextNumber() > 0.45 then
 			local tx = cx + BK.rng:NextNumber(-w / 4, w / 4)
 			local tz = cz + BK.rng:NextNumber(-d / 4, d / 4)
 			for _, lx in { -1.4, 1.4 } do
 				for _, lz in { -1.4, 1.4 } do
-					BK.cylinder("TankLeg", 0.18, 2, Vector3.new(tx + lx, py + 1, tz + lz), hex("4A4D5C"), model, Enum.Material.Metal)
+					BK.cylinder("TankLeg", 0.18, 2, Vector3.new(tx + lx, py + 1, tz + lz), hex("44464D"), model, Enum.Material.Metal)
 				end
 			end
 			BK.cylinder("WaterTank", 2.2, 3.6, Vector3.new(tx, py + 3.8, tz), hex("8E6F55"), model, Enum.Material.Wood)
-			BK.cylinder("TankCap", 2.3, 0.4, Vector3.new(tx, py + 5.8, tz), hex("4A4D5C"), model, Enum.Material.Metal)
+			BK.cylinder("TankCap", 2.3, 0.4, Vector3.new(tx, py + 5.8, tz), hex("44464D"), model, Enum.Material.Metal)
 		end
 		if h > 20 then
-			BK.cylinder("Antenna", 0.12, 7, Vector3.new(cx + BK.rng:NextNumber(-w / 3, w / 3), py + 3.5, cz + BK.rng:NextNumber(-d / 3, d / 3)), hex("2B2D42"), model, Enum.Material.Metal)
+			BK.cylinder("Antenna", 0.12, 7, Vector3.new(cx + BK.rng:NextNumber(-w / 3, w / 3), py + 3.5, cz + BK.rng:NextNumber(-d / 3, d / 3)), hex("2A2C32"), model, Enum.Material.Metal)
 		end
 		-- เครื่องปรับอากาศใต้หน้าต่างบางบาน
 		local acRows = math.max(1, math.floor((h - 3) / 6.5))
@@ -352,7 +366,7 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 				local ax = cx + BK.rng:NextNumber(-w / 2 + 4, w / 2 - 4)
 				local side = if BK.rng:NextNumber() > 0.5 then 1 else -1
 				local ay = y0 + 3 + r * 6.5
-				BK.box("AirCon", ax - 1.4, ax + 1.4, ay, ay + 1.6, math.min(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), math.max(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), hex("D8D8E0"), model, Enum.Material.Metal)
+				BK.box("AirCon", ax - 1.4, ax + 1.4, ay, ay + 1.6, math.min(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), math.max(cz + side * (d / 2), cz + side * (d / 2 + 1.1)), hex("B8BABA"), model, Enum.Material.Metal)
 			end
 		end
 		for _, sx in { -1, 1 } do
@@ -361,14 +375,14 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 		if h > 16 and BK.rng:NextNumber() > 0.4 then
 			local by = y0 + 3 + 6.5
 			local fz = cz + facing * (d / 2)
-			BK.box("Balcony", cx - 5, cx + 5, by, by + 0.4, math.min(fz, fz + facing * 2.2), math.max(fz, fz + facing * 2.2), hex("C9CED6"), model, Enum.Material.Concrete)
-			BK.box("BalconyRail", cx - 5, cx + 5, by + 0.4, by + 1.6, math.min(fz + facing * 2, fz + facing * 2.2), math.max(fz + facing * 2, fz + facing * 2.2), hex("2B2D42"), model, Enum.Material.Metal)
+			BK.box("Balcony", cx - 5, cx + 5, by, by + 0.4, math.min(fz, fz + facing * 2.2), math.max(fz, fz + facing * 2.2), hex("A5A7A8"), model, Enum.Material.Concrete)
+			BK.box("BalconyRail", cx - 5, cx + 5, by + 0.4, by + 1.6, math.min(fz + facing * 2, fz + facing * 2.2), math.max(fz + facing * 2, fz + facing * 2.2), hex("2A2C32"), model, Enum.Material.Metal)
 		end
 	end
 	if o.Windows ~= false then
 		local cols = math.max(1, math.floor((w - 3) / 7))
 		local rows = math.max(1, math.floor((h - 3) / 6.5))
-		local glass = o.GlassColor or hex("7FB2D6")
+		local glass = o.GlassColor or hex("6F8C9C")
 		local function pane(size: Vector3, pos: Vector3, lit: boolean)
 			local frame = BK.part("WindowFrame", size + Vector3.new(0.45, 0.45, 0.45), pos, frameColor, model, Enum.Material.Concrete)
 			frame.CanCollide = false
@@ -407,6 +421,12 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 			g.Transparency = 0.35
 			g.CanCollide = false
 			BK.box("ShopDoor", cx + w / 2 - 4.2, cx + w / 2 - 1.2, y0 + 1.2, y0 + 5.4, fz - 0.15 * facing - 0.15, fz + 0.15, hex("5A4636"), model, Enum.Material.Wood)
+			-- ม้วนชัตเตอร์เหล็กลูกฟูกปิดครึ่งหน้าร้านบางร้าน (ร้านปิดแล้ว)
+			if BK.rng:NextNumber() < 0.4 then
+				local sx1 = cx - w / 2 + 2.5
+				BK.box("ShutterDoor", sx1, sx1 + (w - 5) * 0.55, y0 + 1.2, y0 + 5, fz - 0.05 * facing - 0.2, fz + 0.2, hex("7C8084"), model, Enum.Material.CorrugatedMetal)
+				BK.box("ShutterBox", sx1 - 0.2, sx1 + (w - 5) * 0.55 + 0.2, y0 + 5, y0 + 5.6, fz - 0.3, fz + 0.3, hex("5A5D62"), model, Enum.Material.Metal)
+			end
 			for i = 0, 2 do
 				BK.box("ShopMullion", cx - w / 2 + 2.5 + i * ((w - 5) / 2) - 0.2, cx - w / 2 + 2.5 + i * ((w - 5) / 2) + 0.2, y0 + 1.2, y0 + 5, fz - 0.2, fz + 0.2, trim, model, Enum.Material.Concrete)
 			end
@@ -414,7 +434,7 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 	end
 	if o.SignText then
 		-- ป้ายหันไปทางถนน (o.Facing = +1 หัน +Z, -1 หัน -Z)
-		BK.sign(model, o.SignText, Vector3.new(math.min(w - 2, 12), 2.6, 0.4), Vector3.new(cx, y0 + 8.8, cz + facing * (d / 2 + 0.3)), if facing == 1 then 180 else 0, o.SignBg or hex("2B2D42"), o.SignFg or hex("FFE066"))
+		BK.sign(model, o.SignText, Vector3.new(math.min(w - 2, 12), 2.6, 0.4), Vector3.new(cx, y0 + 8.8, cz + facing * (d / 2 + 0.3)), if facing == 1 then 180 else 0, o.SignBg or hex("2A2C32"), o.SignFg or hex("FFE066"))
 	end
 	if o.Awning then
 		local aw = BK.box("Awning", cx - w / 2 + 0.5, cx + w / 2 - 0.5, y0 + 6.6, y0 + 7.1, cz + facing * (d / 2), cz + facing * (d / 2 + 4.5), o.Awning :: Color3, model, Enum.Material.Fabric)
@@ -428,15 +448,15 @@ function BK.road(parent: Instance, x1: number, z1: number, x2: number, z2: numbe
 	local ax1, ax2 = math.min(x1, x2), math.max(x1, x2)
 	local az1, az2 = math.min(z1, z2), math.max(z1, z2)
 	local horizontal = (ax2 - ax1) >= (az2 - az1)
-	local asphalt = hex("3F424E")
-	local curbColor = hex("B9BCC4")
+	local asphalt = hex("3A3B3F")
+	local curbColor = hex("9C9A94")
 	if horizontal then
 		BK.box("Road", ax1, ax2, 0, 0.3, az1 - width / 2, az1 + width / 2, asphalt, parent, Enum.Material.Asphalt)
 		for _, side in { -1, 1 } do
 			BK.box("Curb", ax1, ax2, 0, 0.55, az1 + side * (width / 2) - (if side == 1 then 0 else -0.4), az1 + side * (width / 2) + (if side == 1 then 0.4 else 0), curbColor, parent, Enum.Material.Concrete)
 		end
 		for x = ax1 + 6, ax2 - 6, 12 do
-			BK.box("Dash", x, x + 5, 0.3, 0.34, az1 - 0.2, az1 + 0.2, hex("F2D95C"), parent)
+			BK.box("Dash", x, x + 5, 0.3, 0.34, az1 - 0.2, az1 + 0.2, hex("CDB454"), parent)
 		end
 	else
 		BK.box("Road", ax1 - width / 2, ax1 + width / 2, 0, 0.3, az1, az2, asphalt, parent, Enum.Material.Asphalt)
@@ -444,19 +464,19 @@ function BK.road(parent: Instance, x1: number, z1: number, x2: number, z2: numbe
 			BK.box("Curb", ax1 + side * (width / 2) - (if side == 1 then 0 else -0.4), ax1 + side * (width / 2) + (if side == 1 then 0.4 else 0), 0, 0.55, az1, az2, curbColor, parent, Enum.Material.Concrete)
 		end
 		for z = az1 + 6, az2 - 6, 12 do
-			BK.box("Dash", ax1 - 0.2, ax1 + 0.2, 0.3, 0.34, z, z + 5, hex("F2D95C"), parent)
+			BK.box("Dash", ax1 - 0.2, ax1 + 0.2, 0.3, 0.34, z, z + 5, hex("CDB454"), parent)
 		end
 	end
 end
 
 -- ทางเท้า (ปูแผ่นคอนกรีต) แนวแกน
 function BK.sidewalk(parent: Instance, x1: number, x2: number, z1: number, z2: number)
-	BK.box("Sidewalk", math.min(x1, x2), math.max(x1, x2), 0, 0.45, math.min(z1, z2), math.max(z1, z2), hex("CFCBC2"), parent, Enum.Material.Concrete)
+	BK.box("Sidewalk", math.min(x1, x2), math.max(x1, x2), 0, 0.45, math.min(z1, z2), math.max(z1, z2), hex("A9A59B"), parent, Enum.Material.Concrete)
 end
 
 -- ประตูโทริอิ (ไม้ทาแดง + ฐานหิน)
 function BK.torii(parent: Instance, x: number, y: number, z: number, yaw: number, scale: number)
-	local red = hex("D93A2F")
+	local red = hex("A9372D")
 	local model = Instance.new("Model")
 	model.Name = "Torii"
 	model.Parent = parent
@@ -465,7 +485,7 @@ function BK.torii(parent: Instance, x: number, y: number, z: number, yaw: number
 		p.CFrame = CFrame.new(x, y, z) * CFrame.Angles(0, math.rad(yaw), 0) * CFrame.new(offset * scale)
 	end
 	for _, sx in { -5, 5 } do
-		piece(Vector3.new(1.8, 1.2, 1.8), Vector3.new(sx, 0.6, 0), hex("5A5F6E"), Enum.Material.Slate)
+		piece(Vector3.new(1.8, 1.2, 1.8), Vector3.new(sx, 0.6, 0), hex("555960"), Enum.Material.Slate)
 		piece(Vector3.new(1.4, 11.4, 1.4), Vector3.new(sx, 6.9, 0), red)
 	end
 	piece(Vector3.new(14.5, 1.1, 1.5), Vector3.new(0, 10.6, 0), red)

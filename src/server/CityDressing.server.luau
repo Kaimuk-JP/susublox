@@ -61,8 +61,8 @@ for _, side in { -1, 1 } do
 	while x < B.MaxX - 10 do
 		local segmentEnd = math.min(x + 10, B.MaxX - 5)
 		if not nearBridge(x + 5, 13) then
-			BK.box("Embankment", x, segmentEnd, 0, 1.4, z - 0.8, z + 0.8, hex("B5B8C2"), f, Enum.Material.Concrete)
-			BK.box("EmbankmentCap", x - 0.1, segmentEnd + 0.1, 1.4, 1.8, z - 1.1, z + 1.1, hex("8F8A7F"), f, Enum.Material.Concrete)
+			BK.box("Embankment", x, segmentEnd, 0, 1.4, z - 0.8, z + 0.8, hex("8F8E88"), f, Enum.Material.Concrete)
+			BK.box("EmbankmentCap", x - 0.1, segmentEnd + 0.1, 1.4, 1.8, z - 1.1, z + 1.1, hex("6F6B62"), f, Enum.Material.Concrete)
 		end
 		x = segmentEnd
 	end
@@ -76,47 +76,47 @@ end
 ---------------------------------------------------------------- สะพาน 3 แห่ง
 for _, bx in BRIDGE_X do
 	local z1, z2 = RIVER_Z - RIVER_W / 2 - 3, RIVER_Z + RIVER_W / 2 + 3
-	BK.box("BridgeDeck", bx - 8, bx + 8, 0, 0.5, z1, z2, hex("8E94A3"), f, Enum.Material.Concrete)
-	BK.box("BridgeRoad", bx - 7, bx + 7, 0.5, 0.58, z1, z2, hex("4A4D5C"), f, Enum.Material.Asphalt)
+	BK.box("BridgeDeck", bx - 8, bx + 8, 0, 0.5, z1, z2, hex("70747A"), f, Enum.Material.Concrete)
+	BK.box("BridgeRoad", bx - 7, bx + 7, 0.5, 0.58, z1, z2, hex("44464D"), f, Enum.Material.Asphalt)
 	for _, side in { -1, 1 } do
 		local rx = bx + side * 8
-		BK.box("BridgeRail", rx - 0.3, rx + 0.3, 0.5, 3.2, z1, z2, hex("D9D2C4"), f, Enum.Material.Concrete)
-		BK.box("BridgeRailTop", rx - 0.5, rx + 0.5, 3.2, 3.6, z1, z2, hex("2B2D42"), f, Enum.Material.Metal)
+		BK.box("BridgeRail", rx - 0.3, rx + 0.3, 0.5, 3.2, z1, z2, hex("B3AB9B"), f, Enum.Material.Concrete)
+		BK.box("BridgeRailTop", rx - 0.5, rx + 0.5, 3.2, 3.6, z1, z2, hex("2A2C32"), f, Enum.Material.Metal)
 	end
 	for k = 0, 3 do
 		local pz = z1 + (z2 - z1) * (k / 3)
 		for _, side in { -1, 1 } do
 			local lamp = BK.ball("BridgeLamp", 1.4, Vector3.new(bx + side * 8, 5.4, pz), hex("FFE066"), f, Enum.Material.Neon)
 			BK.light(lamp, hex("FFE066"), 22, 1)
-			BK.cylinder("BridgeLampPole", 0.2, 4, Vector3.new(bx + side * 8, 2.6, pz), hex("2B2D42"), f)
+			BK.cylinder("BridgeLampPole", 0.2, 4, Vector3.new(bx + side * 8, 2.6, pz), hex("2A2C32"), f)
 		end
 	end
 	-- เสาสะพานลงน้ำ
 	for _, pz in { RIVER_Z - 10, RIVER_Z + 10 } do
 		for _, side in { -1, 1 } do
-			BK.cylinder("BridgePier", 0.9, 8, Vector3.new(bx + side * 6, -3.5, pz), hex("8E94A3"), f, Enum.Material.Concrete)
+			BK.cylinder("BridgePier", 0.9, 8, Vector3.new(bx + side * 6, -3.5, pz), hex("70747A"), f, Enum.Material.Concrete)
 		end
 	end
-	BK.sign(f, "สะพาน", Vector3.new(7, 1.6, 0.3), Vector3.new(bx, 7.5, z1 - 0.5), 0, hex("2B2D42"), hex("FFE066"))
+	BK.sign(f, "สะพาน", Vector3.new(7, 1.6, 0.3), Vector3.new(bx, 7.5, z1 - 0.5), 0, hex("2A2C32"), hex("FFE066"))
 end
 
 ---------------------------------------------------------------- หอคอยซูซู: จุดสังเกตที่เห็นได้จากทั้งเมือง (ฝั่งใต้ของแม่น้ำ)
 do
 	local tx, tz = 40, 500
-	BK.cylinder("TowerPlaza", 24, 0.5, Vector3.new(tx, 0.3, tz), hex("F1E4D3"), f, Enum.Material.Concrete)
-	BK.box("TowerBase", tx - 8, tx + 8, 0, 8, tz - 8, tz + 8, hex("E8E4DC"), f, Enum.Material.Concrete)
-	BK.cylinder("TowerShaft", 4.2, 72, Vector3.new(tx, 44, tz), hex("F7F1E5"), f, Enum.Material.Concrete)
-	BK.cylinder("TowerShaftBand", 4.6, 1.2, Vector3.new(tx, 30, tz), hex("EF233C"), f)
-	BK.cylinder("TowerShaftBand", 4.6, 1.2, Vector3.new(tx, 56, tz), hex("EF233C"), f)
-	BK.cylinder("ObservationDeck", 11, 4, Vector3.new(tx, 84, tz), hex("2B2D42"), f, Enum.Material.Metal)
-	local ring = BK.cylinder("DeckGlass", 11.2, 2.6, Vector3.new(tx, 84, tz), hex("BFE9FF"), f, Enum.Material.Glass)
+	BK.cylinder("TowerPlaza", 24, 0.5, Vector3.new(tx, 0.3, tz), hex("B5AA98"), f, Enum.Material.Concrete)
+	BK.box("TowerBase", tx - 8, tx + 8, 0, 8, tz - 8, tz + 8, hex("BDB8AE"), f, Enum.Material.Concrete)
+	BK.cylinder("TowerShaft", 4.2, 72, Vector3.new(tx, 44, tz), hex("D9D0BE"), f, Enum.Material.Concrete)
+	BK.cylinder("TowerShaftBand", 4.6, 1.2, Vector3.new(tx, 30, tz), hex("9E3B33"), f)
+	BK.cylinder("TowerShaftBand", 4.6, 1.2, Vector3.new(tx, 56, tz), hex("9E3B33"), f)
+	BK.cylinder("ObservationDeck", 11, 4, Vector3.new(tx, 84, tz), hex("2A2C32"), f, Enum.Material.Metal)
+	local ring = BK.cylinder("DeckGlass", 11.2, 2.6, Vector3.new(tx, 84, tz), hex("8FA3AB"), f, Enum.Material.Glass)
 	ring.Transparency = 0.45
-	local neon = BK.cylinder("DeckNeon", 11.6, 0.6, Vector3.new(tx, 86.6, tz), hex("FF4D8D"), f, Enum.Material.Neon)
-	BK.light(neon, hex("FF4D8D"), 60, 1.2)
-	BK.cylinder("TowerMast", 0.9, 44, Vector3.new(tx, 110, tz), hex("C9CED6"), f, Enum.Material.Metal)
-	local beacon = BK.ball("TowerBeacon", 3, Vector3.new(tx, 133, tz), hex("EF233C"), f, Enum.Material.Neon)
-	BK.light(beacon, hex("EF233C"), 90, 1.8)
-	BK.sign(f, "SUSU TOWER", Vector3.new(14, 3, 0.4), Vector3.new(tx, 12, tz - 8.4), 0, hex("2B2D42"), hex("FFE066"))
+	local neon = BK.cylinder("DeckNeon", 11.6, 0.6, Vector3.new(tx, 86.6, tz), hex("C2506F"), f, Enum.Material.Neon)
+	BK.light(neon, hex("C2506F"), 60, 1.2)
+	BK.cylinder("TowerMast", 0.9, 44, Vector3.new(tx, 110, tz), hex("A5A7A8"), f, Enum.Material.Metal)
+	local beacon = BK.ball("TowerBeacon", 3, Vector3.new(tx, 133, tz), hex("9E3B33"), f, Enum.Material.Neon)
+	BK.light(beacon, hex("9E3B33"), 90, 1.8)
+	BK.sign(f, "SUSU TOWER", Vector3.new(14, 3, 0.4), Vector3.new(tx, 12, tz - 8.4), 0, hex("2A2C32"), hex("FFE066"))
 end
 
 ---------------------------------------------------------------- สถานีรถไฟประจำย่าน (แทนหินเดินทาง; จุดเทเลพอร์ตเดิม StonePos ไม่เปลี่ยน)
@@ -134,20 +134,20 @@ if districtsFolder then
 				end
 			end
 			local px, pz = stonePos.X, stonePos.Z - 6 -- StonePos ถูกตั้งไว้ที่ z+6 ของฐานเดิม
-			BK.box("StationPlatform", px - 8, px + 8, 0, 0.9, pz - 3.5, pz + 3.5, hex("C9CED6"), folder, Enum.Material.Concrete)
-			BK.box("StationEdge", px - 8, px + 8, 0.9, 1, pz + 3.1, pz + 3.5, hex("FFE066"), folder)
+			BK.box("StationPlatform", px - 8, px + 8, 0, 0.9, pz - 3.5, pz + 3.5, hex("A5A7A8"), folder, Enum.Material.Concrete)
+			BK.box("StationEdge", px - 8, px + 8, 0.9, 1, pz + 3.1, pz + 3.5, hex("B8944A"), folder)
 			for _, ox in { -7, 7 } do
-				BK.cylinder("StationPost", 0.3, 8, Vector3.new(px + ox, 4.9, pz - 2.8), hex("2B2D42"), folder, Enum.Material.Metal)
+				BK.cylinder("StationPost", 0.3, 8, Vector3.new(px + ox, 4.9, pz - 2.8), hex("2A2C32"), folder, Enum.Material.Metal)
 			end
-			BK.box("StationRoof", px - 9, px + 9, 8.8, 9.4, pz - 4.2, pz + 3.5, hex("4D7CFE"), folder, Enum.Material.Metal)
-			BK.sign(folder, `สถานี{d.Name}`, Vector3.new(14, 2.2, 0.3), Vector3.new(px, 7.4, pz - 3.1), 180, hex("2B2D42"), hex("FFE066"))
-			local gate = BK.ball("StationGate", 1.4, Vector3.new(px, 2.4, pz + 0.5), hex("7EC8E3"), folder, Enum.Material.Neon)
-			BK.light(gate, hex("7EC8E3"), 22, 1.2)
-			BK.box("StationBench", px + 3, px + 7, 1.4, 1.9, pz - 2.4, pz - 1.4, hex("9C7A54"), folder, Enum.Material.Wood)
+			BK.box("StationRoof", px - 9, px + 9, 8.8, 9.4, pz - 4.2, pz + 3.5, hex("3F566E"), folder, Enum.Material.Metal)
+			BK.sign(folder, `สถานี{d.Name}`, Vector3.new(14, 2.2, 0.3), Vector3.new(px, 7.4, pz - 3.1), 180, hex("2A2C32"), hex("FFE066"))
+			local gate = BK.ball("StationGate", 1.4, Vector3.new(px, 2.4, pz + 0.5), hex("6C8E96"), folder, Enum.Material.Neon)
+			BK.light(gate, hex("6C8E96"), 22, 1.2)
+			BK.box("StationBench", px + 3, px + 7, 1.4, 1.9, pz - 2.4, pz - 1.4, hex("6F5236"), folder, Enum.Material.Wood)
 			-- ร้านบนชานชาลา: กดซื้ออาหาร ¥60 ฟื้นเลือดเต็มและพลังงาน (เหตุผลให้แวะสถานี)
-			local machine = BK.box("StationShop", px - 7.5, px - 4.5, 0.9, 6.4, pz - 2.9, pz - 0.9, hex("EF233C"), folder)
-			local panel = BK.box("StationShopPanel", px - 7.2, px - 4.8, 3, 5.6, pz - 0.95, pz - 0.85, hex("FFF3C9"), folder, Enum.Material.Neon)
-			BK.light(panel, hex("FFF3C9"), 14, 0.9)
+			local machine = BK.box("StationShop", px - 7.5, px - 4.5, 0.9, 6.4, pz - 2.9, pz - 0.9, hex("9E3B33"), folder)
+			local panel = BK.box("StationShopPanel", px - 7.2, px - 4.8, 3, 5.6, pz - 0.95, pz - 0.85, hex("F0D9A0"), folder, Enum.Material.Neon)
+			BK.light(panel, hex("F0D9A0"), 14, 0.9)
 			local prompt = Instance.new("ProximityPrompt")
 			prompt.ActionText = "ซื้ออาหาร (¥60)"
 			prompt.ObjectText = "ร้านบนชานชาลา: ฟื้นเลือดและพลังงานเต็ม"
