@@ -29,14 +29,17 @@ local LotGen = {}
 
 type Profile = { w: { number }, d: { number }, h: { number }, gap: { number }, pgap: number, ground: string, eras: { [string]: number }, awning: boolean? }
 local PROFILES: { [string]: Profile } = {
-	down = { w = { 6, 13 }, d = { 12, 21 }, h = { 16, 54 }, gap = { 0, 0.6 }, pgap = 0.07, ground = "shop", eras = { postwar = 3, showa = 3, modern = 2 } },
-	shop = { w = { 6, 10 }, d = { 12, 15 }, h = { 9, 17 }, gap = { 0, 0.4 }, pgap = 0.04, ground = "shop", eras = { postwar = 2, showa = 4, wood = 3, modern = 1 }, awning = true },
+	down = { w = { 8, 14 }, d = { 12, 21 }, h = { 16, 54 }, gap = { 0, 0.6 }, pgap = 0.07, ground = "shop", eras = { postwar = 3, showa = 3, modern = 2 } },
+	shop = { w = { 8, 11 }, d = { 12, 15 }, h = { 9, 17 }, gap = { 0, 0.4 }, pgap = 0.04, ground = "shop", eras = { postwar = 2, showa = 4, wood = 3, modern = 1 }, awning = true },
 	resi = { w = { 7, 12 }, d = { 10, 16 }, h = { 7, 21 }, gap = { 1, 4.5 }, pgap = 0.5, ground = "house", eras = { wood = 4, showa = 3, postwar = 2, modern = 1 } },
 	park = { w = { 9, 13 }, d = { 9, 12 }, h = { 6, 9 }, gap = { 4, 16 }, pgap = 0.65, ground = "house", eras = { wood = 4, showa = 1 } },
 	ind = { w = { 16, 34 }, d = { 16, 28 }, h = { 9, 16 }, gap = { 3, 10 }, pgap = 0.25, ground = "ind", eras = { postwar = 1 } },
-	monzen = { w = { 6, 9 }, d = { 9, 12 }, h = { 5, 8 }, gap = { 0.5, 2 }, pgap = 0.1, ground = "shop", eras = { wood = 1 } },
+	monzen = { w = { 8, 10 }, d = { 9, 12 }, h = { 5, 8 }, gap = { 0.5, 2 }, pgap = 0.1, ground = "shop", eras = { wood = 1 } },
 }
 LotGen.Profiles = PROFILES
+
+-- ความสูงตึกคูณตามชั้นที่สูงขึ้น (8/6.5)
+local HEIGHT_SCALE = 1.23
 
 local DOWN_KINDS = { "karaoke", "pachinko", "izakaya", "game", "pharmacy", "kissaten", "books", "ramen", "izakaya", "karaoke", "game", "ramen" }
 local SHOP_KINDS = { "ramen", "izakaya", "books", "kissaten", "game", "pharmacy", "izakaya", "ramen", "kissaten" }
@@ -236,7 +239,8 @@ function LotGen.generate(): { Lot }
 							h = math.min(h, 42)
 						end
 						-- ล็อตมุม (ติดแยก) = ที่ตั้งร้านสะดวกซื้อ
-						local corner = false
+						h = math.floor(h * HEIGHT_SCALE * 2 + 0.5) / 2 -- ชั้นสูง 8 stud (เดิม 6.5) คงจำนวนชั้นเดิม
+							local corner = false
 						for j, q in rr do
 							if j ~= i and (math.abs(roads[j][3] - roads[j][1]) >= math.abs(roads[j][4] - roads[j][2])) ~= horizontal and roads[j][5] >= 8 then
 								if x1 < q[2] + 3 and q[1] - 3 < x2 and z1 < q[4] + 3 and q[3] - 3 < z2 then
