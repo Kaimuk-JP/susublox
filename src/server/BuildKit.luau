@@ -503,10 +503,10 @@ end
 function BK.lamp(parent: Instance, x: number, z: number, color: Color3?)
 	local glow = color or hex("FFE066")
 	BK.cylinder("PoleBase", 0.7, 0.8, Vector3.new(x, 0.4, z), hex("34363C"), parent, Enum.Material.Metal)
-	BK.cylinder("Pole", 0.25, 11.6, Vector3.new(x, 6.2, z), hex("2A2C32"), parent, Enum.Material.Metal)
-	BK.box("LampArm", x - 0.15, x + 0.15, 11.8, 12, z - 1.4, z + 0.2, hex("2A2C32"), parent, Enum.Material.Metal)
-	BK.box("LampHousing", x - 0.7, x + 0.7, 11.5, 11.9, z - 2.1, z - 0.7, hex("34363C"), parent, Enum.Material.Metal)
-	local bulb = BK.box("Bulb", x - 0.5, x + 0.5, 11.35, 11.5, z - 1.9, z - 0.9, glow, parent, Enum.Material.Neon)
+	BK.cylinder("Pole", 0.3, 15.4, Vector3.new(x, 8.1, z), hex("2A2C32"), parent, Enum.Material.Metal)
+	BK.box("LampArm", x - 0.15, x + 0.15, 15.6, 15.9, z - 1.4, z + 0.2, hex("2A2C32"), parent, Enum.Material.Metal)
+	BK.box("LampHousing", x - 0.7, x + 0.7, 15.3, 15.7, z - 2.1, z - 0.7, hex("34363C"), parent, Enum.Material.Metal)
+	local bulb = BK.box("Bulb", x - 0.5, x + 0.5, 15.15, 15.3, z - 1.9, z - 0.9, glow, parent, Enum.Material.Neon)
 	BK.light(bulb, glow, 30, 1.1)
 end
 
@@ -632,12 +632,12 @@ function BK.building(parent: Instance, cx: number, cz: number, w: number, d: num
 			local g = BK.part("ShopGlass", Vector3.new(w - 5, 3.8, 0.2), Vector3.new(cx - 1.5, y0 + 3.1, fz), hex("5F7F96"), model, Enum.Material.Glass)
 			g.Transparency = 0.35
 			g.CanCollide = false
-			BK.box("ShopDoor", cx + w / 2 - 4.2, cx + w / 2 - 1.2, y0 + 1.2, y0 + 5.4, fz - 0.15 * facing - 0.15, fz + 0.15, hex("5A4636"), model, Enum.Material.Wood)
+			BK.box("ShopDoor", cx + w / 2 - 4.6, cx + w / 2 - 1.4, y0 + 0.3, y0 + 6.0, fz - 0.15 * facing - 0.15, fz + 0.15, hex("5A4636"), model, Enum.Material.Wood)
 			-- ม้วนชัตเตอร์เหล็กลูกฟูกปิดครึ่งหน้าร้านบางร้าน (ร้านปิดแล้ว)
 			if BK.rng:NextNumber() < 0.4 then
 				local sx1 = cx - w / 2 + 2.5
-				BK.box("ShutterDoor", sx1, sx1 + (w - 5) * 0.55, y0 + 1.2, y0 + 5, fz - 0.05 * facing - 0.2, fz + 0.2, hex("7C8084"), model, Enum.Material.Metal)
-				BK.box("ShutterBox", sx1 - 0.2, sx1 + (w - 5) * 0.55 + 0.2, y0 + 5, y0 + 5.6, fz - 0.3, fz + 0.3, hex("5A5D62"), model, Enum.Material.Metal)
+				BK.box("ShutterDoor", sx1, sx1 + (w - 5) * 0.55, y0 + 0.3, y0 + 5.6, fz - 0.05 * facing - 0.2, fz + 0.2, hex("7C8084"), model, Enum.Material.Metal)
+				BK.box("ShutterBox", sx1 - 0.2, sx1 + (w - 5) * 0.55 + 0.2, y0 + 5.6, y0 + 6.2, fz - 0.3, fz + 0.3, hex("5A5D62"), model, Enum.Material.Metal)
 			end
 			for i = 0, 2 do
 				BK.box("ShopMullion", cx - w / 2 + 2.5 + i * ((w - 5) / 2) - 0.2, cx - w / 2 + 2.5 + i * ((w - 5) / 2) + 0.2, y0 + 1.2, y0 + 5, fz - 0.2, fz + 0.2, trim, model, Enum.Material.Concrete)
@@ -763,7 +763,7 @@ local function exteriorStairs(model: Instance, cx: number, cz: number, w: number
 		noc(BK.box("StairLanding", xb - 1.5, xb + 1.5, y + 6.5, y + 6.8, bz - 1.2, bz + 1.2, steel, model, Enum.Material.Metal))
 		noc(BK.box("StairRail", math.min(xa, xb), math.max(xa, xb), y + 7, y + 7.2, bz - 1.1, bz - 0.9, steel, model, Enum.Material.Metal))
 	end
-	noc(BK.box("StairDoor", x0 - 1, x0 + 1, 0.3, 3.5, cz - d / 2 - 0.2, cz - d / 2 + 0.1, hex("3A3D44"), model, Enum.Material.Metal))
+	noc(BK.box("StairDoor", x0 - 1.3, x0 + 1.3, 0.3, 5.8, cz - d / 2 - 0.2, cz - d / 2 + 0.1, hex("3A3D44"), model, Enum.Material.Metal))
 end
 
 local function balconies(model: Instance, cx: number, cz: number, w: number, d: number, h: number, rng: Random, modern: boolean)
@@ -838,9 +838,9 @@ end
 local function houseGround(model: Instance, cx: number, cz: number, w: number, d: number, rng: Random)
 	local fz = cz + d / 2
 	local dx = cx + rng:NextNumber(-w / 2 + 2, w / 2 - 2)
-	noc(BK.box("Door", dx - 0.9, dx + 0.9, 0.3, 3.8, fz, fz + 0.25, hex("4A3A2E"), model, Enum.Material.Wood))
-	noc(BK.box("DoorStep", dx - 1.4, dx + 1.4, 0, 0.35, fz, fz + 0.9, hex("8F8B83"), model, Enum.Material.Concrete))
-	noc(BK.box("Mailbox", dx + 1.3, dx + 1.9, 3.2, 3.7, fz, fz + 0.4, hex("7A2E2A"), model, Enum.Material.Metal))
+	noc(BK.box("Door", dx - 1.3, dx + 1.3, 0.3, 5.8, fz, fz + 0.25, hex("4A3A2E"), model, Enum.Material.Wood))
+	noc(BK.box("DoorStep", dx - 1.8, dx + 1.8, 0, 0.35, fz, fz + 1.2, hex("8F8B83"), model, Enum.Material.Concrete))
+	noc(BK.box("Mailbox", dx + 1.7, dx + 2.3, 3.4, 3.9, fz, fz + 0.4, hex("7A2E2A"), model, Enum.Material.Metal))
 	for k = 1, rng:NextInteger(1, 3) do
 		local px = cx - w / 2 + 1 + rng:NextNumber(0, math.max(0.1, w - 2))
 		if math.abs(px - dx) > 1.8 then
@@ -850,12 +850,12 @@ local function houseGround(model: Instance, cx: number, cz: number, w: number, d
 	end
 	if rng:NextNumber() < 0.35 then -- จักรยานพิงกำแพง
 		local bx = cx + rng:NextNumber(-w / 2 + 1.5, w / 2 - 1.5)
-		for _, o in { -0.9, 0.9 } do
-			local wheel = BK.cylinder("BikeWheel", 0.55, 0.12, Vector3.new(bx + o, 0.55, fz + 0.5), hex("2A2C32"), model, Enum.Material.Metal)
-			wheel.CFrame = CFrame.new(bx + o, 0.55, fz + 0.5) * CFrame.Angles(0, math.rad(90), math.rad(90))
+		for _, o in { -1.6, 1.6 } do -- จักรยานยาว ~4.6 สูง ~3 (ล้อสูง 2.0 studs)
+			local wheel = BK.cylinder("BikeWheel", 1.0, 0.14, Vector3.new(bx + o, 1.0, fz + 0.5), hex("2A2C32"), model, Enum.Material.Metal)
+			wheel.CFrame = CFrame.new(bx + o, 1.0, fz + 0.5) * CFrame.Angles(0, math.rad(90), math.rad(90))
 			noc(wheel)
 		end
-		noc(BK.box("BikeFrame", bx - 0.9, bx + 0.9, 0.9, 1.0, fz + 0.45, fz + 0.55, hex("4F7358"), model, Enum.Material.Metal))
+		noc(BK.box("BikeFrame", bx - 1.6, bx + 1.6, 1.6, 1.75, fz + 0.45, fz + 0.55, hex("4F7358"), model, Enum.Material.Metal))
 	end
 end
 

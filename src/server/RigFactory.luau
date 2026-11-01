@@ -3,6 +3,8 @@
 -- Create(name, position, parent, attributes?, color?, look?) — color = สีประจำแก๊ง (ใช้เป็นผ้าพันแขน/ผ้าพันคอ), look = ชื่อบทบาท (ไม่ใส่ = เดาจากชื่อ/attribute)
 local InsertService = game:GetService("InsertService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CharScale = require(ReplicatedStorage.Shared.CombatConfig).CharScale
 
 local RigFactory = {}
 
@@ -634,10 +636,10 @@ function RigFactory.Create(name: string, position: Vector3, parent: Instance, at
 		local desc = Instance.new("HumanoidDescription")
 		local sc = spec.Scale
 		-- สเกลเปลี่ยนเล็กน้อยรายคน (อยู่ในช่วงปลอดภัย: hitbox 7x6x7 ยังครอบคลุม)
-		desc.HeightScale = sc.Height * rng:NextNumber(0.97, 1.03)
-		desc.WidthScale = sc.Width * rng:NextNumber(0.95, 1.05)
-		desc.DepthScale = sc.Width * rng:NextNumber(0.95, 1.05)
-		desc.HeadScale = sc.Head * rng:NextNumber(0.97, 1.03)
+		desc.HeightScale = CharScale * sc.Height * rng:NextNumber(0.97, 1.03)
+		desc.WidthScale = CharScale * sc.Width * rng:NextNumber(0.95, 1.05)
+		desc.DepthScale = CharScale * sc.Width * rng:NextNumber(0.95, 1.05)
+		desc.HeadScale = CharScale * sc.Head * rng:NextNumber(0.97, 1.03)
 		desc.ProportionScale = rng:NextNumber(0, 0.25)
 		desc.BodyTypeScale = 0
 		desc.HeadColor, desc.TorsoColor, desc.LeftArmColor = skin, skin, skin

@@ -3,6 +3,7 @@
 return table.freeze({
 	BaseHealth = 100,
 	BaseStamina = 100,
+	CharScale = 0.88, -- สเกลตัวละครทุกตัว (ผู้เล่น/NPC/คนขี่) ให้ได้สัดส่วนกับรถและเมือง: 5.2 studs -> ~4.6 studs (~1.6 m)
 	M1Damage = 5,
 	ComboLength = 4,
 	ComboResetTime = 1.0,

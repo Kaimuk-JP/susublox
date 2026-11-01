@@ -67,7 +67,7 @@ for i, r in World.Roads do
 	end
 	local horizontal = math.abs(r[3] - r[1]) >= math.abs(r[4] - r[2])
 	local fixed = if horizontal then r[2] else r[1]
-	local sw = if w >= 14 then 3.9 else 2.4
+	local sw = if w >= 14 then 5.4 else 2.4
 	local step = if w >= 14 then 70 else 90
 	for _, side in { -1, 1 } do
 		if rng:NextNumber() < (if w >= 14 then 0.9 else 0.55) then

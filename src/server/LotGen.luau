@@ -46,7 +46,7 @@ local function sidewalkOf(w: number, kind: string): number
 	if kind == "T" then
 		return 0.6
 	elseif w >= 14 then
-		return 3.9
+		return 5.4 -- ทางเท้า 5 + ขอบถนน (ต้องตรงกับ WorldBuilder/StreetFurniture)
 	elseif w >= 10 then
 		return 2.4
 	end

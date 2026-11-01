@@ -26,7 +26,7 @@ local paint = { "EF233C", "4D7CFE", "FFE066", "FFFFFF", "2B2D42", "5FBF7A", "FF8
 -- ถ้ามีจะใช้แทนรถที่สร้างด้วยชิ้นส่วนเอง; ถ้าไม่มีก็ใช้โมเดลโค้ดด้านล่าง (ไม่พัง)
 local ServerStorage = game:GetService("ServerStorage")
 -- คนขี่นั่งบนมอเตอร์ไซค์ (ตำแหน่งสะโพกอ่านจาก Attribute RiderY/RiderZ ของโมเดลต้นฉบับ แกนหน้ารถ -Z) ถูก weld เข้ากับตัวรถ ไม่ชน ลบพร้อมรถ
-local function addRider(model: Model, primary: BasePart, src: Instance)
+local function addRider(model: Model, primary: BasePart, src: Instance, s: number)
 	local y, z, pose = src:GetAttribute("RiderY"), src:GetAttribute("RiderZ"), src:GetAttribute("RiderPose")
 	if type(y) ~= "number" or type(z) ~= "number" then
 		return
@@ -35,7 +35,7 @@ local function addRider(model: Model, primary: BasePart, src: Instance)
 	if not rider then
 		return
 	end
-	rider:PivotTo(model:GetPivot() * CFrame.new(0, y, z))
+	rider:PivotTo(model:GetPivot() * CFrame.new(0, y * s, z * s)) -- ตำแหน่งสะโพกอ่านจากโมเดลต้นฉบับ คูณสเกลรถ (คนขี่สเกลตาม CharScale จาก RigFactory เอง)
 	local root = rider:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if root then
 		local w = Instance.new("WeldConstraint")
@@ -63,6 +63,9 @@ local function addTaxiLamp(model: Model, primary: BasePart, moving: boolean)
 		w.Parent = lamp
 	end
 end
+
+-- ความยาวเป้าหมาย (studs; 1 stud ~ 0.35 m) ต่อชนิด: kei 3.4 m ~10, เก๋ง 4.5 m ~13, รถตู้/กระบะ kei (Hijet/Sambar) ~10.5, แท็กซี่ Crown ~13, มอเตอร์ไซค์ 1.9 m ~5.5
+local TARGET_LENGTH: { [string]: number } = { kei = 10, sedan = 13, van = 10.5, taxi = 13, bike = 5.5 }
 
 local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Model?, BasePart?)
 	local assets = ServerStorage:FindFirstChild("ImportedAssets")
@@ -157,6 +160,11 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	if type(frontYaw) == "number" then
 		model:PivotTo(model:GetPivot() * CFrame.Angles(0, math.rad(frontYaw), 0))
 	end
+	-- ปรับขนาดให้ได้ความยาวตามมาตรฐานของชนิดนั้น (Pivot อยู่ใต้ล้อ ScaleTo จึงไม่ลอย/จม)
+	local _, lenSize = model:GetBoundingBox()
+	local scaleF = (TARGET_LENGTH[if isRealTaxi then "taxi" else kind] or 13) / math.max(lenSize.Z, 0.1)
+	scaleF = math.min(scaleF, 6.4 / math.max(lenSize.X, 0.1)) -- กว้างไม่เกิน 6.4 (ไม่ล้ำขอบถนนกว้าง 16; กันโมเดลกว้างผิดสัดส่วน เช่น Hijet Truck ต้นฉบับ 5.7 x 7.8)
+	model:ScaleTo(model:GetScale() * scaleF)
 	-- วางให้ท้องรถ/ล้อล่างสุดแตะพื้นพอดี (บางโมเดลจุดหมุนไม่ได้อยู่ใต้ล้อ รถเลยลอย เช่นสกูตเตอร์)
 	local bbCf, bbSize = model:GetBoundingBox()
 	local lift = cf.Position.Y - (bbCf.Position.Y - bbSize.Y / 2)
@@ -187,7 +195,7 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 			addTaxiLamp(model, primary, false)
 		end
 		if kind == "bike" and rng:NextNumber() < 0.5 then
-			addRider(model, primary, src)
+			addRider(model, primary, src, scaleF)
 		end
 		return model, primary
 	end
@@ -220,9 +228,12 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 		addTaxiLamp(model, primary, true)
 	end
 	if kind == "bike" then
-		addRider(model, primary, src)
+		addRider(model, primary, src, scaleF)
 	end
 	-- ให้ pivot ของโมเดลตามตัวขยับ (ถ้าไม่มี PrimaryPart GetPivot จะค้างที่ตำแหน่งเกิด ทำให้ตรวจรถชนผู้เล่นพลาด)
+	local _, moveSize = model:GetBoundingBox()
+	model:SetAttribute("HalfX", moveSize.X / 2)
+	model:SetAttribute("HalfZ", moveSize.Z / 2)
 	model.PrimaryPart = mover
 	return model, mover
 end
@@ -298,16 +309,18 @@ for ri, r in World.Roads do
 	local x1, z1, x2, z2, w = r[1], r[2], r[3], r[4], r[5]
 	local horizontal = math.abs(x2 - x1) >= math.abs(z2 - z1)
 	local length = if horizontal then math.abs(x2 - x1) else math.abs(z2 - z1)
-	if w >= 14 and r[6] ~= "T" then
+	-- ถนนที่รถวิ่ง (z=170 / z=600 แนวนอน) ไม่วางรถจอด กันซ้อนเลนรถวิ่ง
+	local onRoute = horizontal and (z1 == 170 or z1 == 600)
+	if w >= 14 and r[6] ~= "T" and not onRoute then
 		for _, side in { -1, 1 } do
-			local lane = side * (w / 2 - 3.2)
+			local lane = side * (w / 2 - 3.8) -- รถกว้างสุด ~6.4 studs ชิดขอบถนนไม่ล้ำขอบทางเท้า
 			local intervals = World.FreeIntervals(ri, lane)
-			for t = 40, length - 40, 55 do
-				if rng:NextNumber() < 0.3 then
+			for t = 40, length - 40, 60 do
+				if rng:NextNumber() < 0.5 then
 					local along = (if horizontal then math.min(x1, x2) else math.min(z1, z2)) + t + rng:NextNumber(-10, 10)
 					local ok = false
 					for _, iv in intervals do
-						if along >= iv[1] + 8 and along <= iv[2] - 8 then
+						if along >= iv[1] + 10 and along <= iv[2] - 10 then
 							ok = true
 						end
 					end
@@ -331,16 +344,17 @@ local traffic = Instance.new("Folder")
 traffic.Name = "Traffic"
 traffic.Parent = life
 local routes = {
-	{ Vector3.new(-760, 0.3, 170 + 3.5), Vector3.new(760, 0.3, 170 + 3.5), 25 },
-	{ Vector3.new(760, 0.3, 170 - 3.5), Vector3.new(-760, 0.3, 170 - 3.5), 25 },
-	{ Vector3.new(-660, 0.3, 600 + 3), Vector3.new(680, 0.3, 600 + 3), 22 },
-	{ Vector3.new(680, 0.3, 600 - 3), Vector3.new(-660, 0.3, 600 - 3), 22 },
+	-- เลนห่างกึ่งกลาง 4.2 (รถกว้างสุด ~6.4 บนถนนกว้าง 16-22): ความเร็วต่างกันตามเส้นทาง คันในเส้นทางเดียวกันความเร็วเท่ากัน (ไม่ทะลุกัน)
+	{ Vector3.new(-760, 0.3, 170 + 4.2), Vector3.new(760, 0.3, 170 + 4.2), 34 },
+	{ Vector3.new(760, 0.3, 170 - 4.2), Vector3.new(-760, 0.3, 170 - 4.2), 38 },
+	{ Vector3.new(-660, 0.3, 600 + 4.2), Vector3.new(680, 0.3, 600 + 4.2), 30 },
+	{ Vector3.new(680, 0.3, 600 - 4.2), Vector3.new(-660, 0.3, 600 - 4.2), 33 },
 }
 for i, route in routes do
 	local a: Vector3, b: Vector3, speed: number = route[1], route[2], route[3]
-	for k = 0, 1 do
+	for k = 0, 2 do
 		task.spawn(function()
-			local start = a:Lerp(b, k * 0.5)
+			local start = a:Lerp(b, k / 3 + rng:NextNumber(-0.04, 0.04))
 			local dir = (b - a).Unit
 			local heading = math.atan2(-dir.X, -dir.Z)
 			local model, body = buildCar(traffic, CFrame.new(start) * CFrame.Angles(0, heading, 0), true)
@@ -364,7 +378,7 @@ do
 	local Players = game:GetService("Players")
 	local Combat = require(script.Parent.Combat)
 	local hitAt: { [Player]: number } = {}
-	local HALF = Vector3.new(2.6, 3, 5.2) -- ครึ่งหนึ่งของกล่องชน (กว้าง สูง ยาว) รวมระยะตัวละครแล้ว
+	local MARGIN = Vector3.new(1.2, 3.5, 1.2) -- กล่องชน = ครึ่งตัวรถ (Attribute HalfX/HalfZ ตามขนาดจริงหลังสเกล) + ระยะตัวละคร
 	task.spawn(function()
 		while true do
 			task.wait(0.1)
@@ -372,6 +386,7 @@ do
 			for _, car in traffic:GetChildren() do
 				if car:IsA("Model") then
 					local cf = car:GetPivot()
+						local HALF = Vector3.new((car:GetAttribute("HalfX") or 2.2) + MARGIN.X, MARGIN.Y, (car:GetAttribute("HalfZ") or 4.5) + MARGIN.Z)
 					for _, player in Players:GetPlayers() do
 						local char = player.Character
 						local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?

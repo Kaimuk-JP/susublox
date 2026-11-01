@@ -62,22 +62,22 @@ end
 function SP.bikeRack(parent: Instance, x: number, z: number, yaw: number, n: number, rng: Random)
 	local piece = placer(parent, x, 0.45, z, yaw)
 	local frameColors = { "3F566E", "6A6D72", "4F7358", "9E3B33", "2A2C32" }
-	piece("BikeRackBar", Vector3.new(n * 1.6 + 0.4, 0.2, 0.2), Vector3.new(0, 0.7, 0.9), hex("6A6D72"), Enum.Material.Metal)
+	piece("BikeRackBar", Vector3.new(n * 2.0 + 0.4, 0.25, 0.25), Vector3.new(0, 1.0, 1.4), hex("6A6D72"), Enum.Material.Metal)
 	for i = 0, n - 1 do
-		local bx = (i - (n - 1) / 2) * 1.6
+		local bx = (i - (n - 1) / 2) * 2.0 -- จักรยานยาว ~4.6 สูง ~4.5 studs (จริง 1.7 m ~ 5)
 		local fc = hex(frameColors[rng:NextInteger(1, #frameColors)])
-		for _, wz in { -1.4, 1.4 } do
-			local w = piece("BikeWheel", Vector3.new(0.18, 2.2, 2.2), Vector3.new(bx, 1.1, wz), hex("1A1B20"), Enum.Material.Metal)
+		for _, wz in { -2.2, 2.2 } do
+			local w = piece("BikeWheel", Vector3.new(0.22, 3.4, 3.4), Vector3.new(bx, 1.7, wz), hex("1A1B20"), Enum.Material.Metal)
 			w.Shape = Enum.PartType.Cylinder
 			BK.noCollide(w)
 		end
-		BK.noCollide(piece("BikeFrame", Vector3.new(0.14, 0.14, 2.9), Vector3.new(bx, 1.9, 0), fc, Enum.Material.Metal))
-		BK.noCollide(piece("BikeSeatPost", Vector3.new(0.12, 1.1, 0.12), Vector3.new(bx, 2.1, 0.9), fc, Enum.Material.Metal))
-		BK.noCollide(piece("BikeSeat", Vector3.new(0.4, 0.15, 0.7), Vector3.new(bx, 2.7, 0.9), hex("15161A"), Enum.Material.Metal))
-		BK.noCollide(piece("BikeStem", Vector3.new(0.12, 1.3, 0.12), Vector3.new(bx, 2.2, -1.35), fc, Enum.Material.Metal))
-		BK.noCollide(piece("BikeBar", Vector3.new(1.0, 0.12, 0.12), Vector3.new(bx, 2.9, -1.35), hex("15161A"), Enum.Material.Metal))
+		BK.noCollide(piece("BikeFrame", Vector3.new(0.18, 0.18, 4.5), Vector3.new(bx, 3.0, 0), fc, Enum.Material.Metal))
+		BK.noCollide(piece("BikeSeatPost", Vector3.new(0.16, 1.7, 0.16), Vector3.new(bx, 3.3, 1.4), fc, Enum.Material.Metal))
+		BK.noCollide(piece("BikeSeat", Vector3.new(0.5, 0.2, 0.9), Vector3.new(bx, 4.2, 1.4), hex("15161A"), Enum.Material.Metal))
+		BK.noCollide(piece("BikeStem", Vector3.new(0.16, 2.0, 0.16), Vector3.new(bx, 3.5, -2.1), fc, Enum.Material.Metal))
+		BK.noCollide(piece("BikeBar", Vector3.new(1.3, 0.16, 0.16), Vector3.new(bx, 4.5, -2.1), hex("15161A"), Enum.Material.Metal))
 		if rng:NextNumber() < 0.6 then
-			BK.noCollide(piece("BikeBasket", Vector3.new(0.9, 0.55, 0.7), Vector3.new(bx, 2.6, -1.75), hex("8F8E88"), Enum.Material.DiamondPlate))
+			BK.noCollide(piece("BikeBasket", Vector3.new(1.2, 0.8, 1.0), Vector3.new(bx, 4.0, -2.7), hex("8F8E88"), Enum.Material.DiamondPlate))
 		end
 	end
 end

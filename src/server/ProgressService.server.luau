@@ -93,10 +93,21 @@ local function applyToCharacter(player: Player)
 	if not p or not char or not hum or not s then
 		return
 	end
+	-- สเกลตัวละครผู้เล่นให้เท่า NPC (Config.CharScale) ทำครั้งเดียวต่อตัว; ความเร็ว/แรงกระโดดลดตามสเกลเพื่อให้ "ก้าวต่อความยาวตัว" เท่าเดิม
+	if char:GetAttribute("CharScaled") ~= true then
+		char:SetAttribute("CharScaled", true)
+		for _, n in { "BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale" } do
+			local v = hum:FindFirstChild(n) :: NumberValue?
+			if v then
+				v.Value *= Config.CharScale
+			end
+		end
+	end
+	char:SetAttribute("BaseJumpPower", 50 * math.sqrt(Config.CharScale))
 	local ratio = hum.Health / hum.MaxHealth
 	hum.MaxHealth = Config.BaseHealth + 5 * p.Stats.Health
 	hum.Health = hum.MaxHealth * ratio
-	char:SetAttribute("BaseWalkSpeed", 16 + 0.3 * p.Stats.Speed) -- CombatState.ApplyMovement ใช้ค่านี้ (ไม่ตั้ง WalkSpeed ตรงๆ)
+	char:SetAttribute("BaseWalkSpeed", (16 + 0.3 * p.Stats.Speed) * Config.CharScale) -- CombatState.ApplyMovement ใช้ค่านี้ (ไม่ตั้ง WalkSpeed ตรงๆ)
 	char:SetAttribute("DamageMult", 1 + 0.05 * p.Stats.Strength) -- +5% ต่อแต้ม (ดูตัวเลขจริงในเมนูสเตตัส)
 	char:SetAttribute("MaxStamina", Config.BaseStamina + 5 * p.Stats.Stamina)
 	s.Equipped = table.clone(p.Passives)

@@ -164,7 +164,7 @@ do
 			end
 		end
 		if w >= 10 and kind ~= "T" then
-			local sw = if w >= 14 then 3.5 else 2
+			local sw = if w >= 14 then 5 else 2
 			for _, side in { -1, 1 } do
 				-- ขอบถนน (Curb) + ทางเท้าปูแผ่นเปลี่ยนวัสดุทุกไม่กี่ studs; เว้นตรงแยก
 				for _, iv in World.FreeIntervals(i, side * (w / 2)) do
