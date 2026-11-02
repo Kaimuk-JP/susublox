@@ -65,6 +65,27 @@ local function backCrest(add: AddFn, withText: string?)
 	label.Parent = gui
 end
 
+-- แผ่นพิมพ์ข้อความที่หลังเสื้อ (ใช้กับชุดที่มีตัวอักษรปัก/สกรีน)
+local function backPrint(add: AddFn, text: string, bg: string, fg: string, size: Vector3, y: number, vertical: boolean?)
+	local panel = add("UpperTorso", size, CFrame.new(0, y, 0.55), bg)
+	if not panel then
+		return
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Back
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 80
+	gui.Parent = panel
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = if vertical then table.concat(string.split(text, ""), "\n") else text
+	label.TextColor3 = hex(fg)
+	label.Font = Enum.Font.GothamBlack
+	label.TextScaled = true
+	label.Parent = gui
+end
+
 local looks: { [string]: Look } = {
 	Uniform_School = {
 		Torso = "FFFFFF",
@@ -189,6 +210,102 @@ local looks: { [string]: Look } = {
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.3), CFrame.new(-1.15, 0.8, 0), "15151A") -- ไหล่
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.3), CFrame.new(1.15, 0.8, 0), "15151A")
 			add("UpperTorso", Vector3.new(0.18, 1.9, 0.12), CFrame.new(0, 0, -0.62), color) -- แถบซิป
+		end,
+	},
+	-- โทกกุฟุกุ: ชุดสายแก๊งบอซโซกุ โค้ตขาวยาว ปักคันจิที่หลัง สายคาดแดง
+	Tokko_Fuku = {
+		Torso = "F4F1E8",
+		Arms = "F4F1E8",
+		Legs = "F4F1E8",
+		Shoes = "15151A",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.9, 0.5, 1.1), CFrame.new(0, 1.0, -0.02), "F4F1E8") -- คอตั้ง
+			add("UpperTorso", Vector3.new(2.05, 0.38, 1.15), CFrame.new(0, -0.55, 0), "C1272D") -- สายคาดเอวแดง
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(-1.15, 0.78, 0), "E8C34A", Enum.Material.Metal) -- บ่าทอง
+			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(1.15, 0.78, 0), "E8C34A", Enum.Material.Metal)
+			add("LowerTorso", Vector3.new(2.25, 2.1, 1.2), CFrame.new(0, -1.3, 0), "F4F1E8") -- ชายโค้ตยาว
+			add("LowerTorso", Vector3.new(2.35, 0.16, 1.3), CFrame.new(0, -2.3, 0), "C1272D")
+			for _, arm in { "LeftLowerArm", "RightLowerArm" } do
+				add(arm, Vector3.new(1.15, 0.4, 1.15), CFrame.new(0, -0.35, 0), "C1272D") -- ข้อมือแดง
+			end
+			backPrint(add, "夜露死苦", "F4F1E8", "C1272D", Vector3.new(1.4, 2.7, 0.06), -0.2, true)
+		end,
+	},
+	-- เคนโด: เสื้อครามเข้ม ฮากามะขากว้าง ผ้าคาดหัวขาวจุดแดง
+	Kendo_Hakama = {
+		Torso = "1F2A44",
+		Arms = "1F2A44",
+		Legs = "161C30",
+		Shoes = "E8E2D0",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.95, 0.22, 1.12), CFrame.new(0, 0.95, -0.05), "F4F1E8") -- ขอบคอเสื้อ
+			add("UpperTorso", Vector3.new(0.28, 1.5, 0.08), CFrame.new(-0.35, 0.15, -0.54) * CFrame.Angles(0, 0, math.rad(-18)), "10162A") -- ปกไขว้
+			add("UpperTorso", Vector3.new(0.28, 1.5, 0.08), CFrame.new(0.35, 0.15, -0.54) * CFrame.Angles(0, 0, math.rad(18)), "10162A")
+			add("LowerTorso", Vector3.new(2.3, 0.7, 1.3), CFrame.new(0, 0, 0), "161C30") -- เอวฮากามะ
+			add("LowerTorso", Vector3.new(0.2, 0.9, 0.1), CFrame.new(-0.3, -0.3, -0.68), "F4F1E8") -- เชือกผูก
+			add("LowerTorso", Vector3.new(0.2, 0.9, 0.1), CFrame.new(0.3, -0.3, -0.68), "F4F1E8")
+			for _, leg in { "LeftUpperLeg", "RightUpperLeg" } do
+				add(leg, Vector3.new(1.95, 1.5, 1.95), CFrame.new(0, -0.05, 0), "161C30")
+			end
+			for _, leg in { "LeftLowerLeg", "RightLowerLeg" } do
+				add(leg, Vector3.new(1.85, 1.3, 1.85), CFrame.new(0, 0.1, 0), "161C30")
+			end
+			add("Head", Vector3.new(1.4, 0.28, 1.4), CFrame.new(0, 0.35, 0), "F4F1E8") -- ฮาจิมากิ
+			add("Head", Vector3.new(0.3, 0.3, 0.08), CFrame.new(0, 0.35, -0.7), "C1272D", Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+		end,
+	},
+	-- คาราเต้: ชุดขาวล้วน สายดำ
+	Karate_Gi = {
+		Torso = "F4F1E8",
+		Arms = "F4F1E8",
+		Legs = "EDE9DD",
+		Shoes = "D8B89C",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(0.3, 1.55, 0.08), CFrame.new(-0.4, 0.2, -0.54) * CFrame.Angles(0, 0, math.rad(-20)), "FFFFFF") -- ปกรูปตัววี
+			add("UpperTorso", Vector3.new(0.3, 1.55, 0.08), CFrame.new(0.4, 0.2, -0.54) * CFrame.Angles(0, 0, math.rad(20)), "FFFFFF")
+			add("LowerTorso", Vector3.new(2.15, 0.32, 1.12), CFrame.new(0, 0.25, 0), "0B0B0F") -- สายดำ
+			add("LowerTorso", Vector3.new(0.26, 0.95, 0.1), CFrame.new(-0.18, -0.35, -0.6), "0B0B0F") -- ปลายสาย
+			add("LowerTorso", Vector3.new(0.26, 0.8, 0.1), CFrame.new(0.2, -0.3, -0.6) * CFrame.Angles(0, 0, math.rad(8)), "0B0B0F")
+			add("UpperTorso", Vector3.new(0.4, 0.4, 0.08), CFrame.new(0.65, 0.45, -0.56), "C1272D", Enum.Material.SmoothPlastic, Enum.PartType.Ball) -- ตราสำนัก
+		end,
+	},
+	-- ยูกาตะเทศกาล: ครามลายซากุระ โอบิแดงผูกโบว์หลัง
+	Yukata_Festival = {
+		Torso = "2E4A8F",
+		Arms = "2E4A8F",
+		Legs = "2E4A8F",
+		Shoes = "8B5A2B",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.9, 0.16, 1.1), CFrame.new(0, 0.95, -0.05), "F4F1E8") -- คอเสื้อขาว
+			add("LowerTorso", Vector3.new(2.15, 0.8, 1.15), CFrame.new(0, 0.2, 0), "C1272D") -- โอบิ
+			add("LowerTorso", Vector3.new(1.4, 0.95, 0.35), CFrame.new(0, 0.2, 0.7), "C1272D") -- โบว์หลัง
+			add("LowerTorso", Vector3.new(2.15, 1.5, 1.15), CFrame.new(0, -1.0, 0), "2E4A8F") -- ชายยูกาตะ
+			for _, leg in { "LeftUpperLeg", "RightUpperLeg" } do
+				add(leg, Vector3.new(1.5, 1.2, 1.5), CFrame.new(0, -0.05, 0), "2E4A8F")
+			end
+			for _, d in { Vector3.new(-0.6, 0.5, 0), Vector3.new(0.5, -0.15, 0), Vector3.new(-0.35, -0.7, 0), Vector3.new(0.65, 0.55, 0) } do
+				add("UpperTorso", Vector3.new(0.22, 0.22, 0.06), CFrame.new(d.X, d.Y, -0.55), "FFD1DC", Enum.Material.SmoothPlastic, Enum.PartType.Ball) -- ลายซากุระ
+			end
+			add("LowerTorso", Vector3.new(0.22, 0.22, 0.06), CFrame.new(-0.6, -1.0, -0.6), "FFD1DC", Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+			add("LowerTorso", Vector3.new(0.22, 0.22, 0.06), CFrame.new(0.55, -1.5, -0.6), "FFD1DC", Enum.Material.SmoothPlastic, Enum.PartType.Ball)
+			add("Head", Vector3.new(0.5, 0.5, 0.2), CFrame.new(0.55, 0.55, -0.4), "FF8FAB", Enum.Material.SmoothPlastic, Enum.PartType.Ball) -- ดอกไม้ติดผม
+		end,
+	},
+	-- ฮู้ดสตรีท: เสื้อฮู้ดเทา กระเป๋าจิงโจ้ รองเท้าสะท้อนแสง
+	Hoodie_Street = {
+		Torso = "4A4E5A",
+		Arms = "4A4E5A",
+		Legs = "20232B",
+		Shoes = "E8FF5A",
+		Decor = function(_, add)
+			add("UpperTorso", Vector3.new(1.7, 0.75, 0.95), CFrame.new(0, 0.95, 0.45), "3B3E49") -- ฮู้ดที่คอ
+			add("UpperTorso", Vector3.new(1.3, 0.55, 0.1), CFrame.new(0, -0.5, -0.56), "3B3E49") -- กระเป๋าจิงโจ้
+			add("UpperTorso", Vector3.new(0.08, 0.65, 0.08), CFrame.new(-0.25, 0.55, -0.56), "F4F1E8") -- เชือกฮู้ด
+			add("UpperTorso", Vector3.new(0.08, 0.65, 0.08), CFrame.new(0.25, 0.55, -0.56), "F4F1E8")
+			for _, arm in { "LeftLowerArm", "RightLowerArm" } do
+				add(arm, Vector3.new(1.1, 0.3, 1.1), CFrame.new(0, -0.4, 0), "3B3E49") -- ข้อมือรัด
+			end
+			backPrint(add, "SUSU", "2B2D42", "FFE066", Vector3.new(1.6, 0.6, 0.06), 0.3)
 		end,
 	},
 	Aura_Sparkle = {

@@ -11,6 +11,11 @@ local list: { string } = {
 	"Gakuran_Tanran",
 	"Uniform_Sakura",
 	"Uniform_Night",
+	"Hoodie_Street",
+	"Karate_Gi",
+	"Yukata_Festival",
+	"Kendo_Hakama",
+	"Tokko_Fuku",
 	"Jacket_Gang",
 	"Aura_Sparkle",
 }
