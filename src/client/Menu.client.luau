@@ -413,9 +413,14 @@ views.outfits = function()
 	end)
 	for _, id in Outfits.Order do
 		local owned = player:GetAttribute("OutfitOwned_" .. id) == true
-		local isOn = equipped == id
+		local isAuraItem = id == "Aura_Sparkle"
+		local isOn = if isAuraItem then player:GetAttribute("SparkleOn") == true else equipped == id
 		local label = `{if isOn then "✓ " elseif owned then "" else "🔒 "}{Outfits.Name(id)}{if owned then "" else `  ¥{Outfits.Price(id)}`}`
-		if isOn then
+		if isOn and isAuraItem then
+			row(label, "ถอด", function()
+				outfitRemote:FireServer("Equip", id)
+			end)
+		elseif isOn then
 			row(label)
 		elseif owned then
 			row(label, "สวม", function()

@@ -339,10 +339,11 @@ local function setColor(character: Model, names: { string }, color: Color3)
 	end
 end
 
-local function apply(character: Model, id: string)
+local function apply(character: Model, id: string, sparkle: boolean)
 	local look = looks[id] or looks[Outfits.Default]
-	-- Aura_Sparkle ใช้ชุดนักเรียนเป็นฐานแล้วเพิ่มออร่า
+	-- ประกาย (Aura_Sparkle) เป็นเลเยอร์ซ้อนทับชุดใดก็ได้ ไม่เปลี่ยนชุด; ถ้าบันทึกเก่าเก็บ Aura_Sparkle เป็นชุดให้ใช้ชุดนักเรียนเป็นฐาน
 	local base = if look.Aura then looks[Outfits.Default] else look
+	sparkle = sparkle or look.Aura == true
 	clearOutfit(character)
 
 	local bc = character:FindFirstChildOfClass("BodyColors")
@@ -382,7 +383,7 @@ local function apply(character: Model, id: string)
 		base.Decor(character, add)
 	end
 
-	if look.Aura then
+	if sparkle then
 		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if root then
 			local e = Instance.new("ParticleEmitter")
@@ -416,13 +417,14 @@ local function applyTo(player: Player)
 	local p = PlayerData.Get(player)
 	local char = player.Character
 	if p and char and char:FindFirstChild("UpperTorso") then
-		apply(char, p.EquippedOutfit)
+		apply(char, p.EquippedOutfit, player:GetAttribute("SparkleOn") == true and player:GetAttribute("AuraOff") ~= true)
 	end
 end
 
 remote.OnServerEvent:Connect(function(player: Player, action: unknown, id: unknown)
 	if action == "ToggleAura" then
 		player:SetAttribute("AuraOff", player:GetAttribute("AuraOff") ~= true) -- ถอด/สวมออร่าสไตล์ (ไม่แตะชุด)
+		applyTo(player)
 		return
 	end
 	local p = PlayerData.Get(player)
@@ -431,6 +433,12 @@ remote.OnServerEvent:Connect(function(player: Player, action: unknown, id: unkno
 	end
 	if id ~= Outfits.Default and not table.find(p.Owned, id) then
 		return -- ต้องเป็นเจ้าของก่อน
+	end
+	if looks[id].Aura then
+		-- ประกายสลับเปิด/ปิดโดยไม่แตะชุดที่ใส่อยู่
+		player:SetAttribute("SparkleOn", player:GetAttribute("SparkleOn") ~= true)
+		applyTo(player)
+		return
 	end
 	p.EquippedOutfit = id
 	publish(player)
