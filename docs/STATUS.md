@@ -62,3 +62,10 @@
 - ประตูบานเลื่อนเปิดครึ่ง ช่องโล่งวัดจริง 6.5-6.8 กว้าง สูง ~10.5; Part +4,700 (อาคารเรียน 605 -> 5,309), Light 39 ดวง
 - ตรวจแล้ว: เดินจากลานหน้า->ประตูหน้า->ทางเดิน->ห้อง 1-B และบันไดหนีไฟ->ประตูตะวันตกชั้น 2->ทางเดินได้ ไม่มี NPC ในอาคาร
 - ภาพ screen_capture ใน Play ออกขาว; ตรวจภาพจากอาคารจำลองในโหมด Edit (โมดูลเดียวกัน) เท่านั้น
+
+## Run66: นักเรียน + ครูในห้องเรียน (ClassroomLife / ClassroomAnim)
+- `ClassroomLife.server.luau`: สร้างตามระยะผู้เล่น (ห้องภายใน 70 studs สร้าง, ไกลเกิน 110 นาน 5 วิ ลบ), รวมไม่เกิน 120 คน, ห้องละ ครู 1 + นักเรียน 60–70% ของ 20 ที่นั่ง (~13 คน) อยู่ใน `workspace.ClassroomPeople/<Room_xx>` (ไม่ใช่ `Npcs` -> ไม่โดนระบบต่อสู้/เควส/ชื่อ/แอนิเมชัน NPC; ไม่มี Humanoid, CanCollide/CanQuery/CanTouch=false) ; ไม่มีผู้เล่นใกล้ = ลูป 1 วิทำแค่เทียบระยะ (~0.05 ms)
+- ท่า `seatedDesk` ใน `RigFactory` (`CreateClassmate` + `SnapPose`): แปลง AnimationConstraint -> Motor6D ตั้ง C0 แบบ `CreateRider`, ผมจาก catalog (Accessory) เชื่อม Weld เอง, **ลบ WrapTarget/BallSocket/NoCollision** ออก
+- `shared/RigFK.luau`: forward kinematics เอง (rig Anchored ทั้งตัว) ; ฝั่ง server วางท่าครั้งเดียว ฝั่ง `ClassroomAnim.client.luau` ทำลายข้อต่อ (client เท่านั้น) แล้วย้ายเฉพาะ subtree ที่เปลี่ยนด้วย BulkMoveTo ~16 Hz เฉพาะตัวที่อยู่ในระยะ 40 studs จากกล้อง
+- บทเรียนประสิทธิภาพ (วัดใน Studio Play): rig ที่ไม่ Anchored 111 ตัว = Heartbeat ~100 ms ทั้ง server/client ; ข้อต่อค้างบนชิ้น Anchored ที่ถูกย้าย + **WrapTarget** = renderCPU ~77–115 ms ; หลังแก้ ~13 ms ที่ 38 ตัวขยับ
+- แก้ ClassroomKit: เก้าอี้ผิวสูง 0.9 (เดิม 1.4 ต้นขาชนใต้โต๊ะ), ขาโต๊ะแยก 2 ข้าง (เดิมเป็นแผ่นขวางหน้าแข้ง), export `Rooms/ToWorld/SeatTop/DeskRows/DeskCols`

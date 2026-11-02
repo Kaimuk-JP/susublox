@@ -43,6 +43,22 @@ local LETTERS = "ABCDEFGHIJKL"
 
 local stats = { parts = 0, lights = 0, guis = 0 }
 
+-- ผังที่นั่งนักเรียน (u = ระยะจากกระดาน, v = จากผนังทางเดิน) ใช้ทั้งตอนสร้างโต๊ะและตอน ClassroomLife วางนักเรียน
+local DESK_ROWS = { 5.8, 8.6, 11.4, 14.2 }
+local DESK_COLS = { 4.8, 7.0, 11.7, 13.9, 16.1 }
+local SEAT_TOP = 0.9 -- ผิวเก้าอี้สูงจากพื้นห้อง (ตัวละคร ~3.7 stud ขาสั้น ถ้าสูงกว่านี้ต้นขาชนใต้โต๊ะ 2.0)
+
+type RoomInfo = { Name: string, Folder: Folder, Seed: number, Level: number, x0: number, W: number, zc: number, sgn: number, yf: number, Center: Vector3 }
+ClassroomKit.Rooms = {} :: { RoomInfo }
+ClassroomKit.SeatTop = SEAT_TOP
+ClassroomKit.DeskRows = DESK_ROWS
+ClassroomKit.DeskCols = DESK_COLS
+
+-- พิกัดห้อง (u,v,h) -> โลก
+function ClassroomKit.ToWorld(room: RoomInfo, u: number, v: number, h: number): Vector3
+	return Vector3.new(room.x0 + u, room.yf + h, room.zc + room.sgn * v)
+end
+
 ----------------------------------------------------------------- ตัวช่วย
 -- flags: "n" = ไม่ชน/ไม่ query, "S" = เปิดเงา (ค่าเริ่มต้นของชิ้นเล็ก = ไม่มีเงา)
 local function newPart(parent: Instance, name: string, size: Vector3, pos: Vector3, color: Color3, mat: Enum.Material?, flags: string?): Part
@@ -371,6 +387,11 @@ local function buildClass(parent: Instance, R: Room, letter: string, seed: numbe
 	local folder = Instance.new("Folder")
 	folder.Name = "Room_" .. (R.level + 1) .. letter
 	folder.Parent = parent
+	table.insert(ClassroomKit.Rooms, {
+		Name = folder.Name, Folder = folder, Seed = seed, Level = R.level,
+		x0 = x0, W = W, zc = zc, sgn = sgn, yf = yf,
+		Center = Vector3.new(x0 + W / 2, yf + 5, zc + sgn * D / 2),
+	})
 	local P = roomApi(R, folder)
 	local fE, fW = Enum.NormalId.Right, Enum.NormalId.Left
 	local fC = if sgn == 1 then Enum.NormalId.Front else Enum.NormalId.Back -- หันเข้าทางเดิน
@@ -466,13 +487,15 @@ local function buildClass(parent: Instance, R: Room, letter: string, seed: numbe
 
 	-- โต๊ะนักเรียน 5 คอลัมน์ x 4 แถว (2 + ทางเดินกลาง + 3) หันหน้าไปกระดาน เก้าอี้อยู่ท้ายโต๊ะ
 	local seat = CHAIR[(seed % #CHAIR) + 1]
-	for _, r in { 5.8, 8.6, 11.4, 14.2 } do
-		for _, cv in { 4.8, 7.0, 11.7, 13.9, 16.1 } do
+	for _, r in DESK_ROWS do
+		for _, cv in DESK_COLS do
 			P("DeskTop", r, r + 1.7, cv - 1.05, cv + 1.05, 2.0, 2.2, K.deskTop, Mat.Wood)
-			P("DeskLeg", r + 0.75, r + 0.95, cv - 0.9, cv + 0.9, 0, 2.0, K.steel, Mat.Metal)
-			P("Seat", r + 1.2, r + 2.6, cv - 0.7, cv + 0.7, 1.2, 1.4, seat, Mat.SmoothPlastic)
-			P("ChairBack", r + 2.45, r + 2.65, cv - 0.65, cv + 0.65, 1.4, 2.6, seat, Mat.SmoothPlastic, "n")
-			P("ChairLeg", r + 1.9, r + 2.1, cv - 0.55, cv + 0.55, 0, 1.2, K.darkSteel, Mat.Metal)
+			-- ขาโต๊ะ 2 ข้าง (เว้นช่องกลางให้หน้าแข้งนักเรียน)
+			P("DeskLeg", r + 0.65, r + 0.95, cv - 1.0, cv - 0.9, 0, 2.0, K.steel, Mat.Metal)
+			P("DeskLeg", r + 0.65, r + 0.95, cv + 0.9, cv + 1.0, 0, 2.0, K.steel, Mat.Metal)
+			P("Seat", r + 1.2, r + 2.6, cv - 0.7, cv + 0.7, SEAT_TOP - 0.2, SEAT_TOP, seat, Mat.SmoothPlastic)
+			P("ChairBack", r + 2.45, r + 2.65, cv - 0.65, cv + 0.65, SEAT_TOP, SEAT_TOP + 1.2, seat, Mat.SmoothPlastic, "n")
+			P("ChairLeg", r + 1.9, r + 2.1, cv - 0.55, cv + 0.55, 0, SEAT_TOP - 0.2, K.darkSteel, Mat.Metal)
 		end
 	end
 
@@ -571,6 +594,7 @@ end
 ----------------------------------------------------------------- ประกอบทั้งอาคาร
 function ClassroomKit.Build(school: Instance): { parts: number, lights: number, guis: number }
 	stats = { parts = 0, lights = 0, guis = 0 }
+	table.clear(ClassroomKit.Rooms)
 	local root = Instance.new("Folder")
 	root.Name = "Classrooms"
 	for level = 0, 2 do

@@ -5,6 +5,7 @@ local InsertService = game:GetService("InsertService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CharScale = require(ReplicatedStorage.Shared.CombatConfig).CharScale
+local RigFK = require(ReplicatedStorage.Shared.RigFK)
 
 local RigFactory = {}
 
@@ -718,6 +719,8 @@ local RIDER_POSES: { [string]: { [string]: number } } = {
 	bike = { waist = -30, neck = 26, hip = 80, knee = -92, ankle = 8, shoulder = 80, elbow = 32, splay = 7 },
 	car = { waist = -3, neck = 3, hip = 88, knee = -88, ankle = 4, shoulder = 52, elbow = 42, splay = 3 },
 	scooter = { waist = -6, neck = 6, hip = 74, knee = -76, ankle = 0, shoulder = 50, elbow = 34, splay = 5 },
+	-- นักเรียนนั่งโต๊ะ: ตัวตรง ก้มหน้าเล็กน้อย สะโพก/เข่า 90° มือวางบนโต๊ะ
+	seatedDesk = { waist = -4, neck = -10, hip = 90, knee = -90, ankle = 0, shoulder = 38, elbow = 62, splay = 3, adduct = 26 },
 }
 
 local function bend(rig: Model, joint: string, rx: number, rz: number?)
@@ -727,14 +730,8 @@ local function bend(rig: Model, joint: string, rx: number, rz: number?)
 	end
 end
 
--- สร้างคนขี่ที่นั่งอยู่ท่าขี่ ไม่มี Humanoid ไม่ชน ไม่มีน้ำหนัก (Weld เข้ากับรถที่ผู้เรียกทำ) pivot ที่ HumanoidRootPart
-function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
-	local rig = RigFactory.Create("คนขับมอเตอร์ไซค์", Vector3.new(0, 1000, 0), parent, { NoLocomotion = true }, nil, "rider")
-	if not rig then
-		return nil
-	end
-	local pose = RIDER_POSES[poseName] or RIDER_POSES.scooter
-	-- R15 จาก CreateHumanoidModelFromDescription ใช้ AnimationConstraint (ขยับด้วย Animator เท่านั้น) แปลงเป็น Motor6D เพื่อตั้งท่าด้วย C0
+-- R15 จาก CreateHumanoidModelFromDescription ใช้ AnimationConstraint (ขยับด้วย Animator เท่านั้น) แปลงเป็น Motor6D เพื่อตั้งท่าด้วย C0/Transform
+local function toMotors(rig: Model)
 	for _, d in rig:GetDescendants() do
 		if d:IsA("AnimationConstraint") and d.Attachment0 and d.Attachment1 then
 			local m = Instance.new("Motor6D")
@@ -747,6 +744,9 @@ function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
 			d:Destroy()
 		end
 	end
+end
+
+local function applyPose(rig: Model, pose: { [string]: number })
 	bend(rig, "Waist", pose.waist)
 	bend(rig, "Neck", pose.neck)
 	bend(rig, "RightHip", pose.hip, pose.splay)
@@ -755,10 +755,21 @@ function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
 	bend(rig, "LeftKnee", pose.knee)
 	bend(rig, "RightAnkle", pose.ankle)
 	bend(rig, "LeftAnkle", pose.ankle)
-	bend(rig, "RightShoulder", pose.shoulder, -6)
-	bend(rig, "LeftShoulder", pose.shoulder, 6)
+	bend(rig, "RightShoulder", pose.shoulder, -(pose.adduct or 6))
+	bend(rig, "LeftShoulder", pose.shoulder, pose.adduct or 6)
 	bend(rig, "RightElbow", pose.elbow)
 	bend(rig, "LeftElbow", pose.elbow)
+end
+
+-- สร้างคนขี่ที่นั่งอยู่ท่าขี่ ไม่มี Humanoid ไม่ชน ไม่มีน้ำหนัก (Weld เข้ากับรถที่ผู้เรียกทำ) pivot ที่ HumanoidRootPart
+function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
+	local rig = RigFactory.Create("คนขับมอเตอร์ไซค์", Vector3.new(0, 1000, 0), parent, { NoLocomotion = true }, nil, "rider")
+	if not rig then
+		return nil
+	end
+	local pose = RIDER_POSES[poseName] or RIDER_POSES.scooter
+	toMotors(rig)
+	applyPose(rig, pose)
 	local hum = rig:FindFirstChildOfClass("Humanoid")
 	if hum then
 		hum:Destroy()
@@ -800,6 +811,80 @@ function RigFactory.CreateRider(parent: Instance, poseName: string): Model?
 		end
 	end
 	return rig
+end
+
+-- นักเรียน/ครูในห้องเรียน: ไม่มี Humanoid, Motor6D (ตั้งท่าด้วย C0), "Anchored ทุกชิ้น" (engine ไม่คำนวณข้อต่อ — rig ไม่ Anchored 111 ตัวทำ Heartbeat ~100 ms)
+-- ไม่ชน/ไม่ query ; poseName = nil -> ยืนปกติ (ครู) ; ผู้เรียกต้อง PivotTo แล้วเรียก RigFactory.SnapPose(rig) ก่อนใส่ parent
+-- คืน rig และความสูงราก HumanoidRootPart เหนือพื้นตอนยืน
+function RigFactory.CreateClassmate(name: string, look: string, poseName: string?, attributes: { [string]: any }?): (Model?, number)
+	local rig = RigFactory.Create(name, Vector3.new(0, 1000, 0), nil :: any, { NoLocomotion = true }, nil, look)
+	if not rig then
+		return nil, 0
+	end
+	local hum = rig:FindFirstChildOfClass("Humanoid")
+	local hip = if hum then hum.HipHeight else 2
+	toMotors(rig)
+	if poseName then
+		applyPose(rig, RIDER_POSES[poseName] or RIDER_POSES.seatedDesk)
+	end
+	if hum then
+		hum:Destroy()
+	end
+	for _, d in rig:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.Massless = true
+		elseif d.ClassName == "WrapTarget" or d.ClassName == "BallSocketConstraint" or d.ClassName == "NoCollisionConstraint" then
+			-- WrapTarget (เสื้อผ้า layered) ทำให้ย้ายชิ้นส่วนแพงมากฝั่ง render: ย้าย ~110 ตัว renderCPU 77 -> 13 ms หลังลบ (วัดแล้ว); constraint ของ ragdoll ไม่ใช้
+			d:Destroy()
+		end
+	end
+	-- ผมจาก catalog (Accessory): AddAccessory ตอนยังไม่มี parent/Humanoid ไม่สร้าง Weld ให้ -> เชื่อมเองด้วย attachment ชื่อเดียวกันบนตัว
+	for _, acc in rig:GetChildren() do
+		if acc:IsA("Accessory") then
+			local handle = acc:FindFirstChild("Handle") :: BasePart?
+			local att = handle and handle:FindFirstChildOfClass("Attachment")
+			local bodyAtt: Instance? = nil
+			if att then
+				for _, d in rig:GetDescendants() do
+					if d:IsA("Attachment") and d.Name == att.Name and d.Parent ~= handle and d.Parent:IsA("BasePart") then
+						bodyAtt = d
+						break
+					end
+				end
+			end
+			if handle and att and bodyAtt and not handle:FindFirstChildOfClass("Weld") then
+				local w = Instance.new("Weld")
+				w.Name = "AccessoryWeld"
+				w.Part0 = (bodyAtt :: Attachment).Parent :: BasePart
+				w.Part1 = handle
+				w.C0 = (bodyAtt :: Attachment).CFrame
+				w.C1 = att.CFrame
+				w.Parent = handle
+			end
+		end
+	end
+	local root = rig:FindFirstChild("HumanoidRootPart") :: BasePart
+	for k, v in attributes or {} do
+		rig:SetAttribute(k, v)
+	end
+	return rig, hip + root.Size.Y / 2
+end
+
+-- วางทุกชิ้นตามท่า (forward kinematics จากราก) หลัง PivotTo ; ใช้ก่อนใส่ parent
+function RigFactory.SnapPose(rig: Model)
+	local fk = RigFK.Build(rig)
+	if not fk then
+		return
+	end
+	local parts, cfs = {}, {}
+	RigFK.PlaceAll(fk, parts, cfs)
+	for i, p in parts do
+		p.CFrame = cfs[i]
+	end
 end
 
 return RigFactory
