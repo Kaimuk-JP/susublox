@@ -279,12 +279,7 @@ local function apply(character: Model, id: string)
 			e.Rate = 22
 			e.LightEmission = 1
 			e.Parent = root
-			local light = Instance.new("PointLight")
-			light.Name = "OutfitAura"
-			light.Color = hex("FFB7C5")
-			light.Range = 10
-			light.Brightness = 0.8
-			light.Parent = root
+			e.Rate = 10 -- ประกายเบาๆ ไม่ใช้แสงชมพูฟุ้งทับชุด
 		end
 	end
 end

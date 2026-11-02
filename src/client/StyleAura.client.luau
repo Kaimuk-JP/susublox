@@ -18,13 +18,79 @@ local function applyAura(character: Model)
 		if not style then
 			return
 		end
-		local h = Instance.new("Highlight")
-		h.Name = "StyleAura"
-		h.FillTransparency = 1
-		h.OutlineColor = Color3.fromHex(style.Color)
-		h.OutlineTransparency = 0.35
-		h.DepthMode = Enum.HighlightDepthMode.Occluded
-		h.Parent = character
+		-- ออร่าพลังงานแบบเกมต่อสู้อนิเมะ: เปลวลอยขึ้นจากตัว + วงพลังที่พื้น ไม่ใช้ Highlight (ไม่ทับสีชุด)
+		local color = Color3.fromHex(style.Color)
+		local hot = color:Lerp(Color3.new(1, 1, 1), 0.55)
+		local folder = Instance.new("Folder")
+		folder.Name = "StyleAura"
+		folder.Parent = character
+
+		local function flame(part: BasePart?, rate: number, size: number)
+			if not part then
+				return
+			end
+			local e = Instance.new("ParticleEmitter")
+			e.Texture = "rbxasset://textures/particles/fire_main.dds"
+			e.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, hot),
+				ColorSequenceKeypoint.new(0.5, color),
+				ColorSequenceKeypoint.new(1, color:Lerp(Color3.new(0, 0, 0), 0.5)),
+			})
+			e.Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, size),
+				NumberSequenceKeypoint.new(0.6, size * 0.8),
+				NumberSequenceKeypoint.new(1, 0),
+			})
+			e.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.35),
+				NumberSequenceKeypoint.new(0.7, 0.6),
+				NumberSequenceKeypoint.new(1, 1),
+			})
+			e.Lifetime = NumberRange.new(0.6, 1.1)
+			e.Speed = NumberRange.new(3, 6)
+			e.Acceleration = Vector3.new(0, 7, 0) -- ลอยขึ้นเหมือนเปลวไฟ
+			e.EmissionDirection = Enum.NormalId.Top
+			e.SpreadAngle = Vector2.new(12, 12)
+			e.Rate = rate
+			e.LightEmission = 0.9
+			e.LightInfluence = 0
+			e.Rotation = NumberRange.new(0, 360)
+			e.RotSpeed = NumberRange.new(-40, 40)
+			e.ZOffset = -1 -- วาดหลังตัวละคร ไม่บังชุด
+			e.Parent = part
+		end
+		flame(character:FindFirstChild("UpperTorso") :: BasePart?, 14, 3.2)
+		flame(character:FindFirstChild("LowerTorso") :: BasePart?, 10, 2.8)
+		flame(character:FindFirstChild("LeftLowerArm") :: BasePart?, 5, 1.6)
+		flame(character:FindFirstChild("RightLowerArm") :: BasePart?, 5, 1.6)
+		flame(character:FindFirstChild("LeftLowerLeg") :: BasePart?, 5, 1.8)
+		flame(character:FindFirstChild("RightLowerLeg") :: BasePart?, 5, 1.8)
+
+		-- วงพลังที่พื้นใต้เท้า
+		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local hum = character:FindFirstChildOfClass("Humanoid")
+		if root and hum then
+			local ring = Instance.new("Part")
+			ring.Shape = Enum.PartType.Cylinder
+			ring.Size = Vector3.new(0.12, 6, 6)
+			ring.Color = color
+			ring.Material = Enum.Material.Neon
+			ring.Transparency = 0.55
+			ring.CanCollide, ring.CanQuery, ring.CanTouch = false, false, false
+			ring.Massless = true
+			ring.CastShadow = false
+			ring.Parent = folder
+			local weld = Instance.new("Weld")
+			weld.Part0 = root
+			weld.Part1 = ring
+			weld.C0 = CFrame.new(0, -(root.Size.Y / 2 + hum.HipHeight), 0) * CFrame.Angles(0, 0, math.rad(90))
+			weld.Parent = ring
+			TweenService:Create(
+				ring,
+				TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ Transparency = 0.8, Size = Vector3.new(0.12, 7.4, 7.4) }
+			):Play()
+		end
 	end
 	character:GetAttributeChangedSignal("Style"):Connect(refresh)
 	refresh()
