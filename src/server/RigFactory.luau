@@ -885,6 +885,14 @@ function RigFactory.SnapPose(rig: Model)
 	for i, p in parts do
 		p.CFrame = cfs[i]
 	end
+	-- ตัวประกอบนิ่ง: ท่าตั้งครั้งเดียวจบ -> ทิ้งข้อต่อ/attachment/สคริปต์/ค่า Value/Animation ทั้งหมด (ลดจำนวน instance ที่ replicate และต้นทุน render)
+	for _, d in rig:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CastShadow = false
+		elseif d:IsA("JointInstance") or d:IsA("Attachment") or d:IsA("LuaSourceContainer") or d:IsA("ValueBase") or d:IsA("Animation") or d:IsA("Animator") or d:IsA("FaceControls") then
+			d:Destroy()
+		end
+	end
 end
 
 return RigFactory

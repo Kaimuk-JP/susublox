@@ -1,16 +1,17 @@
 --!strict
 -- นักเรียน + ครูในห้องเรียน (ClassroomKit): สร้างเฉพาะห้องที่มีผู้เล่นอยู่ใกล้ (SPAWN_R) ลบเมื่อไกลเกิน DESPAWN_R นาน FAR_SECS วินาที
 -- ตัวประกอบล้วน: ไม่มี Humanoid, ไม่ชน, ไม่อยู่ในโฟลเดอร์ Npcs/Bosses (ระบบ NPC/ศัตรู/ชื่อ/แอนิเมชันต่อสู้ดูแค่สองโฟลเดอร์นั้น) -> อยู่ใน workspace.ClassroomPeople
--- ท่านั่ง (seatedDesk) ตั้งด้วย C0 ฝั่ง server ครั้งเดียว ส่วนการขยับ (เขียน/เงยหน้า/ยกมือ/ครูเดิน) ทำฝั่ง client ที่ ClassroomAnim.client ด้วย Motor6D.Transform
--- ไม่ต้อง replicate ข้อต่อ 15–20 Hz ต่อคน ไม่มีผู้เล่นใกล้ = ลูป 1 วินาทีทำแค่เทียบระยะ ไม่มีการสร้าง/ขยับอะไร
+-- ท่านั่ง (seatedDesk) ตั้งครั้งเดียวตอนสร้าง (RigFactory.SnapPose) แล้วทิ้งข้อต่อทั้งหมด: ไม่มีการขยับ ไม่มีลูป/Tween/สคริปต์ฝั่ง client
+-- ไม่มีผู้เล่นใกล้ = ลูป 1 วินาทีทำแค่เทียบระยะ ไม่มีการสร้าง/ขยับอะไร
 local Players = game:GetService("Players")
 
 local ClassroomKit = require(script.Parent.ClassroomKit)
 local RigFactory = require(script.Parent.RigFactory)
 
 local SPAWN_R, DESPAWN_R, FAR_SECS = 70, 110, 5
-local MAX_ACTIVE = 120 -- นักเรียน+ครู ที่มีตัวจริงพร้อมกันทั้งแมพ
-local FILL_MIN, FILL_MAX = 0.60, 0.70
+local MAX_ACTIVE = 60 -- นักเรียน+ครู ที่มีตัวจริงพร้อมกันทั้งแมพ
+local FILL_MIN, FILL_MAX = 0.45, 0.55
+local DESPAWN_PER_FRAME = 3 -- ลบทีละไม่เกินกี่คนต่อเฟรม
 local STAND_SCALE_REF = 1.659 -- ความสูง HumanoidRootPart ของตัวอ้างอิงที่วัดท่า seatedDesk (ตัวละครคูณสเกลได้เท่ากัน)
 local SIT_ROOT_UP = 1.22 -- ราก HumanoidRootPart สูงกว่าต้นขาท่อนล่าง (ผิวเก้าอี้) เท่านี้ที่ STAND_SCALE_REF
 
@@ -23,7 +24,7 @@ people.Name = "ClassroomPeople"
 people.Parent = workspace
 
 local active: { [string]: Active } = {}
-local PER_ROOM_MAX = 15 -- ครู 1 + นักเรียนสูงสุด 14 (20 ที่นั่ง x 0.70)
+local PER_ROOM_MAX = 12 -- ครู 1 + นักเรียนสูงสุด 11 (20 ที่นั่ง x 0.55)
 local queue: { any } = {}
 local queued: { [string]: boolean } = {}
 
@@ -105,7 +106,7 @@ local function spawnRoom(room: any)
 		if placeStudent(room, folder, seats[i][1], seats[i][2]) then
 			made += 1
 		end
-		task.wait() -- ไม่สร้างหลายคนในเฟรมเดียว
+		task.wait() -- สร้างคนละเฟรม (<= 3 คน/เฟรม ตามเป้า) ไม่สะดุดตอนเดินเข้าห้อง
 	end
 	rec.count = made
 	rec.spawning = false
@@ -117,8 +118,18 @@ local function despawnRoom(name: string)
 		return
 	end
 	rec.dead = true
-	rec.folder:Destroy()
 	active[name] = nil
+	-- ทยอยลบ ไม่ลบทั้งห้องในเฟรมเดียว
+	task.spawn(function()
+		local kids = rec.folder:GetChildren()
+		for i, k in kids do
+			k:Destroy()
+			if i % DESPAWN_PER_FRAME == 0 then
+				task.wait()
+			end
+		end
+		rec.folder:Destroy()
+	end)
 end
 
 -- จำนวนคนที่มีตัวจริงอยู่ (ห้องที่กำลังสร้างนับเต็มโควตาไว้ก่อน)

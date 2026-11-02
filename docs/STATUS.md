@@ -69,3 +69,9 @@
 - `shared/RigFK.luau`: forward kinematics เอง (rig Anchored ทั้งตัว) ; ฝั่ง server วางท่าครั้งเดียว ฝั่ง `ClassroomAnim.client.luau` ทำลายข้อต่อ (client เท่านั้น) แล้วย้ายเฉพาะ subtree ที่เปลี่ยนด้วย BulkMoveTo ~16 Hz เฉพาะตัวที่อยู่ในระยะ 40 studs จากกล้อง
 - บทเรียนประสิทธิภาพ (วัดใน Studio Play): rig ที่ไม่ Anchored 111 ตัว = Heartbeat ~100 ms ทั้ง server/client ; ข้อต่อค้างบนชิ้น Anchored ที่ถูกย้าย + **WrapTarget** = renderCPU ~77–115 ms ; หลังแก้ ~13 ms ที่ 38 ตัวขยับ
 - แก้ ClassroomKit: เก้าอี้ผิวสูง 0.9 (เดิม 1.4 ต้นขาชนใต้โต๊ะ), ขาโต๊ะแยก 2 ข้าง (เดิมเป็นแผ่นขวางหน้าแข้ง), export `Rooms/ToWorld/SeatTop/DeskRows/DeskCols`
+
+## Run67: ตัวประกอบห้องเรียนนิ่ง (ลดอาการหน่วง)
+- ลบ `ClassroomAnim.client` (ไม่มีลูปขยับ/BulkMoveTo/Tween ฝั่ง client อีก) ; ท่านั่งตั้งครั้งเดียวใน `RigFactory.SnapPose` แล้วทิ้ง Motor6D/Weld/Attachment/Script/Value/Animation/FaceControls, CastShadow=false (Anchored, ไม่ชน/query/touch เหมือนเดิม) — `RigFK` ยังใช้วางท่าตอนสร้าง
+- `ClassroomLife`: นักเรียน 45–55% ของที่นั่ง + ครู 1, รวมไม่เกิน 60 คน, สร้างคนละเฟรม, ลบทีละ 3 คน/เฟรม (สร้าง <70, ลบ >110 นาน 5 วิ เหมือนเดิม)
+- วัดใน Studio Play (เดินเข้าใกล้ 5 ห้อง): คน 70 -> 53–56, Part 1,520 -> 1,163–1,222, Heartbeat server max 118 -> 66–68 ms, p99 38 -> 22 ms (avg ติดเพดาน ~16.8 ms = 60 fps ทั้งก่อน/หลัง) ; เข้า-ออกซ้ำ 2 รอบ คน/Part/โฟลเดอร์กลับเป็น 0 ไม่รั่ว
+
