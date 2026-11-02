@@ -47,7 +47,7 @@ end
 -- คนขับในรถยนต์: นั่งฝั่งขวา (รถญี่ปุ่นพวงมาลัยขวา หน้ารถ -Z) ย่อสเกลให้หัวไม่ทะลุหลังคา weld เข้าตัวรถ ไม่ชน ลบพร้อมรถ
 local function addDriver(model: Model, primary: BasePart)
 	local cf, size = model:GetBoundingBox()
-	local hipY = size.Y * 0.3
+	local hipY = size.Y * 0.3 + 0.2 -- ยกขึ้นเล็กน้อยกันปลายเท้าโผล่ใต้ท้องรถ
 	local headroom = size.Y * 0.88 - hipY
 	local s = math.clamp(headroom / 3.4, 0.55, 1)
 	local rider = RigFactory.CreateRider(model, "car")
