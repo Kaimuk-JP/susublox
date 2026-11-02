@@ -304,6 +304,10 @@ local function applyTo(player: Player)
 end
 
 remote.OnServerEvent:Connect(function(player: Player, action: unknown, id: unknown)
+	if action == "ToggleAura" then
+		player:SetAttribute("AuraOff", player:GetAttribute("AuraOff") ~= true) -- ถอด/สวมออร่าสไตล์ (ไม่แตะชุด)
+		return
+	end
 	local p = PlayerData.Get(player)
 	if not p or action ~= "Equip" or typeof(id) ~= "string" or not looks[id] then
 		return

@@ -407,6 +407,10 @@ end
 views.outfits = function()
 	local equipped = player:GetAttribute("Outfit")
 	row(`เยน: ¥{player:GetAttribute("Yen") or 0}  — ชุดที่ใส่อยู่: {Outfits.Name((equipped :: string?) or Outfits.Default)}`)
+	local auraOn = player:GetAttribute("AuraOff") ~= true
+	row(`ออร่าสไตล์: {if auraOn then "สวมอยู่" else "ถอดอยู่"} (ใส่ซ้อนกับชุดใดก็ได้)`, if auraOn then "ถอด" else "สวม", function()
+		outfitRemote:FireServer("ToggleAura")
+	end)
 	for _, id in Outfits.Order do
 		local owned = player:GetAttribute("OutfitOwned_" .. id) == true
 		local isOn = equipped == id

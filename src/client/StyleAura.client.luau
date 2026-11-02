@@ -20,6 +20,10 @@ local function applyAura(character: Model)
 		if old then
 			old:Destroy()
 		end
+		local owner = Players:GetPlayerFromCharacter(character)
+		if owner and owner:GetAttribute("AuraOff") == true then
+			return -- ผู้เล่นถอดออร่าออก
+		end
 		local style = typeof(id) == "string" and StyleData.Styles[id]
 		if not style then
 			return
@@ -95,10 +99,10 @@ local function applyAura(character: Model)
 			for i = 1, 4 do
 				local o = dot("Orbiter", Vector3.new(0.2, 0.2, 0.2), 1)
 				local a0 = Instance.new("Attachment")
-				a0.Position = Vector3.new(0, 0.6, 0)
+				a0.Position = Vector3.new(0, 0.3, 0)
 				a0.Parent = o
 				local a1 = Instance.new("Attachment")
-				a1.Position = Vector3.new(0, -0.6, 0)
+				a1.Position = Vector3.new(0, -0.3, 0)
 				a1.Parent = o
 				local t = Instance.new("Trail")
 				t.Attachment0, t.Attachment1 = a0, a1
@@ -137,7 +141,7 @@ local function applyAura(character: Model)
 				for i, o in orbiters do
 					local ang = t * (2.6 + i * 0.25) + i * math.pi / 2
 					local h = 2.4 + 2.2 * math.sin(t * 1.3 + i * 1.7) -- ขึ้นลงเป็นเกลียว
-					o.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 2.3, h, math.sin(ang) * 2.3))
+					o.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 1.9, h, math.sin(ang) * 1.9))
 				end
 			end)
 			folder.Destroying:Connect(function()
@@ -146,6 +150,10 @@ local function applyAura(character: Model)
 		end
 	end
 	character:GetAttributeChangedSignal("Style"):Connect(refresh)
+	local owner = Players:GetPlayerFromCharacter(character)
+	if owner then
+		owner:GetAttributeChangedSignal("AuraOff"):Connect(refresh)
+	end
 	refresh()
 end
 
