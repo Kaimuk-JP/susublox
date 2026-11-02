@@ -223,12 +223,12 @@ local looks: { [string]: Look } = {
 			add("UpperTorso", Vector3.new(2.05, 0.38, 1.15), CFrame.new(0, -0.55, 0), "C1272D") -- สายคาดเอวแดง
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(-1.15, 0.78, 0), "E8C34A", Enum.Material.Metal) -- บ่าทอง
 			add("UpperTorso", Vector3.new(0.5, 0.5, 1.2), CFrame.new(1.15, 0.78, 0), "E8C34A", Enum.Material.Metal)
-			add("LowerTorso", Vector3.new(2.25, 2.1, 1.2), CFrame.new(0, -1.3, 0), "F4F1E8") -- ชายโค้ตยาว
-			add("LowerTorso", Vector3.new(2.35, 0.16, 1.3), CFrame.new(0, -2.3, 0), "C1272D")
+			add("LowerTorso", Vector3.new(2.25, 1.8, 1.2), CFrame.new(0, -1.15, 0), "F4F1E8") -- ชายโค้ตยาว (ปลายอยู่เหนือข้อเท้า ไม่จมพื้น)
+			add("LowerTorso", Vector3.new(2.35, 0.16, 1.3), CFrame.new(0, -2.12, 0), "C1272D")
 			for _, arm in { "LeftLowerArm", "RightLowerArm" } do
 				add(arm, Vector3.new(1.15, 0.4, 1.15), CFrame.new(0, -0.35, 0), "C1272D") -- ข้อมือแดง
 			end
-			backPrint(add, "夜露死苦", "F4F1E8", "C1272D", Vector3.new(1.4, 2.7, 0.06), -0.2, true)
+			backPrint(add, "夜露死苦", "F4F1E8", "C1272D", Vector3.new(1.4, 2.4, 0.06), -0.05, true)
 		end,
 	},
 	-- เคนโด: เสื้อครามเข้ม ฮากามะขากว้าง ผ้าคาดหัวขาวจุดแดง
@@ -288,7 +288,7 @@ local looks: { [string]: Look } = {
 			end
 			add("LowerTorso", Vector3.new(0.22, 0.22, 0.06), CFrame.new(-0.6, -1.0, -0.6), "FFD1DC", Enum.Material.SmoothPlastic, Enum.PartType.Ball)
 			add("LowerTorso", Vector3.new(0.22, 0.22, 0.06), CFrame.new(0.55, -1.5, -0.6), "FFD1DC", Enum.Material.SmoothPlastic, Enum.PartType.Ball)
-			add("Head", Vector3.new(0.5, 0.5, 0.2), CFrame.new(0.55, 0.55, -0.4), "FF8FAB", Enum.Material.SmoothPlastic, Enum.PartType.Ball) -- ดอกไม้ติดผม
+			add("Head", Vector3.new(0.45, 0.45, 0.2), CFrame.new(0.5, 0.4, -0.3), "FF8FAB", Enum.Material.SmoothPlastic, Enum.PartType.Ball) -- ดอกไม้ติดผม
 		end,
 	},
 	-- ฮู้ดสตรีท: เสื้อฮู้ดเทา กระเป๋าจิงโจ้ รองเท้าสะท้อนแสง
