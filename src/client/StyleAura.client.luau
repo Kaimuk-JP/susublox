@@ -24,7 +24,7 @@ local function applyAura(character: Model)
 		if not style then
 			return
 		end
-		-- ออร่าพลังงานแบบเกมต่อสู้อนิเมะ: เปลวลอยขึ้นจากตัว + ริบบิ้นเกลียว/เส้นแสง ไม่ใช้ Highlight (ไม่ทับสีชุด)
+		-- ออร่าพลังงานแบบเกมต่อสู้อนิเมะ: เปลวลอยขึ้นจากตัว + ริบบิ้นเกลียว ไม่ใช้ Highlight (ไม่ทับสีชุด)
 		local color = Color3.fromHex(style.Color)
 		local hot = color:Lerp(Color3.new(1, 1, 1), 0.55)
 		local folder = Instance.new("Folder")
@@ -95,14 +95,14 @@ local function applyAura(character: Model)
 			for i = 1, 4 do
 				local o = dot("Orbiter", Vector3.new(0.2, 0.2, 0.2), 1)
 				local a0 = Instance.new("Attachment")
-				a0.Position = Vector3.new(0, 0.25, 0)
+				a0.Position = Vector3.new(0, 0.6, 0)
 				a0.Parent = o
 				local a1 = Instance.new("Attachment")
-				a1.Position = Vector3.new(0, -0.25, 0)
+				a1.Position = Vector3.new(0, -0.6, 0)
 				a1.Parent = o
 				local t = Instance.new("Trail")
 				t.Attachment0, t.Attachment1 = a0, a1
-				t.Lifetime = 0.7
+				t.Lifetime = 1
 				t.MinLength = 0
 				t.LightEmission = 1
 				t.LightInfluence = 0
@@ -117,11 +117,6 @@ local function applyAura(character: Model)
 				})
 				t.Parent = o
 				orbiters[i] = o
-			end
-			-- เส้นแสงแนวตั้ง
-			local streaks = {}
-			for i = 1, 8 do
-				streaks[i] = dot("Streak", Vector3.new(0.12, 4 + (i % 3) * 1.5, 0.12), 0.35)
 			end
 			local t0 = os.clock()
 			local inWorld = false
@@ -143,12 +138,6 @@ local function applyAura(character: Model)
 					local ang = t * (2.6 + i * 0.25) + i * math.pi / 2
 					local h = 2.4 + 2.2 * math.sin(t * 1.3 + i * 1.7) -- ขึ้นลงเป็นเกลียว
 					o.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 2.3, h, math.sin(ang) * 2.3))
-				end
-				for i, sk in streaks do
-					local ang = i * math.pi / 4 + math.sin(t * 0.5 + i) * 0.2
-					local rise = (t * 5 + i * 1.3) % 7 -- วนขึ้นแล้วเริ่มใหม่
-					sk.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 1.8, rise, math.sin(ang) * 1.8))
-					sk.Transparency = 0.3 + 0.7 * (rise / 7)
 				end
 			end)
 			folder.Destroying:Connect(function()
