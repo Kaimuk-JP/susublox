@@ -2,6 +2,7 @@
 -- ขอบสีประจำสไตล์รอบตัวละคร + ข้อความแจ้งเมื่อเปลี่ยนสไตล์ (ให้เห็นชัดว่าสวมแล้ว)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local StyleData = require(ReplicatedStorage.Shared.Styles)
@@ -10,6 +11,11 @@ local player = Players.LocalPlayer
 local function applyAura(character: Model)
 	local function refresh()
 		local id = character:GetAttribute("Style")
+		for _, d in character:GetDescendants() do
+			if d.Name == "StyleAuraFlame" then
+				d:Destroy() -- เปลวผูกกับชิ้นส่วนตัว ไม่ได้อยู่ใน folder จึงต้องลบเอง
+			end
+		end
 		local old = character:FindFirstChild("StyleAura")
 		if old then
 			old:Destroy()
@@ -18,7 +24,7 @@ local function applyAura(character: Model)
 		if not style then
 			return
 		end
-		-- ออร่าพลังงานแบบเกมต่อสู้อนิเมะ: เปลวลอยขึ้นจากตัว + วงพลังที่พื้น ไม่ใช้ Highlight (ไม่ทับสีชุด)
+		-- ออร่าพลังงานแบบเกมต่อสู้อนิเมะ: เปลวลอยขึ้นจากตัว + ริบบิ้นเกลียว/เส้นแสง ไม่ใช้ Highlight (ไม่ทับสีชุด)
 		local color = Color3.fromHex(style.Color)
 		local hot = color:Lerp(Color3.new(1, 1, 1), 0.55)
 		local folder = Instance.new("Folder")
@@ -30,6 +36,7 @@ local function applyAura(character: Model)
 				return
 			end
 			local e = Instance.new("ParticleEmitter")
+			e.Name = "StyleAuraFlame"
 			e.Texture = "rbxasset://textures/particles/fire_main.dds"
 			e.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, hot),
@@ -66,30 +73,78 @@ local function applyAura(character: Model)
 		flame(character:FindFirstChild("LeftLowerLeg") :: BasePart?, 5, 1.8)
 		flame(character:FindFirstChild("RightLowerLeg") :: BasePart?, 5, 1.8)
 
-		-- วงพลังที่พื้นใต้เท้า
+		-- เส้นพลังแบบอนิเมะ: ริบบิ้นเกลียวหมุนรอบตัว + เส้นแสงแนวตั้งพุ่งขึ้นจากพื้น (ไม่มีวงกลมที่พื้น)
 		local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local hum = character:FindFirstChildOfClass("Humanoid")
 		if root and hum then
-			local ring = Instance.new("Part")
-			ring.Shape = Enum.PartType.Cylinder
-			ring.Size = Vector3.new(0.12, 6, 6)
-			ring.Color = color
-			ring.Material = Enum.Material.Neon
-			ring.Transparency = 0.55
-			ring.CanCollide, ring.CanQuery, ring.CanTouch = false, false, false
-			ring.Massless = true
-			ring.CastShadow = false
-			ring.Parent = folder
-			local weld = Instance.new("Weld")
-			weld.Part0 = root
-			weld.Part1 = ring
-			weld.C0 = CFrame.new(0, -(root.Size.Y / 2 + hum.HipHeight), 0) * CFrame.Angles(0, 0, math.rad(90))
-			weld.Parent = ring
-			TweenService:Create(
-				ring,
-				TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-				{ Transparency = 0.8, Size = Vector3.new(0.12, 7.4, 7.4) }
-			):Play()
+			local feetY = -(root.Size.Y / 2 + hum.HipHeight)
+			local function dot(name: string, size: Vector3, transparency: number): Part
+				local p = Instance.new("Part")
+				p.Name = name
+				p.Anchored = true
+				p.Size = size
+				p.Color = hot
+				p.Material = Enum.Material.Neon
+				p.Transparency = transparency
+				p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, false, false, false
+				p.Parent = folder
+				return p
+			end
+			-- ริบบิ้นเกลียว: จุดโคจรที่ลากรอยไว้ด้วย Trail (จุดเองโปร่งใส)
+			local orbiters = {}
+			for i = 1, 4 do
+				local o = dot("Orbiter", Vector3.new(0.2, 0.2, 0.2), 1)
+				local a0 = Instance.new("Attachment")
+				a0.Position = Vector3.new(0, 0.25, 0)
+				a0.Parent = o
+				local a1 = Instance.new("Attachment")
+				a1.Position = Vector3.new(0, -0.25, 0)
+				a1.Parent = o
+				local t = Instance.new("Trail")
+				t.Attachment0, t.Attachment1 = a0, a1
+				t.Lifetime = 0.7
+				t.MinLength = 0
+				t.LightEmission = 1
+				t.LightInfluence = 0
+				t.Color = ColorSequence.new(hot, color)
+				t.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0.1),
+					NumberSequenceKeypoint.new(1, 1),
+				})
+				t.WidthScale = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(1, 0),
+				})
+				t.Parent = o
+				orbiters[i] = o
+			end
+			-- เส้นแสงแนวตั้ง
+			local streaks = {}
+			for i = 1, 8 do
+				streaks[i] = dot("Streak", Vector3.new(0.12, 4 + (i % 3) * 1.5, 0.12), 0.35)
+			end
+			local t0 = os.clock()
+			local conn = RunService.RenderStepped:Connect(function()
+				if not root.Parent then
+					return
+				end
+				local t = os.clock() - t0
+				local base = root.CFrame * CFrame.new(0, feetY, 0)
+				for i, o in orbiters do
+					local ang = t * (2.6 + i * 0.25) + i * math.pi / 2
+					local h = 2.4 + 2.2 * math.sin(t * 1.3 + i * 1.7) -- ขึ้นลงเป็นเกลียว
+					o.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 2.3, h, math.sin(ang) * 2.3))
+				end
+				for i, sk in streaks do
+					local ang = i * math.pi / 4 + math.sin(t * 0.5 + i) * 0.2
+					local rise = (t * 5 + i * 1.3) % 7 -- วนขึ้นแล้วเริ่มใหม่
+					sk.CFrame = CFrame.new(base.Position + Vector3.new(math.cos(ang) * 1.8, rise, math.sin(ang) * 1.8))
+					sk.Transparency = 0.3 + 0.7 * (rise / 7)
+				end
+			end)
+			folder.Destroying:Connect(function()
+				conn:Disconnect()
+			end)
 		end
 	end
 	character:GetAttributeChangedSignal("Style"):Connect(refresh)
