@@ -44,6 +44,28 @@ local function addRider(model: Model, primary: BasePart, src: Instance, s: numbe
 	end
 end
 
+-- คนขับในรถยนต์: นั่งฝั่งขวา (รถญี่ปุ่นพวงมาลัยขวา หน้ารถ -Z) ย่อสเกลให้หัวไม่ทะลุหลังคา weld เข้าตัวรถ ไม่ชน ลบพร้อมรถ
+local function addDriver(model: Model, primary: BasePart)
+	local cf, size = model:GetBoundingBox()
+	local hipY = size.Y * 0.3
+	local headroom = size.Y * 0.88 - hipY
+	local s = math.clamp(headroom / 3.4, 0.55, 1)
+	local rider = RigFactory.CreateRider(model, "car")
+	if not rider then
+		return
+	end
+	rider:ScaleTo(rider:GetScale() * s)
+	local groundY = (cf.Position.Y - size.Y / 2)
+	local local0 = model:GetPivot():PointToObjectSpace(Vector3.new(cf.Position.X, groundY, cf.Position.Z))
+	rider:PivotTo(model:GetPivot() * CFrame.new(local0.X + size.X * 0.24, local0.Y + hipY, local0.Z + size.Z * 0.06))
+	local root = rider:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if root then
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = primary, root
+		w.Parent = root
+	end
+end
+
 -- ป้ายไฟแท็กซี่บนหลังคา (ไม่มีโลโก้/ตัวอักษรยี่ห้อ)
 local function addTaxiLamp(model: Model, primary: BasePart, moving: boolean)
 	local _, size = model:GetBoundingBox()
@@ -237,6 +259,8 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 		end
 		if kind == "bike" and rng:NextNumber() < 0.5 then
 			addRider(model, primary, src, scaleF)
+		elseif kind ~= "bike" and rng:NextNumber() < 0.35 then
+			addDriver(model, primary)
 		end
 		return model, primary
 	end
@@ -270,6 +294,8 @@ local function importedCar(parent: Instance, cf: CFrame, moving: boolean): (Mode
 	end
 	if kind == "bike" then
 		addRider(model, primary, src, scaleF)
+	else
+		addDriver(model, primary)
 	end
 	addCarLights(model, primary, kind == "bike")
 	-- ให้ pivot ของโมเดลตามตัวขยับ (ถ้าไม่มี PrimaryPart GetPivot จะค้างที่ตำแหน่งเกิด ทำให้ตรวจรถชนผู้เล่นพลาด)

@@ -716,6 +716,7 @@ end
 -- มุมองศารอบแกน X ของ Motor6D.C0 (บวก = ไปข้างหน้า) หน้าตัวละครหัน -Z
 local RIDER_POSES: { [string]: { [string]: number } } = {
 	bike = { waist = -30, neck = 26, hip = 80, knee = -92, ankle = 8, shoulder = 80, elbow = 32, splay = 7 },
+	car = { waist = -3, neck = 3, hip = 88, knee = -88, ankle = 4, shoulder = 52, elbow = 42, splay = 3 },
 	scooter = { waist = -6, neck = 6, hip = 74, knee = -76, ankle = 0, shoulder = 50, elbow = 34, splay = 5 },
 }
 
