@@ -44,25 +44,254 @@ local function addRider(model: Model, primary: BasePart, src: Instance, s: numbe
 	end
 end
 
--- คนขับในรถยนต์: นั่งฝั่งขวา (รถญี่ปุ่นพวงมาลัยขวา หน้ารถ -Z) ย่อสเกลให้หัวไม่ทะลุหลังคา weld เข้าตัวรถ ไม่ชน ลบพร้อมรถ
+-- โมเดลนำเข้าปิด CanQuery ไว้ raycast เลยมองไม่เห็นตัวถัง: เปิดชั่วคราวตอนสแกนแล้วคืนค่าเดิม
+local function enableQuery(parts: { BasePart }): () -> ()
+	local saved = {}
+	for _, p in parts do
+		saved[p] = p.CanQuery
+		p.CanQuery = true
+	end
+	return function()
+		for p, v in saved do
+			p.CanQuery = v
+		end
+	end
+end
+
+-- ชิ้นกระจกที่โมเดลนำเข้าทาสีทึบ: สีเข้มมาก, ไม่ใช่เปลือกตัวถังทั้งคัน (สูงไม่เกิน 55% ของรถ) และอยู่ในครึ่งบนของรถ
+local function isDarkWindowPart(part: BasePart, size: Vector3, groundY: number): boolean
+	local c = part.Color
+	local lum = c.R * 0.3 + c.G * 0.59 + c.B * 0.11
+	return lum < 0.16
+		and part.Size.Y < size.Y * 0.55
+		and part.Size.Magnitude > 1.2
+		and part.Position.Y - groundY > size.Y * 0.55
+end
+
+-- หาแนวหน้าต่างด้านข้างฝั่งคนขับด้วย raycast ตามแนวนอนที่ความสูงต่าง ๆ: ช่วงที่รังสีทะลุตัวรถ (ชิ้นโปร่งใส >= 0.5 ถือว่ามองทะลุ) = ช่องกระจก
+-- คืน (ขอบล่าง, ขอบบน) เหนือพื้นเป็น studs หรือ nil ถ้าตัวถังทึบ (เช่นโมเดลก้อนเดียวที่หน้าต่างเป็นแค่ texture)
+local function findWindowBand(model: Model, pivot: CFrame, local0: Vector3, size: Vector3, zLocal: number): (number?, number?)
+	local solid = {}
+	local groundY = (pivot * local0).Y
+	for _, d in model:GetDescendants() do
+		if
+			d:IsA("BasePart")
+			and d.Transparency < 0.5
+			and d.Name ~= "Collider"
+			and d.Name ~= "Mover"
+			and not isDarkWindowPart(d, size, groundY)
+		then
+			table.insert(solid, d)
+		end
+	end
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = solid
+	local restore = enableQuery(solid)
+	local out = size.X / 2 + 0.6
+	local dir = -pivot.RightVector * (size.X + 1.2)
+	local bestLo, bestHi, runLo = nil, nil, nil
+	local step = size.Y * 0.03
+	local y = size.Y * 0.35
+	while y <= size.Y + step do
+		local origin = (pivot * CFrame.new(local0.X + out, local0.Y + y, zLocal)).Position
+		local hit = workspace:Raycast(origin, dir, rp)
+		local open = y <= size.Y and (hit == nil or hit.Distance > 1.6) -- ชนเฉพาะเปลือกนอกฝั่งใกล้ (ราว 1 stud แรก) ไม่นับเบาะ/ของภายในห้อง
+		if open then
+			runLo = runLo or y
+		elseif runLo then
+			if not bestLo or (y - runLo) > (bestHi :: number) - bestLo then
+				bestLo, bestHi = runLo, y - step
+			end
+			runLo = nil
+		end
+		y += step
+	end
+	restore()
+	if bestLo and bestHi and bestHi - bestLo >= size.Y * 0.1 then
+		return bestLo, bestHi
+	end
+	return nil, nil
+end
+
+-- ช่วงห้องโดยสารตามแนวยาวรถ (หน้ารถ = -Z): ยิง raycast ลงจากเหนือรถ ตำแหน่งไหนมีหลังคา/กระจกสูงเกิน 78% ของรถถือว่าเป็นห้องโดยสาร
+-- (ไม่งั้นช่วงเหนือฝากระโปรงที่โล่งจะถูกมองเป็นช่องกระจก แล้วคนขับไปลอยเหนือรถ)
+local function cabinRange(model: Model, pivot: CFrame, local0: Vector3, size: Vector3, x: number): (number?, number?, number)
+	local parts = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 0.95 and d.Name ~= "Collider" and d.Name ~= "Mover" then
+			table.insert(parts, d)
+		end
+	end
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = parts
+	local restore = enableQuery(parts)
+	local groundY = (pivot * local0).Y
+	local zMin, zMax, roofTop = nil, nil, 0
+	local zf = -0.5
+	while zf <= 0.5 do
+		local z = local0.Z + size.Z * zf
+		local origin = (pivot * CFrame.new(x, local0.Y + size.Y + 1, z)).Position
+		local hit = workspace:Raycast(origin, Vector3.new(0, -(size.Y + 2), 0), rp)
+		if hit and hit.Position.Y - groundY >= size.Y * 0.78 then
+			zMin = zMin or z
+			zMax = z
+			roofTop = math.max(roofTop, hit.Position.Y - groundY)
+		end
+		zf += 0.02
+	end
+	restore()
+	return zMin, zMax, roofTop
+end
+
+-- เลือกจุดนั่ง: นั่งที่ ~30% ของห้องโดยสารนับจากหน้า (แถวหน้า) แล้ววัดแนวกระจกข้างตรงจุดนั้น (ต้องโปร่งทั้ง -0.45/0/+0.45 stud ไม่ให้หัวไปหลบหลังเสา)
+-- ผลวัดเก็บเป็นสัดส่วนของขนาดรถ แคชตามชื่อโมเดลต้นฉบับ (โมเดลเดียวกันสเกลเท่ากันเสมอ) จึงยิง raycast แค่ครั้งแรกของแต่ละรุ่น
+local seatCache: { [string]: any } = {}
+
+local function findSeat(model: Model, pivot: CFrame, local0: Vector3, size: Vector3): (number?, number?, number)
+	local key = model:GetAttribute("Src")
+	local cached = if type(key) == "string" then seatCache[key] else nil
+	if cached then
+		return cached.lo and cached.lo * size.Y, cached.hi and cached.hi * size.Y, local0.Z + cached.z * size.Z
+	end
+	local zMin, zMax, roofTop = cabinRange(model, pivot, local0, size, local0.X + size.X * 0.17)
+	local z, lo, hi = local0.Z - size.Z * 0.06, nil, nil
+	-- ตัวถังก้อนเดียวที่หน้าต่างเป็นแค่ texture (ไม่มีชิ้นกระจก/โปร่งแสง/กระจกสีทึบเลย) raycast วัดช่องกระจกไม่ได้: ถือเป็นตัวถังทึบ
+	local groundY = (pivot * local0).Y
+	local hasGlass = false
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Name ~= "Collider" and d.Name ~= "Mover" and d.Size.Magnitude > 1.2 then
+			if
+				d.Material == Enum.Material.Glass
+				or (d.Transparency > 0.05 and d.Transparency < 0.95)
+				or isDarkWindowPart(d, size, groundY)
+			then
+				hasGlass = true
+				break
+			end
+		end
+	end
+	if zMin and zMax then
+		z = zMin + (zMax - zMin) * 0.25 -- ค่าเริ่มต้นถ้าวัดช่องกระจกไม่ได้: แถวหน้าสุดของห้องโดยสาร (ตรงพวงมาลัย)
+	end
+	if zMin and zMax and hasGlass then
+		local bestScore = -1
+		for _, frac in { 0.18, 0.24, 0.3, 0.36, 0.42 } do
+			local zc = zMin + (zMax - zMin) * frac
+			local l, h = 0, math.min(size.Y, roofTop - 0.25) -- เหนือหลังคาโล่งเหมือนกัน ต้องไม่นับเป็นช่องกระจก
+			local ok = true
+			for _, dz in { -0.4, 0, 0.4 } do
+				local bl, bh = findWindowBand(model, pivot, local0, size, zc + dz)
+				if bl and bh then
+					l, h = math.max(l, bl), math.min(h, bh)
+				else
+					ok = false
+					break
+				end
+			end
+			if ok and h - l >= size.Y * 0.08 then
+				local score = (h - l) / size.Y - math.abs(frac - 0.3) * 0.5
+				if score > bestScore then
+					bestScore, z, lo, hi = score, zc, l, h
+				end
+			end
+		end
+	end
+	if type(key) == "string" then
+		seatCache[key] = { lo = lo and lo / size.Y, hi = hi and hi / size.Y, z = (z - local0.Z) / size.Z }
+	end
+	return lo, hi, z
+end
+
+-- ทำชิ้นกระจกสีทึบที่บังหัวคนขับให้โปร่งใส (ยิง raycast จากข้างรถไปที่ตำแหน่งหัว เอาเฉพาะชิ้นที่เป็นกระจกมืด ไม่แตะตัวถัง)
+local function revealDriver(model: Model, pivot: CFrame, local0: Vector3, size: Vector3, zLocal: number, headY: number)
+	local groundY = (pivot * local0).Y
+	local parts = {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 0.5 and d.Name ~= "Collider" and d.Name ~= "Mover" then
+			table.insert(parts, d)
+		end
+	end
+	local rp = RaycastParams.new()
+	rp.FilterType = Enum.RaycastFilterType.Include
+	rp.FilterDescendantsInstances = parts
+	local restore = enableQuery(parts)
+	local dir = -pivot.RightVector * (size.X + 1.2)
+	local found = {}
+	for dy = -0.8, 0.8, 0.2 do
+		for dz = -0.7, 0.7, 0.2 do
+			local origin = (pivot * CFrame.new(local0.X + size.X / 2 + 0.6, local0.Y + headY + dy, zLocal + dz)).Position
+			local hit = workspace:Raycast(origin, dir, rp)
+			if hit and isDarkWindowPart(hit.Instance :: BasePart, size, groundY) then
+				found[hit.Instance :: BasePart] = true
+			end
+		end
+	end
+	restore()
+	for p in found do
+		p.Transparency = 0.6
+		p.Material = Enum.Material.Glass
+	end
+end
+
+-- คนขับในรถยนต์: นั่งฝั่งขวา (รถญี่ปุ่นพวงมาลัยขวา หน้ารถ -Z) หัวอยู่กลางแนวกระจกข้างที่วัดจริงด้วย raycast
+-- ย่อสเกลให้หัวไม่ทะลุหลังคา weld เข้าตัวรถ ไม่ชน ลบพร้อมรถ
+-- ตัวถังทึบไม่มีช่องหน้าต่าง: ขยับคนขับชิดผิวข้างรถแล้วครอบด้วยกระจกสีเข้มโปร่งใสให้เห็นจากภายนอก
 local function addDriver(model: Model, primary: BasePart)
 	local cf, size = model:GetBoundingBox()
-	local hipY = size.Y * 0.3 + 0.2 -- ยกขึ้นเล็กน้อยกันปลายเท้าโผล่ใต้ท้องรถ
-	local headroom = size.Y * 0.88 - hipY
-	local s = math.clamp(headroom / 3.4, 0.55, 1)
+	local pivot = model:GetPivot()
+	local groundY = (cf.Position.Y - size.Y / 2)
+	local local0 = pivot:PointToObjectSpace(Vector3.new(cf.Position.X, groundY, cf.Position.Z))
+	local lo, hi, zLocal = findSeat(model, pivot, local0, size)
+	revealDriver(model, pivot, local0, size, zLocal, if lo and hi then (lo + hi) / 2 else size.Y * 0.7)
 	local rider = RigFactory.CreateRider(model, "car")
 	if not rider then
 		return
 	end
+	local headPart = rider:FindFirstChild("Head") :: BasePart?
+	local rootPart = rider:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not (headPart and rootPart) then
+		rider:Destroy()
+		return
+	end
+	local headY = size.Y * 0.7 -- ไม่เจอช่องกระจก: ใช้ค่ากลาง ๆ ของโมเดลนำเข้า
+	local topLimit = size.Y * 0.96
+	if lo and hi then
+		headY = (lo + hi) / 2
+		topLimit = math.min(topLimit, hi + 0.15)
+	end
+	local s = math.clamp((topLimit - headY) / (headPart.Size.Y / 2), 0.55, 1)
+	local headDy = (headPart.Position.Y - rootPart.Position.Y) * s -- ระยะหัวเหนือสะโพก หลังย่อสเกล
+	local hipY = headY - headDy
 	rider:ScaleTo(rider:GetScale() * s)
-	local groundY = (cf.Position.Y - size.Y / 2)
-	local local0 = model:GetPivot():PointToObjectSpace(Vector3.new(cf.Position.X, groundY, cf.Position.Z))
-	rider:PivotTo(model:GetPivot() * CFrame.new(local0.X + size.X * 0.24, local0.Y + hipY, local0.Z + size.Z * 0.06))
-	local root = rider:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if root then
-		local w = Instance.new("WeldConstraint")
-		w.Part0, w.Part1 = primary, root
-		w.Parent = root
+	local x = local0.X + size.X * 0.17 -- ชิดกลางรถขึ้นอีกนิด แขนไม่ทะลุประตู
+	local solidBody = lo == nil
+	if solidBody then
+		x = local0.X + size.X / 2 - 0.3 * s -- ชิดผิวข้างรถ ครึ่งตัวโผล่พ้นเนื้อโมเดลทึบ
+	end
+	local seat = pivot * CFrame.new(x, local0.Y + hipY, zLocal)
+	rider:PivotTo(seat)
+	local w = Instance.new("WeldConstraint")
+	w.Part0, w.Part1 = primary, rootPart
+	w.Parent = rootPart
+	if solidBody then
+		local pane = Instance.new("Part")
+		pane.Name = "DriverGlass"
+		pane.Size = Vector3.new(1.4 * s, 2.4 * s, 2.6 * s)
+		pane.Color = Color3.fromHex("8FA6B8")
+		pane.Material = Enum.Material.SmoothPlastic
+		pane.Transparency = 0.72
+		pane.CFrame = pivot * CFrame.new(x + 0.2 * s, local0.Y + headY - 0.6 * s, zLocal)
+		pane.CanCollide, pane.CanQuery, pane.CanTouch = false, false, false
+		pane.Massless = true
+		pane.Anchored = primary.Anchored
+		pane.Parent = model
+		if not primary.Anchored then
+			local pw = Instance.new("WeldConstraint")
+			pw.Part0, pw.Part1 = primary, pane
+			pw.Parent = pane
+		end
 	end
 end
 
