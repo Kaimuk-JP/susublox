@@ -10,6 +10,7 @@ local RigFactory = require(script.Parent.RigFactory)
 local BK = require(script.Parent.BuildKit)
 local ArenaKit = require(script.Parent.ArenaKit)
 local PitchKit = require(script.Parent.PitchKit)
+local ClassroomKit = require(script.Parent.ClassroomKit)
 
 local C = {
 	paving = Color3.fromHex("B8AE9C"),
@@ -288,40 +289,11 @@ box("Plinth", X1 - 1, X2 + 1, -3, 0.32, Z1 - 1, Z2 + 1, C.darkConcrete, school)
 for level = 0, 2 do
 	local y0 = level * 16
 	local y1 = y0 + 16
-	-- ผนังหน้า ชั้นล่างเจาะประตูกว้าง 14
-	if level == 0 then
-		box("FrontWallL", X1, -7, y0, y1, Z2 - 1, Z2, C.wall, school)
-		box("FrontWallR", 7, X2, y0, y1, Z2 - 1, Z2, C.wall, school)
-		box("FrontDoorTop", -7, 7, y0 + 11, y1, Z2 - 1, Z2, C.wall, school)
-	else
-		box("FrontWall" .. level, X1, X2, y0, y1, Z2 - 1, Z2, C.wall, school)
-	end
-	box("BackWall" .. level, X1, X2, y0, y1, Z1, Z1 + 1, C.wall, school)
-	box("EastWall" .. level, X2 - 1, X2, y0, y1, Z1, Z2, C.wall, school)
-	-- ผนังตะวันตก ชั้น 2 เจาะทางเข้าจากบันไดหนีไฟที่ z -108..-98
-	if level == 1 then
-		box("WestWall1a", X1, X1 + 1, y0, y1, Z1, -108, C.wall, school)
-		box("WestWall1b", X1, X1 + 1, y0, y1, -98, Z2, C.wall, school)
-		box("WestDoorTop", X1, X1 + 1, y0 + 9, y1, -108, -98, C.wall, school)
-	else
-		box("WestWall" .. level, X1, X1 + 1, y0, y1, Z1, Z2, C.wall, school)
-	end
+	-- ผนังนอก 4 ด้านเจาะหน้าต่างจริง (ประตูหน้าชั้นล่าง x -7..7, ประตูหนีไฟตะวันตกชั้น 2 z -108..-98) ดู ClassroomKit
+	ClassroomKit.BuildShell(school, level, C.wall, C.navy, C.glass)
 	-- แถบสีชมพูคั่นชั้น
 	box("Band" .. level, X1 - 0.4, X2 + 0.4, y1 - 1.2, y1, Z2, Z2 + 0.5, C.trim, school)
 	box("BandBack" .. level, X1 - 0.4, X2 + 0.4, y1 - 1.2, y1, Z1 - 0.5, Z1, C.trim, school)
-	-- หน้าต่างด้านหน้า (เว้นหอนาฬิกา/ประตูกลาง) ด้านหลัง และด้านตะวันออก
-	for wx = -52, 52, 13 do
-		if not (math.abs(wx) < 12 and level <= 3) then
-			window(school, "x", wx, y0 + 9, Z2, 1)
-		end
-		window(school, "x", wx, y0 + 9, Z1, -1)
-	end
-	for wz = -112, -68, 11 do
-		window(school, "z", wz, y0 + 9, X2, 1)
-		if not (level == 1 and wz < -98) then
-			window(school, "z", wz, y0 + 9, X1, -1)
-		end
-	end
 end
 box("Slab_Floor2", X1, X2, 15.5, 16, Z1, Z2, C.wall, school)
 box("Slab_Floor3", X1, X2, 31.5, 32, Z1, Z2, C.wall, school)
@@ -331,25 +303,28 @@ box("Slab_Roof", X1, X2, 47.5, 48, Z1, Z2, C.roof, school)
 for level = 0, 2 do
 	local y0 = level * 16 + (if level == 0 then 0.3 else 0)
 	box("ClassFloor" .. level, X1 + 1, X2 - 1, y0, y0 + 0.1, Z1 + 1, Z2 - 1, C.wood, school, Enum.Material.WoodPlanks)
-	-- โต๊ะเรียน + เก้าอี้ แถวหน้าชั้น (ห่างหน้าต่างและประตู ไม่กีดขวางทางเข้ากลางตึก)
-	for _, dz in { -73, -67 } do
-		for _, dx in { -48, -36, -24, 24, 36, 48 } do
-			box("Desk", dx - 1.6, dx + 1.6, y0 + 2.4, y0 + 2.7, dz - 1, dz + 1, C.wood, school, Enum.Material.Wood)
-			box("DeskLeg", dx - 0.3, dx + 0.3, y0, y0 + 2.4, dz - 0.3, dz + 0.3, C.navy, school)
-			box("Chair", dx - 0.8, dx + 0.8, y0 + 1.3, y0 + 1.6, dz + 1.6, dz + 3.2, if (dx // 12) % 2 == 0 then C.trim else C.glass, school)
-			box("ChairLeg", dx - 0.2, dx + 0.2, y0, y0 + 1.3, dz + 2.2, dz + 2.6, C.navy, school)
-		end
-	end
-	box("Corridor" .. level, X1 + 1, X2 - 1, y0 + 0.05, y0 + 0.2, -97.5, -82.5, C.paving, school)
+	box("Corridor" .. level, X1 + 1, X2 - 1, y0 + 0.05, y0 + 0.2, -97.5, -82.5, Color3.fromHex("E8E4D8"), school, Enum.Material.SmoothPlastic) -- พื้นกระเบื้องสว่าง
 	for _, lx in { -40, 0, 40 } do
 		local strip = part("CeilingLight", Vector3.new(14, 0.25, 1.6), Vector3.new(lx, level * 16 + 15.1, -90), C.white, school, Enum.Material.Neon)
 		noCollide(strip)
-		pointLight(strip, Color3.fromHex("FFF3E0"), 26, 1.1)
+		if lx ~= 0 then
+			pointLight(strip, Color3.fromHex("FFF3E0"), 34, 1.0) -- 2 ดวงต่อชั้น (ห้องเรียนมีดวงละห้องใน ClassroomKit รวมทั้งอาคาร < 40)
+		end
 	end
 	for lx = -56, 52, 4 do
+		if ClassroomKit.PartitionHitsX(lx, lx + 3) then
+			continue -- ผนังกั้นห้องผ่านตำแหน่งนี้
+		end
 		local alt = (math.floor(lx / 4)) % 2 == 0
 		box("Locker", lx, lx + 3, level * 16 + 0.3, level * 16 + 6.3, Z1 + 1, Z1 + 3, if alt then C.blue else C.trim, school)
 	end
+end
+
+-- ห้องเรียนญี่ปุ่น: ผนังกั้นห้อง ประตูบานเลื่อน กระดาน โต๊ะเรียน ฯลฯ (ดู ClassroomKit.luau)
+do
+	local t0 = os.clock()
+	local st = ClassroomKit.Build(school)
+	print(string.format("[Classroom] %d parts, %d lights, %d SurfaceGui, %.2fs", st.parts, st.lights, st.guis, os.clock() - t0))
 end
 
 -- ดาดฟ้า: อารีน่า PvP 80x60 + ราวกันตกสูง 3 + ถังน้ำ + เสาอากาศ
