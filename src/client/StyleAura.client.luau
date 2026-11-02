@@ -124,10 +124,19 @@ local function applyAura(character: Model)
 				streaks[i] = dot("Streak", Vector3.new(0.12, 4 + (i % 3) * 1.5, 0.12), 0.35)
 			end
 			local t0 = os.clock()
-			local conn = RunService.RenderStepped:Connect(function()
-				if not root.Parent then
+			local inWorld = false
+			local conn: RBXScriptConnection
+			conn = RunService.RenderStepped:Connect(function()
+				if not root:IsDescendantOf(workspace) then
+					-- ตัวละครเก่าถูกถอดออกจาก workspace (ตาย/เกิดใหม่) แต่ root.Parent ยังเป็นโมเดลเดิม จึงต้องเช็คแบบนี้
+					-- (ตัวละครที่เพิ่งเกิดอาจยังไม่เข้า workspace จึงเริ่มเช็คหลังเห็นว่าเคยอยู่แล้วเท่านั้น)
+					if inWorld then
+						conn:Disconnect()
+						folder:Destroy()
+					end
 					return
 				end
+				inWorld = true
 				local t = os.clock() - t0
 				local base = root.CFrame * CFrame.new(0, feetY, 0)
 				for i, o in orbiters do
