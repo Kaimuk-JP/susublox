@@ -7,11 +7,12 @@ local RunService = game:GetService("RunService")
 local World = require(ReplicatedStorage.Shared.World)
 local BK = require(script.Parent.BuildKit)
 local DockKit = require(script.Parent.DockKit)
+local ShrineKit = require(script.Parent.ShrineKit)
 local BuildSync = require(script.Parent.BuildSync)
 local __t0 = os.clock()
 
 -- เพิ่มเลขนี้ทุกครั้งที่แก้โลก: ถ้าใน Place มีโลกที่สร้างไว้ล่วงหน้า (รันใน Edit) เวอร์ชันตรงกัน ตอนเล่นจะข้ามการสร้างใหม่
-local VERSION = 6
+local VERSION = 7
 local running = RunService:IsRunning()
 local prebuilt = workspace:FindFirstChild("World")
 if running and prebuilt and prebuilt:GetAttribute("Built") and prebuilt:GetAttribute("Version") == VERSION then
@@ -482,6 +483,9 @@ local function buildTemple(d: World.District, f: Folder)
 		BK.box("Step", cx - 5, cx + 5, 0, top, z1, z2, hex("A5A7A8"), f)
 		if i == 3 or i == 9 or i == 15 then
 			BK.torii(f, cx, top, (z1 + z2) / 2, 0, 1)
+			if i == 15 then
+				ShrineKit.shimenawa(f, cx, top, (z1 + z2) / 2) -- โทริอิบนสุดผูกชิเมนาวะ + ชิเดะ
+			end
 		end
 	end
 	for i = 1, 19, 3 do
@@ -493,19 +497,8 @@ local function buildTemple(d: World.District, f: Folder)
 			BK.light(glow, hex("B8944A"), 16, 0.9)
 		end
 	end
-	-- ศาลเจ้าบนยอด
-	local topY = 27
-	BK.box("ShrineBase", cx - 11, cx + 11, topY, topY + 1.2, cz - 10, cz + 10, hex("8F8E88"), f, Enum.Material.Slate)
-	BK.box("ShrineHall", cx - 8, cx + 8, topY + 1.2, topY + 9, cz - 6, cz + 6, hex("5C4637"), f, Enum.Material.Wood)
-	for _, o in { { -8, 6 }, { 8, 6 }, { -8, -6 }, { 8, -6 } } do
-		BK.cylinder("ShrinePillar", 0.7, 8.4, Vector3.new(cx + o[1], topY + 5.4, cz + o[2]), hex("A8352C"), f)
-	end
-	BK.box("ShrineRoof1", cx - 11, cx + 11, topY + 9, topY + 10.2, cz - 9, cz + 9, hex("2A2C32"), f)
-	BK.box("ShrineRoof2", cx - 8, cx + 8, topY + 10.2, topY + 11.4, cz - 6.5, cz + 6.5, hex("2A2C32"), f)
-	BK.box("ShrineRoof3", cx - 4, cx + 4, topY + 11.4, topY + 12.6, cz - 3.5, cz + 3.5, hex("2A2C32"), f)
-	BK.ball("ShrineOrb", 2, Vector3.new(cx, topY + 13.6, cz), hex("B8944A"), f, Enum.Material.Neon)
-	local bell = BK.ball("Bell", 2.2, Vector3.new(cx, topY + 5, cz + 8.5), hex("B8944A"), f, Enum.Material.Metal)
-	BK.light(bell, hex("B8944A"), 18, 0.8)
+	-- ศาลเจ้าบนยอด (ซันโด โคมาอินุ เทมิซุยะ ไฮเด็ง ฮนเด็ง ฯลฯ) ดู ShrineKit; บอสยืนที่ (0,27,-16) และ POI (15,27,0) ต้องโล่ง
+	ShrineKit.build(f, cx, cz, 27)
 	-- ต้นซากุระรอบเนิน + ตะเกียง
 	for i = 1, 14 do
 		local a = i / 14 * math.pi * 2
