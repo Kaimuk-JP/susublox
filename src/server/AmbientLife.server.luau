@@ -237,7 +237,7 @@ end
 
 -- คนขับในรถยนต์: นั่งฝั่งขวา (รถญี่ปุ่นพวงมาลัยขวา หน้ารถ -Z) หัวอยู่กลางแนวกระจกข้างที่วัดจริงด้วย raycast
 -- ย่อสเกลให้หัวไม่ทะลุหลังคา weld เข้าตัวรถ ไม่ชน ลบพร้อมรถ
--- ตัวถังทึบไม่มีช่องหน้าต่าง: ขยับคนขับชิดผิวข้างรถแล้วครอบด้วยกระจกสีเข้มโปร่งใสให้เห็นจากภายนอก
+-- ตัวถังทึบไม่มีช่องหน้าต่าง: ไม่ใส่คนขับ (เห็นได้ก็ต่อเมื่อตัวทะลุออกนอกรถ)
 local function addDriver(model: Model, primary: BasePart)
 	local cf, size = model:GetBoundingBox()
 	local pivot = model:GetPivot()
@@ -265,34 +265,18 @@ local function addDriver(model: Model, primary: BasePart)
 	local headDy = (headPart.Position.Y - rootPart.Position.Y) * s -- ระยะหัวเหนือสะโพก หลังย่อสเกล
 	local hipY = headY - headDy
 	rider:ScaleTo(rider:GetScale() * s)
-	local x = local0.X + size.X * 0.17 -- ชิดกลางรถขึ้นอีกนิด แขนไม่ทะลุประตู
+	local x = local0.X + size.X * 0.13 -- ชิดกลางรถ แขนไม่ทะลุประตู
 	local solidBody = lo == nil
 	if solidBody then
-		x = local0.X + size.X / 2 - 0.3 * s -- ชิดผิวข้างรถ ครึ่งตัวโผล่พ้นเนื้อโมเดลทึบ
+		-- ตัวถังทึบ: เห็นคนขับได้ก็ต่อเมื่อให้ตัวทะลุออกนอกรถ ซึ่งดูผิดธรรมชาติ จึงไม่ใส่คนขับในรถรุ่นนี้
+		rider:Destroy()
+		return
 	end
 	local seat = pivot * CFrame.new(x, local0.Y + hipY, zLocal)
 	rider:PivotTo(seat)
 	local w = Instance.new("WeldConstraint")
 	w.Part0, w.Part1 = primary, rootPart
 	w.Parent = rootPart
-	if solidBody then
-		local pane = Instance.new("Part")
-		pane.Name = "DriverGlass"
-		pane.Size = Vector3.new(1.4 * s, 2.4 * s, 2.6 * s)
-		pane.Color = Color3.fromHex("8FA6B8")
-		pane.Material = Enum.Material.SmoothPlastic
-		pane.Transparency = 0.72
-		pane.CFrame = pivot * CFrame.new(x + 0.2 * s, local0.Y + headY - 0.6 * s, zLocal)
-		pane.CanCollide, pane.CanQuery, pane.CanTouch = false, false, false
-		pane.Massless = true
-		pane.Anchored = primary.Anchored
-		pane.Parent = model
-		if not primary.Anchored then
-			local pw = Instance.new("WeldConstraint")
-			pw.Part0, pw.Part1 = primary, pane
-			pw.Parent = pane
-		end
-	end
 end
 
 -- ป้ายไฟแท็กซี่บนหลังคา (ไม่มีโลโก้/ตัวอักษรยี่ห้อ)
